@@ -1,4 +1,4 @@
-# EcoLogística Huancayo
+# EcoLogística Junin
 
 ## 📚 Tabla de Contenido
 
@@ -10,7 +10,7 @@
 
 3. [03. Declaración de la visión](./docs/01%20Inicio/03.%20Declaraci%C3%B3n%20de%20la%20visi%C3%B3n%20V_1_0_0.md)
 
-4. [04. Registro de supuestos y restricciones](./docs/01%20Inicio/04.%20Registro_de_Supuestos_y_Restricciones_Ecologistica_Huancayo_V1.0.0.md)
+4. [04. Registro de supuestos y restricciones](./docs/01%20Inicio/0.4%20Registro_de_Supuestos_y_Restricciones_Ecologistica_Huancayo_V1.0.0.md)
 
 5. [05. Registro de interesados](./docs/01%20Inicio/05.%20Registro%20de%20interesados%20V_1_0_0.md)
 
