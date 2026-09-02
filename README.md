@@ -4,16 +4,17 @@
 
 ## 📚 Tabla de Contenido
 
-### 📌 Fase de Inicio
+### 📌 Documentos de Inicio
 
-| N.º | Documento |
-|---:|---|
-| 00 | [Directrices y Auditoría](docs/01%20Inicio/00.%20Directrices%20y%20Auditoria%20V_1_0_3.md) |
-| 01 | [Selección del enfoque del proyecto](docs/01%20Inicio/01.%20Selección%20del%20enfoque%20del%20proyecto%20V_1_0_0.md) |
-| 02 | [Acta de constitución](docs/01%20Inicio/02.%20Acta%20de%20constitución%20V_1_0_0.md) |
-| 03 | [Declaración de la visión](docs/01%20Inicio/03.%20Declaración%20de%20la%20visión%20V_1_0_0.md) |
-| 04 | [Registro de supuestos y restricciones](docs/01%20Inicio/04.%20Registro%20de%20supuestos%20y%20restricciones%20V_1_0_0.md) |
-| 05 | [Registro de interesados](docs/01%20Inicio/05.%20Registro%20de%20interesados%20V_1_0_0.md) |
+1. [01. Selección del enfoque del proyecto](./docs/01%20Inicio/01.%20Selecci%C3%B3n%20del%20enfoque%20del%20proyecto%20V_1_0_0.md)
+
+2. [02. Acta de constitución](./docs/01%20Inicio/02.%20Acta%20de%20constituci%C3%B3n%20V_1_0_0.md)
+
+3. [03. Declaración de la visión](./docs/01%20Inicio/03.%20Declaraci%C3%B3n%20de%20la%20visi%C3%B3n%20V_1_0_0.md)
+
+4. [04. Registro de supuestos y restricciones](./docs/01%20Inicio/0.4%20Registro_de_Supuestos_y_Restricciones_Ecologistica_Huancayo_V1.0.0.md)
+
+5. [05. Registro de interesados](./docs/01%20Inicio/05.%20Registro%20de%20interesados%20V_1_0_0.md)
 
 ### 🏗️ Arquitectura e Ingeniería de Requisitos
 
