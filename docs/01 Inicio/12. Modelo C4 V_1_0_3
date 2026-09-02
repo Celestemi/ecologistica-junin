@@ -1,0 +1,95 @@
+# 12. Modelo C4 V_1_0_3.md
+
+### Nivel 1 — Diagrama de Contexto
+
+```mermaid
+C4Context
+    title Contexto de Sistema (Nivel 1) - EcoLogística Junín (Huancayo, El Tambo y Chilca)
+
+    Person(admin, "Administrador / TI", "Gestiona usuarios, roles y parametros.")
+    Person(operador, "Operador Logística", "Carga pedidos, ejecuta VRPTW y gestiona re-optimizaciones.")
+    Person(conductor, "Conductor de Reparto", "Consulta hoja de ruta y registra entregas (PWA Mobile).")
+    Person(gerente, "Gerente Operaciones", "Consulta Dashboard de sostenibilidad y reportes.")
+    Person(cliente, "Cliente Final", "Consulta ETA de su pedido via web.")
+
+    System(ecologistica, "EcoLogística Junín (Huancayo, El Tambo y Chilca)", "Plataforma de optimización de rutas sostenibles (VRPTW/Green VRP).")
+
+    System_Ext(maps_api, "Servicio Mapas / Tráfico", "Proveedor de tiles y matrices de distancia (OSM / Google Maps).")
+
+    Rel(admin, ecologistica, "Administra usuarios")
+    Rel(operador, ecologistica, "Carga pedidos y ejecuta VRPTW")
+    Rel(conductor, ecologistica, "Consulta ruta y registra entregas offline/online")
+    Rel(gerente, ecologistica, "Consulta KPIs de sostenibilidad")
+    Rel(cliente, ecologistica, "Consulta ETA")
+
+    Rel(ecologistica, maps_api, "Consulta geocodificación, tiles y matrices de distancia")
+```
+
+---
+
+### Nivel 2 — Diagrama de Contenedores
+
+```mermaid
+C4Container
+    title Contenedores (Nivel 2) - EcoLogística Junín (Huancayo, El Tambo y Chilca)
+
+    Person(operador, "Operador / Gerente", "Desktop Web Browser")
+    Person(conductor, "Conductor", "Mobile Browser (PWA 2G/3G)")
+
+    Container(spa, "Web SPA (Desktop)", "React.js, Tailwind, Leaflet.js", "Interfaz web para despacho, flota y dashboard.")
+    Container(pwa, "Modo Conductor (PWA)", "React.js (PWA), IndexedDB", "Interfaz móvil ligera optimizada para operabilidad offline/online.")
+
+    Container(api, "API Gateway / Backend", "Python 3.11 / FastAPI", "Endpoints REST asíncronos, seguridad JWT y gestión transaccional.")
+    Container(engine, "Motor de Optimización", "Python 3.11 / Google OR-Tools (Python Wrapper)", "Resuelve VRPTW + Green VRP y re-optimizaciones dinámicas.")
+
+    ContainerDb(db, "Base de Datos Relacional / Espacial", "PostgreSQL 15 + PostGIS 3", "Almacena transacciones, geometrías de rutas y pedidos.")
+
+    System_Ext(maps_api, "APIs Externas Mapas", "Leaflet / OSM / Waze CCP", "Información cartográfica y tráfico local.")
+
+    Rel(operador, spa, "Usa vía HTTPS")
+    Rel(conductor, pwa, "Usa vía HTTPS (Soporte Offline)")
+
+    Rel(spa, api, "REST / HTTPS (JSON)")
+    Rel(pwa, api, "Sincronización REST / HTTPS")
+
+    Rel(api, engine, "Invoca optimización VRPTW")
+    Rel(api, db, "Consultas SQL / PostGIS")
+    Rel(engine, db, "Persiste rutas generadas")
+
+    Rel(spa, maps_api, "Carga tiles de mapa")
+    Rel(api, maps_api, "Consulta matrices de distancia de Huancayo")
+```
+
+---
+
+### Nivel 3 — Diagrama de Componentes (Backend FastAPI)
+
+```mermaid
+C4Component
+    title Componentes Backend (Nivel 3) - API FastAPI
+
+    Container(spa_pwa, "Frontend Apps", "React / PWA", "Clientes web y móviles.")
+    ContainerDb(db, "Base de Datos", "PostgreSQL + PostGIS", "Persistencia.")
+    Container(engine_ext, "Google OR-Tools (Python Wrapper)", "Python Lib", "Metaheurística.")
+
+    Container_Boundary(api_boundary, "API Backend Componentes (FastAPI)") {
+        Component(auth_comp, "Security / Auth Component", "FastAPI / JWT", "Valida autenticación, RBAC y sanitización OWASP.")
+        Component(fleet_comp, "Fleet Service", "Python", "Gestiona vehículos y reglas de restricción vehicular.")
+        Component(order_comp, "Order Service", "Python / GeoPy", "Importa CSV, geocodifica y gestiona ventanas de tiempo.")
+        Component(route_comp, "Route Service", "Python", "Orquesta la generación de rutas y re-optimizaciones.")
+        Component(kpi_comp, "Analytics & KPI Service", "Python", "Calcula consumo, CO2 y ahorro de distancia.")
+    }
+
+    Rel(spa_pwa, auth_comp, "Autentica peticiones JWT")
+    Rel(auth_comp, fleet_comp, "Autoriza acceso")
+    Rel(auth_comp, order_comp, "Autoriza acceso")
+    Rel(auth_comp, route_comp, "Autoriza acceso")
+    Rel(auth_comp, kpi_comp, "Autoriza acceso")
+
+    Rel(order_comp, db, "Lectura / Escritura de Pedidos")
+    Rel(fleet_comp, db, "Lectura / Escritura de Vehículos")
+    Rel(route_comp, engine_ext, "Envia datos para VRPTW")
+    Rel(engine_ext, route_comp, "Retorna secuencias y ETAs")
+    Rel(route_comp, db, "Persiste rutas")
+    Rel(kpi_comp, db, "Consulta rutas y persiste KPIs")
+```
