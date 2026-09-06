@@ -2,7 +2,13 @@
 
 ## 📚 Tabla de Contenido
 
-### 📌 Documentos de Inicio
+### 📋 Directrices
+
+0. [00. Directrices y Auditoría](./docs/01%20Inicio/00.%20Directrices%20y%20Auditoria%20V_1_0_3.md)
+
+---
+
+### 📌 Documentos de Inicio — Semana 1
 
 1. [01. Selección del enfoque del proyecto](./docs/01%20Inicio/01.%20Selecci%C3%B3n%20del%20enfoque%20del%20proyecto%20V_1_0_0.md)
 
@@ -16,7 +22,7 @@
 
 ---
 
-### 🏗️ Arquitectura e Ingeniería de Requisitos
+### 🏗️ Arquitectura e Ingeniería de Requisitos — Semana 2
 
 6. [06. Requisitos funcionales](./docs/01%20Inicio/06.%20Requisitos%20funcionales%20V_1_0_3.md)
 
@@ -33,9 +39,3 @@
 12. [12. Modelo C4](./docs/01%20Inicio/12.%20Modelo%20C4%20V_1_0_3.md)
 
 13. [13. Restricciones](./docs/01%20Inicio/13.%20Restricciones%20V_1_0_3.md)
-
----
-
-### 📋 Directrices
-
-[00. Directrices y Auditoría](./docs/01%20Inicio/00.%20Directrices%20y%20Auditoria%20V_1_0_3.md)
