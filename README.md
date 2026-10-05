@@ -1,117 +1,172 @@
-# EcoLogística Huancayo
+# 🌱 EcoLogística Huancayo — Optimizador de Rutas Sostenibles
 
-MVP de optimización de rutas de última milla para Huancayo, Perú. El backend corre un algoritmo genético VRPTW sobre PostgreSQL 15 con PostGIS. El panel del dispatcher muestra el mapa, el CO2 evitado y el equivalente en Quinuales del Valle del Mantaro.
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18.0-61DAFB.svg)](https://reactjs.org/)
+[![PostGIS](https://img.shields.io/badge/PostgreSQL-15%20%2B%20PostGIS%203-336791.svg)](https://postgis.net/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](#)
+[![Sprint](https://img.shields.io/badge/Sprint-1%20Completado-success.svg)](#)
 
-El código está en inglés. Los comentarios, la semilla y la interfaz están en español.
+Sistema web y móvil (PWA) de optimización de rutas de reparto de última milla para **DistriRápido S.A.C.** en los distritos de **Huancayo, El Tambo y Chilca** (provincia de Huancayo, Junín). Integra algoritmos de ruteo vehicular con ventanas de tiempo (**VRPTW**) y criterios ecológicos (**Green VRP**).
 
-## Contexto local
+---
 
-- Centro de operaciones: Plaza Constitución, `-12.06513, -75.20486`.
-- Depósito semilla: Av. Ferrocarril, El Tambo, `-12.0520, -75.2120`, 3250 m s.n.m.
-- Banda de altitud: 3200 m a 3450 m.
-- Sostenibilidad: 1 Quinual abonado en la zona andina equivale a 12 kg de CO2 al año.
-- Geometrías en WGS84 (EPSG:4326) para Leaflet.
+## 🎯 Objetivos Principales (SMART)
 
-## Requisitos
+- 🚗 **Reducción de distancia:** disminución $\ge 15\%$ frente a la ruta secuencial sin optimizar.
+- 🌿 **Reducción de emisiones:** reducción $\ge 10\%$ mensual de $\text{CO}_2$ basada en factores oficiales de combustible.
+- ⏰ **Cumplimiento de ventanas horarias:** nivel de cumplimiento $\ge 90\%$ (incumplimiento $\le 10\%$).
+- ⚡ **SLA de rendimiento:** generación de ruta en $\le 45\text{ s}$ (150 pedidos / 15 vehículos) y re-optimización en $\le 30\text{ s}$.
 
-- Docker con Compose v2
-- Para las pruebas en el host, además: Python 3.11 o superior
+---
 
-## Despliegue con Docker Compose
+## 📁 Estructura del Repositorio
 
-Desde la raíz del proyecto:
-
-```powershell
-docker compose up --build
+```text
+ecologistica-junin/
+├── 📄 README.md
+├── 📄 .gitignore
+├── 📁 docs/
+│   ├── 📁 01 Inicio/
+│   │   ├── 📄 00. Directrices y Auditoria V_1_0_3.md
+│   │   ├── 📄 01. Selección del enfoque del proyecto V_1_0_0.md
+│   │   ├── 📄 02. Acta de constitución V_1_0_0.md
+│   │   ├── 📄 03. Declaración de la visión V_1_0_0.md
+│   │   ├── 📄 04. Registro_de_Supuestos_y_Restricciones_EcoLogistica_Huancayo_V1.0.0.md
+│   │   ├── 📄 05. Registro de interesados V_1_0_0.md
+│   │   ├── 📄 06. Requisitos funcionales V_1_0_0.md
+│   │   ├── 📄 07. Requisitos no funcionales V_1_0_0.md
+│   │   ├── 📄 08. Usuarios V_1_0_3.md
+│   │   ├── 📄 09. Reglas de negocio V_1_0_4.md
+│   │   ├── 📄 10. Stack tecnológico V_1_0_3.md
+│   │   ├── 📄 11. Base de datos V_1_0_3.md
+│   │   ├── 📄 12. Modelo C4 V_1_0_6.md
+│   │   └── 📄 13. Restricciones V_1_0_4.md
+│   ├── 📁 02 Planificacion/
+│   │   ├── 📁 Capturas en JIRA/
+│   │   │   ├── 🖼️ 01-roadmap.png
+│   │   │   ├── 🖼️ 02-backlog-priorizado.png
+│   │   │   ├── 🖼️ 03-sprint-planning.png
+│   │   │   ├── 🖼️ 04-tablero-scrum.png
+│   │   │   └── 🖼️ 05-versiones-release.png
+│   │   ├── 📄 01_transformando_a_agil_v_1_0_0.md
+│   │   ├── 📄 02 Artefactos Jira V_1_0_0.md
+│   │   ├── 📄 03_registro_de_riesgos_v_1_0_0.md
+│   │   └── 📄 04_presupuesto_del_proyecto_v_1_0_0.md
+│   └── 📁 03 Implementación/
+│       ├── 📄 01_informe_de_estado_del_proyecto_v_1_0_0.md
+│       ├── 📄 02_registro_de_impedimentos_v_1_0_0.md
+│       ├── 📄 03_revision_del_sprint_v_1_0_0.md
+│       └── 📄 04_retrospectiva_del_sprint_V_1_0_0.md
+├── 📁 app/                      # API, VRPTW, tiempo real y PDF
+├── 📁 src/                      # Panel, conductor y seguimiento
+├── 📁 tests/
+├── 📄 docker-compose.yml
+└── 📁 EcologisticaJunin/        # esqueleto anterior
+    ├── 📁 backend/
+    └── 📁 frontend/
 ```
 
-Eso levanta tres servicios:
+---
 
-| Servicio | Imagen | Puerto en el host | Función |
-| --- | --- | --- | --- |
-| `db` | `postgis/postgis:15-3.4` | 5433 | PostgreSQL 15 + PostGIS, volumen `ecologistica_pgdata` |
-| `backend` | FastAPI | 8000 | API y semilla |
-| `frontend` | Nginx | 8080 | Panel del dispatcher |
+## 📚 Índice Detallado de Documentación
 
-El backend declara `depends_on` con `condition: service_healthy` sobre PostGIS. El contenedor, además, reintenta la conexión y solo entonces ejecuta `python -m app.db.init_db` (extensión PostGIS, tablas y semilla). La semilla es idempotente: si ya hay un depósito, no vuelve a insertar.
+Haz clic en cualquier documento para navegar directamente a él dentro del repositorio.
 
-Cuando los healthchecks pasan:
+### 🏛️ Fase 1: Inicio y Requisitos Base (`docs/01 Inicio/`)
 
-- Panel: http://localhost:8080/
-- API y Swagger: http://localhost:8000/docs
-- Salud de PostGIS: http://localhost:8000/health/db
+| # | Documento | Descripción |
+|---|-----------|-------------|
+| 00 | [Directrices y Auditoria V_1_0_3](docs/01%20Inicio/00.%20Directrices%20y%20Auditoria%20V_1_0_3.md) | Normas documentales e informe de auditoría de coherencia. |
+| 01 | [Selección del enfoque del proyecto V_1_0_0](docs/01%20Inicio/01.%20Selecci%C3%B3n%20del%20enfoque%20del%20proyecto%20V_1_0_0.md) | Justificación del enfoque Híbrido de gestión. |
+| 02 | [Acta de constitución V_1_0_0](docs/01%20Inicio/02.%20Acta%20de%20constituci%C3%B3n%20V_1_0_0.md) | Project Charter, gobernanza, justificación y presupuesto referencial. |
+| 03 | [Declaración de la visión V_1_0_0](docs/01%20Inicio/03.%20Declaraci%C3%B3n%20de%20la%20visi%C3%B3n%20V_1_0_0.md) | Visión estratégica del sistema EcoLogística Huancayo. |
+| 04 | [Registro de Supuestos y Restricciones V1.0.0](docs/01%20Inicio/04.%20Registro_de_Supuestos_y_Restricciones_EcoLogistica_Huancayo_V1.0.0.md) | Límites operativos, financieros y normativos. |
+| 05 | [Registro de interesados V_1_0_0](docs/01%20Inicio/05.%20Registro%20de%20interesados%20V_1_0_0.md) | Matriz de Poder vs. Interés de stakeholders. |
+| 06 | [Requisitos funcionales V_1_0_0](docs/01%20Inicio/06.%20Requisitos%20funcionales%20V_1_0_0.md) | Macro-requisitos (MRF-01 a MRF-07), RF-001 a RF-018 y escenarios BDD. |
+| 07 | [Requisitos no funcionales V_1_0_0](docs/01%20Inicio/07.%20Requisitos%20no%20funcionales%20V_1_0_0.md) | Escenarios de calidad ISO/IEC 25010 (RNF-001 a RNF-005). |
+| 08 | [Usuarios V_1_0_3](docs/01%20Inicio/08.%20Usuarios%20V_1_0_3.md) | Perfiles de usuario y matriz RBAC (con restricción para Auditor). |
+| 09 | [Reglas de negocio V_1_0_4](docs/01%20Inicio/09.%20Reglas%20de%20negocio%20V_1_0_4.md) | Reglas RN-001 a RN-008 (bloqueos, capacidades, emisiones, horarios). |
+| 10 | [Stack tecnológico V_1_0_3](docs/01%20Inicio/10.%20Stack%20tecnol%C3%B3gico%20V_1_0_3.md) | Selección multicriterio de arquitectura 100% código abierto. |
+| 11 | [Base de datos V_1_0_3](docs/01%20Inicio/11.%20Base%20de%20datos%20V_1_0_3.md) | Modelo ER relacional en 3FN y extensiones geoespaciales PostGIS. |
+| 12 | [Modelo C4 V_1_0_6](docs/01%20Inicio/12.%20Modelo%20C4%20V_1_0_6.md) | Diagramas C4 de Contexto, Contenedores y Componentes Backend. |
+| 13 | [Restricciones V_1_0_4](docs/01%20Inicio/13.%20Restricciones%20V_1_0_4.md) | Análisis multidimensional de impacto, mitigación y LCC. |
 
-El panel sale en el **8080** para poder convivir con otro sitio que ya use el puerto 80. Nginx reenvía `/api/` al backend, así que el mapa usa el mismo origen.
+### 📋 Fase 2: Planificación Ágil (`docs/02 Planificacion/`)
 
-Para dejarlo en segundo plano: `docker compose up --build -d`. Para detenerlo sin borrar los datos: `docker compose down`.
+| Documento | Descripción |
+|-----------|-------------|
+| [01_transformando_a_agil_v_1_0_0](docs/02%20Planificacion/01_transformando_a_agil_v_1_0_0.md) | Transformación de requisitos a Épicas, US, Enablers y DoD global. |
+| [02 Artefactos Jira V_1_0_0](docs/02%20Planificacion/02%20Artefactos%20Jira%20V_1_0_0.md) | Configuración operativa en Atlassian Jira Software. |
+| [03_registro_de_riesgos_v_1_0_0](docs/02%20Planificacion/03_registro_de_riesgos_v_1_0_0.md) | Matriz de evaluación de riesgos PMBOK / CMMI. |
+| [04_presupuesto_del_proyecto_v_1_0_0](docs/02%20Planificacion/04_presupuesto_del_proyecto_v_1_0_0.md) | Modelado financiero CAPEX, OPEX y reserva de contingencia. |
 
-## Pruebas dentro del contenedor
+#### 🖼️ Evidencias de Jira Software (`docs/02 Planificacion/Capturas en JIRA/`)
 
-Con la pila en marcha:
+| Captura | Descripción |
+|---------|-------------|
+| [01-roadmap.png](docs/02%20Planificacion/Capturas%20en%20JIRA/01-roadmap.png) | Hoja de ruta con alineación de Épicas EP-01 a EP-07. |
+| [02-backlog-priorizado.png](docs/02%20Planificacion/Capturas%20en%20JIRA/02-backlog-priorizado.png) | Product Backlog con estimación en Story Points (Fibonacci). |
+| [03-sprint-planning.png](docs/02%20Planificacion/Capturas%20en%20JIRA/03-sprint-planning.png) | Planificación del Sprint 1 y Sprint Goal. |
+| [04-tablero-scrum.png](docs/02%20Planificacion/Capturas%20en%20JIRA/04-tablero-scrum.png) | Tablero Scrum activo con flujo To Do → Done. |
+| [05-versiones-release.png](docs/02%20Planificacion/Capturas%20en%20JIRA/05-versiones-release.png) | Configuración de versión v1.0.0-MVP. |
+
+### 🚀 Fase 3: Implementación y Sprints (`docs/03 Implementación/`)
+
+| Documento | Descripción |
+|-----------|-------------|
+| [01_informe_de_estado_del_proyecto_v_1_0_0](docs/03%20Implementaci%C3%B3n/01_informe_de_estado_del_proyecto_v_1_0_0.md) | Informe de estado del Sprint 1 (Plantilla 1). |
+| [02_registro_de_impedimentos_v_1_0_0](docs/03%20Implementaci%C3%B3n/02_registro_de_impedimentos_v_1_0_0.md) | Registro y trazabilidad de impedimentos (Plantilla 2). |
+| [03_revision_del_sprint_v_1_0_0](docs/03%20Implementaci%C3%B3n/03_revision_del_sprint_v_1_0_0.md) | Informe de revisión del Sprint y demostración a stakeholders (Plantilla 3). |
+| [04_retrospectiva_del_sprint_V_1_0_0](docs/03%20Implementaci%C3%B3n/04_retrospectiva_del_sprint_V_1_0_0.md) | Retrospectiva del Sprint 1 y acciones de mejora del equipo. |
+
+### 💻 Código de la implementación
+
+La aplicación que se ejecuta está en la raíz del repositorio: `app/` (API, algoritmo genético VRPTW, WebSockets y PDF), `src/` (panel, modo conductor y seguimiento del cliente), `tests/` y `docker-compose.yml`. `EcologisticaJunin/` conserva el esqueleto anterior.
+
+Desde la raíz:
 
 ```powershell
-docker compose exec backend pytest
+docker compose up --build -d
 ```
 
-`tests/test_solver.py` comprueba la penalización por pendiente y las ventanas de tiempo. `tests/test_api.py` llama a pedidos, vehículos y `POST /api/v1/optimizar-rutas` con el cliente asíncrono de HTTPX. Esas pruebas usan la base `ecologistica_test`, no la semilla que ve el panel.
-
-En el host, contra el PostGIS publicado en el 5433:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
-pytest
-```
-
-## Datos semilla
-
-| Pieza | Referencia | Notas |
+| Servicio | Puerto en el host | Función |
 | --- | --- | --- |
-| Depósito | Av. Ferrocarril, El Tambo | 3250 m |
-| Furgón | Placa `W4U-158` | Diésel, 1500 kg, 220 g CO2/km, penalización 0.045 |
-| Motocarro | Placa `E7M-304` | Eléctrico, 300 kg, 38 g CO2/km, penalización 0.012 |
-| PED-001 | Plaza Constitución | 120 kg |
-| PED-002 | Jr. Calixto, zona mayorista | 480 kg |
-| PED-003 | UNCP, El Tambo | 85 kg |
-| PED-004 | Chilca Alta | 40 kg, 3410 m |
-| PED-005 | San Jerónimo de Tunán | 260 kg |
+| PostGIS 15-3.4 | 5433 | Base geoespacial |
+| Backend FastAPI | 8000 | API, semilla y Swagger en `/docs` |
+| Frontend Nginx | 8080 | Panel en http://localhost:8080/ |
 
-Los clientes y los pesos son ficticios. Las coordenadas corresponden a esos lugares.
+El panel usa el 8080 para convivir con otro sitio en el puerto 80. Seguimiento del cliente: http://localhost:8080/seguimiento/PED-001. Modo conductor: http://localhost:8080/conductor. Pruebas: `docker compose exec backend pytest`.
 
-## Emisión de un tramo en el optimizador
+---
 
-```
-E = distancia_km × emision_base_g_km × (1 + penalizacion_pendiente × max(0, Δh / 100))
-```
+## 🛠️ Stack Tecnológico (100% Código Abierto)
 
-Δh es solo la subida, en metros. El tiempo de viaje usa 25 km/h. Llegar después de `ventana_fin`, superar `capacidad_kg` o meter un vehículo grande al Centro Histórico suma una penalización alta. El CO2 evitado se convierte a Quinuales con `co2_evitado_kg / 12`.
+| Componente | Tecnología Seleccionada | Justificación |
+|------------|-------------------------|---------------|
+| Backend API | Python 3.11 + FastAPI | Asincronía, alto rendimiento, documentación automática OpenAPI/Swagger. |
+| Motor VRPTW / Green VRP | Google OR-Tools + DEAP | Metaheurísticas avanzadas de ruteo con ventanas de tiempo sin costo de licenciamiento. |
+| Base de Datos Geoespacial | PostgreSQL 15 + PostGIS 3 | Modelo en 3FN con soporte nativo de tipo `GEOGRAPHY` y consultas espaciales. |
+| Frontend Web | React.js + Tailwind CSS | Interfaz modular e interactiva para operadores logísticos. |
+| Móvil / Conductor | React.js PWA + IndexedDB | Funcionamiento resiliente en zonas 2G/3G de baja cobertura. |
+| Cartografía y Ruteo | Leaflet.js + OSRM Local | Mapeo interactivo y matriz de distancias sobre tiles de OpenStreetMap (OSM). |
+| Tareas Asíncronas | Redis + Celery | Cola de procesamiento desacoplada para optimizaciones pesadas. |
 
-## Tiempo real
+---
 
-Dos canales WebSocket, además de la API REST:
+## 👥 Equipo del Proyecto
 
-- `ws://localhost:8000/ws/driver/{driver_id}` recibe la posición (`type: position`, con `lat`, `lon` y, si se conoce, `order_code`) y devuelve la ETA. También acepta `incident` (`traffic`, `landslide`, `blockade`), `cancel_order` y `add_order`.
-- `ws://localhost:8000/ws/tracking/{order_code}` escucha la posición y la ETA de ese pedido. El código `despacho` recibe todos los eventos de la flota.
+| Rol | Integrante |
+|-----|------------|
+| Project Manager (PM) | Nikole Celeste Bastidas Vilca |
+| Software Architect & Lead Dev | Dante Edgar Chuquirachi Martinez |
+| DevOps & Data Engineer | Hernan Anibal Osorio Diaz |
+| QA & Backend Developer | Geraldine Paola Gómez Toribio |
+| Frontend Developer | BryanY29 |
 
-Un incidente bloqueante o un pedido cancelado o prioritario recalcula la secuencia que falta desde el GPS del conductor. El tráfico alarga el tramo; un deslizamiento o un cierre que cae sobre la parada la deja en estado `incident`.
+---
 
-## Seguimiento del cliente
+## 📄 Licencia
 
-`/seguimiento/PED-001` muestra el destino, la posición del repartidor cuando está en vivo, la hora de llegada, cuántas paradas van antes y el CO2 evitado de ese pedido. Si el ETA baja de 5 minutos, la página simula un aviso de WhatsApp o SMS en el navegador.
-
-## Modo conductor
-
-En el panel, el enlace **Modo conductor** abre `/conductor`. Esa vista lista las paradas de la ruta activa, abre Google Maps o Waze, toma la firma o una foto de la entrega y manda incidentes por `ws://<host>/ws/driver/{placa}`.
-
-## Informe PDF
-
-`GET /api/v1/reportes/sostenibilidad/pdf` devuelve el informe de sostenibilidad. Acepta `fecha_inicio` y `fecha_fin` (`YYYY-MM-DD`). Sin fechas, el rango cubre las soluciones guardadas. El archivo trae la huella de CO2, el TCO en soles por combustible y eléctrico, la equivalencia en Quinual y Aliso, y las entregas completadas.
-
-## Esquema
-
-- `depositos`: nombre, dirección, punto y altitud.
-- `vehiculos`: placa, capacidades, combustible y factores de emisión.
-- `pedidos`: cliente, punto, peso, ventana horaria y estado.
-- `soluciones_ruta`: resultado del algoritmo genético, CO2 evitado y Quinuales.
-- `rutas_detalle`: paradas ordenadas por vehículo, desnivel y geometría del tramo.
+Este proyecto se distribuye bajo la licencia MIT. Para más detalles, consulta el archivo [LICENSE](LICENSE).
