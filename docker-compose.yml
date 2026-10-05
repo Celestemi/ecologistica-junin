@@ -1,0 +1,56 @@
+services:
+  db:
+    image: postgis/postgis:15-3.4
+    container_name: ecologistica-postgis
+    environment:
+      POSTGRES_USER: ecologistica
+      POSTGRES_PASSWORD: ecologistica
+      POSTGRES_DB: ecologistica
+    ports:
+      - "5433:5432"
+    volumes:
+      - ecologistica_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecologistica -d ecologistica"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ecologistica:ecologistica@db:5432/ecologistica
+      APP_DEBUG: "false"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 25s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  ecologistica_pgdata:

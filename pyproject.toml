@@ -1,0 +1,41 @@
+[project]
+name = "ecologistica-huancayo"
+version = "0.1.0"
+description = "MVP de optimización ecológica de rutas de última milla para Huancayo, Perú."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "asyncpg>=0.30.0",
+    "fastapi>=0.115.6",
+    "geoalchemy2>=0.16.0",
+    "pydantic>=2.10.4",
+    "pydantic-settings>=2.7.0",
+    "reportlab>=4.2.0",
+    "shapely>=2.0.6",
+    "tzdata>=2025.2",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "uvicorn[standard]>=0.34.0",
+]
+
+[project.scripts]
+ecologistica-init-db = "app.db.init_db:main"
+
+[project.optional-dependencies]
+dev = [
+    "httpx>=0.28.0",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
