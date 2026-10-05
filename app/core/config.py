@@ -1,7 +1,9 @@
 """Parámetros de entorno y constantes topográficas de Huancayo."""
 
 from functools import lru_cache
+from urllib.parse import quote
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,11 +16,35 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    database_url: str = (
-        "postgresql+asyncpg://ecologistica:ecologistica@localhost:5433/ecologistica"
+    db_host: str = "localhost"
+    db_port: int = 5433
+    db_user: str = "ecologistica"
+    db_password: str = "ecologistica"
+    db_name: str = "ecologistica"
+    database_url: str = ""
+    secret_key: str = "cambia-esta-clave-en-produccion"
+    cors_origins: str = (
+        "http://localhost,http://127.0.0.1,"
+        "http://localhost:5173,http://127.0.0.1:5173,"
+        "http://localhost:8080,http://127.0.0.1:8080"
     )
     app_name: str = "EcoLogística Huancayo"
     app_debug: bool = False
+
+    @model_validator(mode="after")
+    def fill_database_url(self) -> "Settings":
+        """Arma la URL async si el entorno solo trae las piezas DB_*."""
+        if not self.database_url:
+            password = quote(self.db_password, safe="")
+            self.database_url = (
+                f"postgresql+asyncpg://{quote(self.db_user, safe='')}:"
+                f"{password}@{self.db_host}:{self.db_port}/{self.db_name}"
+            )
+        return self
+
+    def allowed_origins(self) -> list[str]:
+        """Orígenes CORS separados por coma en CORS_ORIGINS."""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     # Plaza Constitución, centro de Huancayo (WGS84).
     huancayo_base_lat: float = -12.06513

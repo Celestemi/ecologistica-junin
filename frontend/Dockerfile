@@ -1,3 +1,4 @@
+# Vite 7 exige Node 20.19+ o 22.12+. Node 18 no compila este frontend.
 FROM node:22-alpine AS build
 
 WORKDIR /app

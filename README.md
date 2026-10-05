@@ -125,11 +125,13 @@ Haz clic en cualquier documento para navegar directamente a él dentro del repos
 
 La aplicación que se ejecuta está en la raíz del repositorio: `app/` (API, algoritmo genético VRPTW, WebSockets y PDF), `src/` (panel, modo conductor y seguimiento del cliente), `tests/` y `docker-compose.yml`. `EcologisticaJunin/` conserva el esqueleto anterior.
 
-Desde la raíz:
+Copia `.env.example` a `.env` y, desde la raíz:
 
 ```powershell
 docker compose up --build -d
 ```
+
+`backend/entrypoint.sh` espera a PostGIS, crea el esquema con la semilla y arranca Uvicorn.
 
 | Servicio | Puerto en el host | Función |
 | --- | --- | --- |

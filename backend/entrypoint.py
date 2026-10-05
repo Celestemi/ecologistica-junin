@@ -1,4 +1,4 @@
-"""Espera a PostGIS, crea el esquema y deja paso a Uvicorn."""
+"""Espera a que PostGIS acepte conexiones antes de la semilla."""
 
 from __future__ import annotations
 
@@ -6,7 +6,27 @@ import asyncio
 import os
 import sys
 import time
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import quote, urlsplit, urlunsplit
+
+
+def ensure_database_url() -> str:
+    """Usa DATABASE_URL o la arma con DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_NAME."""
+    url = os.environ.get("DATABASE_URL")
+    if url:
+        return url
+    user = os.environ.get("DB_USER")
+    password = os.environ.get("DB_PASSWORD")
+    host = os.environ.get("DB_HOST")
+    port = os.environ.get("DB_PORT")
+    name = os.environ.get("DB_NAME")
+    if not all((user, password, host, port, name)):
+        sys.exit("Falta DATABASE_URL o el conjunto DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_NAME.")
+    url = (
+        f"postgresql+asyncpg://{quote(user or '', safe='')}:"
+        f"{quote(password or '', safe='')}@{host}:{port}/{name}"
+    )
+    os.environ["DATABASE_URL"] = url
+    return url
 
 
 def _asyncpg_dsn(url: str) -> str:
@@ -23,10 +43,7 @@ async def _ping(dsn: str) -> None:
 
 def wait_for_postgis() -> None:
     """Reintenta la conexión. Compose ya exige el healthcheck de PostgreSQL."""
-    url = os.environ.get("DATABASE_URL")
-    if not url:
-        sys.exit("Falta DATABASE_URL.")
-    dsn = _asyncpg_dsn(url)
+    dsn = _asyncpg_dsn(ensure_database_url())
     last_error: Exception | None = None
     for _attempt in range(30):
         try:
@@ -38,13 +55,5 @@ def wait_for_postgis() -> None:
     sys.exit(f"PostGIS no aceptó conexiones: {last_error}")
 
 
-def main() -> None:
-    wait_for_postgis()
-    import subprocess
-
-    subprocess.check_call([sys.executable, "-m", "app.db.init_db"])
-    os.execvp(sys.argv[1], sys.argv[1:])
-
-
 if __name__ == "__main__":
-    main()
+    wait_for_postgis()

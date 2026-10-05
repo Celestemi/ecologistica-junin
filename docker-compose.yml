@@ -1,17 +1,18 @@
 services:
   db:
+    # 15-3.4: el volumen ecologistica_pgdata ya se inicializó con esta imagen.
     image: postgis/postgis:15-3.4
     container_name: ecologistica-postgis
     environment:
-      POSTGRES_USER: ecologistica
-      POSTGRES_PASSWORD: ecologistica
-      POSTGRES_DB: ecologistica
+      POSTGRES_USER: ${DB_USER:-ecologistica}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ecologistica}
+      POSTGRES_DB: ${DB_NAME:-ecologistica}
     ports:
       - "5433:5432"
     volumes:
       - ecologistica_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ecologistica -d ecologistica"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ecologistica} -d ${DB_NAME:-ecologistica}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -21,9 +22,19 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    env_file:
+      - path: .env
+        required: false
     environment:
-      DATABASE_URL: postgresql+asyncpg://ecologistica:ecologistica@db:5432/ecologistica
-      APP_DEBUG: "false"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER:-ecologistica}
+      DB_PASSWORD: ${DB_PASSWORD:-ecologistica}
+      DB_NAME: ${DB_NAME:-ecologistica}
+      SECRET_KEY: ${SECRET_KEY:-cambia-esta-clave-en-produccion}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://127.0.0.1,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-ecologistica}:${DB_PASSWORD:-ecologistica}@db:5432/${DB_NAME:-ecologistica}
     ports:
       - "8000:8000"
     depends_on:
@@ -39,14 +50,15 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 25s
+      retries: 12
+      start_period: 40s
 
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
     ports:
+      # 8080 en el host: el puerto 80 ya lo usa otro sitio local.
       - "8080:80"
     depends_on:
       backend:
