@@ -19,7 +19,7 @@ export function Dashboard({ metadata }: DashboardProps) {
     : [];
 
   return (
-    <section className="grid gap-3 border-b border-stone-200 bg-[#f7f4ee] px-4 py-3 md:grid-cols-[1.1fr_1fr_1.2fr_1.4fr]">
+    <section className="grid gap-3 border-b border-stone-200 bg-[#f7f4ee] px-4 py-3 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_1.2fr_1.4fr]">
       <Kpi
         label="Distancia total optimizada"
         value={metadata ? formatKm(metadata.distancia_total_km) : "—"}
@@ -66,7 +66,9 @@ export function Dashboard({ metadata }: DashboardProps) {
             </ResponsiveContainer>
           </div>
         ) : (
-          <p className="px-1 py-8 text-sm text-stone-500">Ejecuta la optimización para comparar las emisiones.</p>
+          <p className="px-1 py-8 text-sm leading-snug text-stone-500">
+          La comparación aparece cuando el despacho ejecuta la optimización.
+        </p>
         )}
       </article>
     </section>

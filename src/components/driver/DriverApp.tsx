@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { fetchActiveRoute, fetchVehicles } from "../../api";
+import { Brand } from "../Brand";
 import { formatKg, formatTime, formatWindow, fuelLabel } from "../../lib/format";
 import type { ActiveRoute, DriverStop, Vehicle } from "../../types";
 
@@ -244,13 +245,10 @@ export function DriverApp() {
 
   return (
     <div className="min-h-screen bg-[#f6f3ec] text-stone-950">
-      <header className="sticky top-0 z-10 border-b border-stone-300 bg-[#14532d] px-4 py-3 text-white">
+      <header className="sticky top-0 z-10 border-b border-emerald-950 bg-[#14532d] px-4 py-3 text-white">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
-          <div>
-            <p className="text-xs tracking-[0.16em] text-emerald-100">EN RUTA</p>
-            <h1 className="text-xl font-semibold">Modo conductor</h1>
-          </div>
-          <a className="rounded-full border border-white/40 px-3 py-2 text-sm" href="/">
+          <Brand light title="Modo conductor" />
+          <a className="rounded-full bg-white/15 px-3 py-2 text-sm font-semibold" href="/">
             Despacho
           </a>
         </div>
@@ -274,12 +272,27 @@ export function DriverApp() {
           ))}
         </section>
 
-        <p className="text-sm text-stone-600">
-          {link === "conectado" ? "Enlace con despacho activo" : "Conectando con despacho…"}
-          {" · "}
-          {usingGps ? "GPS del teléfono" : "Sin GPS: se usa la parada"}
-          {route ? ` · ${route.codigo}` : ""}
-        </p>
+        <div className="flex flex-wrap gap-2 text-xs font-semibold">
+          <span className={`rounded-full px-3 py-1 ${link === "conectado" ? "bg-emerald-100 text-emerald-950" : "bg-amber-100 text-amber-950"}`}>
+            {link === "conectado" ? "Despacho en línea" : "Conectando con despacho"}
+          </span>
+          <span className="rounded-full bg-white px-3 py-1 text-stone-700 ring-1 ring-stone-200">
+            {usingGps ? "GPS del teléfono" : "Sin GPS: se usa la parada"}
+          </span>
+          {progress.total > 0 ? (
+            <span className="rounded-full bg-white px-3 py-1 text-stone-700 ring-1 ring-stone-200">
+              {progress.finished} de {progress.total} entregas
+            </span>
+          ) : null}
+        </div>
+        {progress.total > 0 ? (
+          <div className="h-2 overflow-hidden rounded-full bg-stone-200" aria-hidden="true">
+            <div
+              className="h-full rounded-full bg-[#14532d]"
+              style={{ width: `${Math.round((progress.finished / progress.total) * 100)}%` }}
+            />
+          </div>
+        ) : null}
         {notice ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-950">{notice}</p> : null}
         {loadError ? <p className="rounded-2xl bg-amber-100 px-4 py-3 text-sm">{loadError}</p> : null}
 
@@ -314,7 +327,9 @@ export function DriverApp() {
           </ol>
         </section>
 
-        <section className="grid grid-cols-1 gap-3" aria-label="Incidentes">
+        <section className="grid grid-cols-1 gap-2" aria-label="Imprevistos">
+          <h2 className="text-lg font-semibold">Si la ruta cambia</h2>
+          <p className="text-sm text-stone-600">El despacho recalcula lo que todavía no entregaste.</p>
           {INCIDENTS.map((incident) => (
             <button
               key={incident.id}
@@ -472,6 +487,7 @@ function DeliveryModal({
       <div className="max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[#f6f3ec] p-4 sm:rounded-3xl" role="dialog" aria-modal="true" aria-labelledby="firma-titulo">
         <h2 id="firma-titulo" className="text-2xl font-semibold">Firma de entrega</h2>
         <p className="mt-1 text-stone-600">{stop.cliente_nombre} · {stop.codigo_pedido}</p>
+        <p className="mt-1 text-sm text-stone-500">Firma con el dedo o adjunta una foto. Con una de las dos basta.</p>
         <canvas
           ref={canvasRef}
           width={640}

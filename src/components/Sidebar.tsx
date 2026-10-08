@@ -2,6 +2,7 @@ import { formatCo2, formatTime, fuelLabel } from "../lib/format";
 import { ROUTE_COLORS, type RouteOptimization, type Vehicle } from "../types";
 
 type SidebarProps = {
+  loading: boolean;
   orderCount: number;
   vehicles: Vehicle[];
   optimizing: boolean;
@@ -19,7 +20,7 @@ type ItineraryStop = {
   kind: string;
 };
 
-export function Sidebar({ orderCount, vehicles, optimizing, error, solution, onOptimize }: SidebarProps) {
+export function Sidebar({ loading, orderCount, vehicles, optimizing, error, solution, onOptimize }: SidebarProps) {
   const groups = groupItinerary(solution, vehicles);
 
   return (
@@ -28,18 +29,19 @@ export function Sidebar({ orderCount, vehicles, optimizing, error, solution, onO
         <p className="text-xs tracking-[0.16em] text-emerald-900/70">DESPACHO</p>
         <h2 className="mt-1 text-lg font-semibold text-stone-900">Control de ruta</h2>
         <p className="mt-2 text-sm text-stone-600">
-          {orderCount} pedidos pendientes · {vehicles.length} vehículos activos
+          {loading ? "Cargando el día de operación…" : `${orderCount} pedidos pendientes · ${vehicles.length} vehículos activos`}
         </p>
         <button
           type="button"
           onClick={onOptimize}
-          disabled={optimizing || orderCount === 0}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-900 px-3 py-3 text-sm font-semibold text-white transition hover:bg-emerald-950 disabled:cursor-not-allowed disabled:bg-stone-400"
+          disabled={loading || optimizing || orderCount === 0}
+          aria-busy={optimizing}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#14532d] px-3 py-3 text-center text-sm font-semibold leading-snug text-white transition hover:bg-emerald-950 disabled:cursor-not-allowed disabled:bg-stone-400"
         >
           {optimizing ? <Spinner /> : null}
           {optimizing ? "Calculando rutas…" : "Ejecutar Optimización Ecológica VRPTW"}
         </button>
-        {orderCount === 0 && !optimizing ? (
+        {!loading && orderCount === 0 && !optimizing ? (
           <p className="mt-2 text-xs text-stone-500">No hay pedidos pendientes.</p>
         ) : null}
         {error ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
@@ -64,18 +66,19 @@ export function Sidebar({ orderCount, vehicles, optimizing, error, solution, onO
                     {group.fuel} · {group.capacityKg} kg
                   </p>
                 </header>
-                <ol className="space-y-2">
+                <ol className="space-y-0 border-l-2 pl-3" style={{ borderColor: group.color }}>
                   {group.stops.map((stop) => (
-                    <li key={`${group.plate}-${stop.sequence}`} className="flex gap-2 text-sm">
-                      <span className="mt-0.5 w-5 shrink-0 text-xs text-stone-400">{stop.sequence}</span>
-                      <div>
-                        <p className="font-medium text-stone-800">{stop.customer}</p>
-                        <p className="text-stone-600">{stop.title}</p>
-                        <p className="text-xs text-stone-500">
-                          {stop.kind === "delivery" ? formatTime(stop.eta) : stop.kind === "depot_start" ? "Salida" : "Retorno"}
-                          {stop.co2g > 0 ? ` · ${formatCo2(stop.co2g)}` : ""}
-                        </p>
-                      </div>
+                    <li key={`${group.plate}-${stop.sequence}`} className="relative pb-3 text-sm">
+                      <span
+                        className="absolute -left-[1.15rem] top-1 h-2.5 w-2.5 rounded-full ring-2 ring-[#fbf9f4]"
+                        style={{ background: group.color }}
+                      />
+                      <p className="font-medium text-stone-800">{stop.customer}</p>
+                      <p className="text-stone-600">{stop.title}</p>
+                      <p className="text-xs text-stone-500">
+                        {stop.kind === "delivery" ? formatTime(stop.eta) : stop.kind === "depot_start" ? "Salida" : "Retorno"}
+                        {stop.co2g > 0 ? ` · ${formatCo2(stop.co2g)}` : ""}
+                      </p>
                     </li>
                   ))}
                 </ol>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { fetchDepots, fetchOrders, fetchVehicles, optimizeRoutes } from "./api";
+import { fetchDepots, fetchOrders, fetchPublishedRoute, fetchVehicles, optimizeRoutes } from "./api";
+import { Brand } from "./components/Brand";
 import { Dashboard } from "./components/Dashboard";
 import { MapView } from "./components/Map";
 import { Sidebar } from "./components/Sidebar";
@@ -11,28 +12,56 @@ export function App() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [solution, setSolution] = useState<RouteOptimization | null>(null);
   const [optimizing, setOptimizing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    Promise.all([fetchDepots(), fetchOrders(), fetchVehicles()])
-      .then(([depots, pending, fleet]) => {
+    Promise.all([fetchDepots(), fetchOrders(), fetchVehicles(), fetchPublishedRoute()])
+      .then(([depots, pending, fleet, published]) => {
         if (!active) {
           return;
         }
         setDepot(depots[0] ?? null);
         setOrders(pending);
         setVehicles(fleet);
+        setSolution(published);
       })
       .catch((reason: unknown) => {
         if (!active) {
           return;
         }
         setError(reason instanceof Error ? reason.message : "No se pudo cargar el panel.");
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
       });
     return () => {
       active = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const socket = new WebSocket(`${protocol}//${window.location.host}/ws/tracking/despacho`);
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(String(event.data)) as { type?: string };
+        if (message.type !== "route_update") {
+          return;
+        }
+      } catch {
+        return;
+      }
+      void fetchPublishedRoute().then((published) => {
+        if (published) {
+          setSolution(published);
+        }
+      });
+    };
+    return () => socket.close();
   }, []);
 
   async function onOptimize() {
@@ -52,23 +81,21 @@ export function App() {
 
   return (
     <div className="flex h-full min-h-screen flex-col bg-[#f3efe6] text-stone-900">
-      <header className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
-        <div>
-          <p className="text-xs tracking-[0.18em] text-emerald-900/70">VALLE DEL MANTARO</p>
-          <h1 className="text-xl font-semibold">EcoLogística Huancayo</h1>
-        </div>
-        <div className="flex gap-4 text-sm font-medium text-emerald-900">
-          <a className="underline-offset-2 hover:underline" href="/seguimiento">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 bg-white/80 px-4 py-3">
+        <Brand title="EcoLogística Huancayo" />
+        <nav className="flex gap-2 text-sm font-semibold" aria-label="Otras vistas">
+          <a className="rounded-full bg-emerald-50 px-3 py-2 text-emerald-950 hover:bg-emerald-100" href="/seguimiento">
             Rastrear pedido
           </a>
-          <a className="underline-offset-2 hover:underline" href="/conductor">
+          <a className="rounded-full bg-[#14532d] px-3 py-2 text-white hover:bg-emerald-950" href="/conductor">
             Modo conductor
           </a>
-        </div>
+        </nav>
       </header>
       <Dashboard metadata={solution?.metadata ?? null} />
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <Sidebar
+          loading={loading}
           orderCount={orders.length}
           vehicles={vehicles}
           optimizing={optimizing}

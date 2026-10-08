@@ -93,6 +93,15 @@ async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient)
     assert pending.status_code == 200
     assert pending.json() == []
 
+    published = await client.get("/api/v1/rutas/mapa")
+    assert published.status_code == 200
+    map_plates = {
+        feature["properties"].get("plate")
+        for feature in published.json()["features"]
+        if feature["geometry"]["type"] == "Point" and feature["properties"].get("stop_type") == "delivery"
+    }
+    assert map_plates == {"W4U-158", "E7M-304"}
+
     active = await client.get("/api/v1/rutas/activas", params={"placa": "W4U-158"})
     assert active.status_code == 200
     route = active.json()

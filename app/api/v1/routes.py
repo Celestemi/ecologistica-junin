@@ -36,12 +36,12 @@ from app.schemas.logistics import (
     ActiveRouteRead,
     DriverStopRead,
     TrackingRead,
-    TrackingRead,
     PedidoCreateRequest,
     PedidoRead,
     RouteOptimizationGeoJSON,
     RouteOptimizationMetadata,
     VehiculoRead,
+    _feature_collection,
 )
 from app.services.genetic_solver import RouteSolution, StopItinerary, solve_vrptw
 from app.services.pdf_generator import build_sustainability_pdf, load_sustainability_report
@@ -216,34 +216,61 @@ async def active_route(
     placa: str | None = None,
     session: AsyncSession = Depends(get_db),
 ) -> ActiveRouteRead:
-    """Devuelve las paradas de la última solución, filtradas por placa si se indica."""
-    solution = await session.scalar(
-        select(SolucionRuta)
-        .options(
-            selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.vehiculo),
-            selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.pedido),
-        )
-        .order_by(SolucionRuta.id.desc())
-        .limit(1)
-    )
-    if solution is None:
+    """Devuelve las paradas vigentes de cada vehículo, aunque un recálculo sea más nuevo."""
+    grouped = await _fleet_groups(session)
+    if placa is not None:
+        grouped = [details for details in grouped if details and details[0].vehiculo.placa == placa]
+    if not grouped:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No hay una ruta activa.",
+            detail="No hay una ruta activa." if placa is None else f"La placa {placa} no tiene paradas en la ruta activa.",
         )
-    details = sorted(solution.detalles, key=lambda detail: (detail.vehiculo.placa, detail.secuencia))
-    if placa is not None:
-        details = [detail for detail in details if detail.vehiculo.placa == placa]
-        if not details:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"La placa {placa} no tiene paradas en la ruta activa.",
-            )
+    details = sorted(
+        (detail for group in grouped for detail in group),
+        key=lambda detail: (detail.vehiculo.placa, detail.secuencia),
+    )
+    newest = max(grouped, key=lambda group: group[0].solucion_id)
     return ActiveRouteRead(
-        codigo=solution.codigo,
-        fecha_operacion=solution.fecha_operacion,
+        codigo=newest[0].solucion.codigo,
+        fecha_operacion=newest[0].solucion.fecha_operacion,
         paradas=[_driver_stop(detail) for detail in details],
     )
+
+
+@router.get(
+    "/rutas/mapa",
+    response_model=RouteOptimizationGeoJSON,
+    tags=["optimizacion"],
+    summary="Mapa vigente de toda la flota",
+    responses={404: {"description": "Todavía no hay una solución calculada."}},
+)
+async def fleet_map(session: AsyncSession = Depends(get_db)) -> RouteOptimizationGeoJSON:
+    """GeoJSON de la última ruta de cada vehículo. Un recálculo no borra al resto."""
+    grouped = await _fleet_groups(session)
+    if not grouped:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No hay una ruta activa.")
+    details = [detail for group in grouped for detail in group]
+    anchor = max((group[0].solucion for group in grouped), key=lambda item: item.id)
+    deliveries = [detail for detail in details if detail.tipo_parada == TipoParada.DELIVERY]
+    plates = {detail.vehiculo.placa for detail in details}
+    metadata = RouteOptimizationMetadata(
+        id=anchor.id,
+        codigo=anchor.codigo,
+        fecha_operacion=anchor.fecha_operacion,
+        distancia_total_km=sum(detail.distancia_tramo_km for detail in details),
+        duracion_total_min=sum(detail.tiempo_viaje_min for detail in details),
+        co2_estimado_kg=anchor.co2_estimado_kg,
+        co2_referencia_kg=anchor.co2_referencia_kg,
+        co2_evitado_kg=anchor.co2_evitado_kg,
+        arboles_quinual_eq=anchor.arboles_quinual_eq,
+        quinual_kg_co2_por_ano=get_settings().quinual_kg_co2_per_year,
+        fitness=anchor.fitness,
+        estado=anchor.estado,
+        feasible=True,
+        pedidos=len(deliveries),
+        vehiculos_usados=len(plates),
+    )
+    return RouteOptimizationGeoJSON(features=_feature_collection(details).features, metadata=metadata)
 
 
 @router.get(
@@ -361,6 +388,89 @@ async def _require_vehicles(session: AsyncSession, depot_id: int) -> list[Vehicu
             detail="No hay vehículos activos en el depósito.",
         )
     return vehicles
+
+
+_CLOSED_ORDERS = {EstadoPedido.DELIVERED, EstadoPedido.CANCELLED, EstadoPedido.INCIDENT}
+
+
+def _open_stop(detail: RutaDetalle) -> bool:
+    """Una parada de depósito sigue. Un pedido cerrado ya no se dibuja ni se reparte."""
+    if detail.pedido is None:
+        return True
+    return detail.pedido.estado not in _CLOSED_ORDERS
+
+
+async def _fleet_groups(session: AsyncSession) -> list[list[RutaDetalle]]:
+    """Última secuencia útil de cada vehículo, de la solución más reciente que aún la tenga."""
+    solutions = list(
+        (
+            await session.scalars(
+                select(SolucionRuta)
+                .options(
+                    selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.vehiculo),
+                    selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.pedido),
+                )
+                .order_by(SolucionRuta.id.desc())
+            )
+        ).all()
+    )
+    chosen: dict[int, list[RutaDetalle]] = {}
+    for solution in solutions:
+        grouped: dict[int, list[RutaDetalle]] = {}
+        for detail in solution.detalles:
+            detail.solucion = solution
+            grouped.setdefault(detail.vehiculo_id, []).append(detail)
+        for vehicle_id, details in grouped.items():
+            if vehicle_id in chosen:
+                continue
+            usable = [detail for detail in details if _open_stop(detail)]
+            if any(detail.tipo_parada == TipoParada.DELIVERY for detail in usable):
+                chosen[vehicle_id] = sorted(usable, key=lambda item: item.secuencia)
+    return list(chosen.values())
+
+
+async def retain_other_vehicles(session: AsyncSession, new_solution: SolucionRuta, vehicle_id: int) -> None:
+    """Copia al resto de la flota dentro del recálculo para que el mapa no pierda sus pedidos."""
+    await session.flush()
+    previous = await session.scalar(
+        select(SolucionRuta)
+        .where(SolucionRuta.id != new_solution.id)
+        .options(selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.pedido))
+        .order_by(SolucionRuta.id.desc())
+        .limit(1)
+    )
+    if previous is None:
+        return
+    extra_km = 0.0
+    extra_min = 0.0
+    for detail in previous.detalles:
+        if detail.vehiculo_id == vehicle_id or not _open_stop(detail):
+            continue
+        longitude, latitude = geometry_to_geojson(detail.ubicacion)["coordinates"][:2]
+        session.add(
+            RutaDetalle(
+                solucion_id=new_solution.id,
+                vehiculo_id=detail.vehiculo_id,
+                pedido_id=detail.pedido_id,
+                secuencia=detail.secuencia,
+                tipo_parada=detail.tipo_parada,
+                ubicacion=point_wkt(float(longitude), float(latitude)),
+                altitud_msnm=detail.altitud_msnm,
+                distancia_tramo_km=detail.distancia_tramo_km,
+                desnivel_m=detail.desnivel_m,
+                pendiente_pct=detail.pendiente_pct,
+                tiempo_viaje_min=detail.tiempo_viaje_min,
+                eta=detail.eta,
+                co2_tramo_g=detail.co2_tramo_g,
+            )
+        )
+        extra_km += detail.distancia_tramo_km
+        extra_min += detail.tiempo_viaje_min
+    new_solution.distancia_total_km += extra_km
+    new_solution.duracion_total_min += extra_min
+    new_solution.co2_referencia_kg = max(new_solution.co2_referencia_kg, previous.co2_referencia_kg)
+    new_solution.co2_evitado_kg = max(new_solution.co2_evitado_kg, previous.co2_evitado_kg)
+    new_solution.arboles_quinual_eq = max(new_solution.arboles_quinual_eq, previous.arboles_quinual_eq)
 
 
 async def _require_pending_orders(session: AsyncSession) -> list[Pedido]:

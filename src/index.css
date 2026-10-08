@@ -9,6 +9,22 @@ body,
 body {
   margin: 0;
   background: #f3efe6;
+  color: #1c1917;
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid #14532d;
+  outline-offset: 2px;
+}
+
+.leaflet-control-zoom a {
+  border-radius: 8px;
+}
+
+.leaflet-bar {
+  border: none !important;
+  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.16);
 }
 
 .leaflet-div-icon.eco-pin {

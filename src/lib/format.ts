@@ -83,3 +83,16 @@ const FUEL_LABELS: Record<string, string> = {
 export function fuelLabel(fuel: string): string {
   return FUEL_LABELS[fuel] ?? fuel;
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  assigned: "Asignado",
+  in_transit: "En camino",
+  delivered: "Entregado",
+  incident: "Con incidencia",
+  cancelled: "Cancelado",
+};
+
+export function statusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status;
+}

@@ -12,18 +12,18 @@ type MapProps = {
 
 type LatLng = [number, number];
 
-function pinIcon(color: string, warehouse: boolean): L.DivIcon {
+function pinIcon(color: string, warehouse: boolean, label = ""): L.DivIcon {
   const mark = warehouse
     ? `<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
         <path d="M14 2 3 9v15h7v-7h8v7h7V9Z" fill="#14532d" stroke="#fff" stroke-width="1.5"/>
       </svg>`
-    : `<span style="display:block;width:18px;height:18px;border-radius:999px;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(28,25,23,.45)"></span>`;
+    : `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;background:${color};color:#fff;font:700 11px Segoe UI,sans-serif;border:2px solid #fff;box-shadow:0 1px 4px rgba(28,25,23,.45)">${label}</span>`;
   return L.divIcon({
     className: "eco-pin",
     html: mark,
-    iconSize: warehouse ? [28, 28] : [18, 18],
-    iconAnchor: warehouse ? [14, 26] : [9, 9],
-    popupAnchor: [0, warehouse ? -24 : -12],
+    iconSize: warehouse ? [28, 28] : [22, 22],
+    iconAnchor: warehouse ? [14, 26] : [11, 11],
+    popupAnchor: [0, warehouse ? -24 : -14],
   });
 }
 
@@ -130,7 +130,11 @@ export function MapView({ depot, orders, solution }: MapProps) {
                 <Marker
                   key={`${plate}-${feature.properties.sequence}-${feature.properties.order_code}`}
                   position={[lat, lon]}
-                  icon={pinIcon(windowColor(feature.properties.window_start), false)}
+                  icon={pinIcon(
+                    windowColor(feature.properties.window_start),
+                    false,
+                    feature.properties.sequence ? String(feature.properties.sequence) : "",
+                  )}
                 >
                   <Popup>
                     <DeliveryPopup
@@ -210,8 +214,8 @@ function DeliveryPopup({
 
 function Legend({ plates }: { plates: string[] }) {
   return (
-    <div className="pointer-events-none absolute bottom-3 left-3 z-[500] max-w-xs rounded-xl bg-white/95 px-3 py-2 text-xs text-stone-700 shadow">
-      <p className="mb-1 font-semibold text-stone-900">Ventanas</p>
+    <div className="pointer-events-none absolute bottom-3 left-3 z-[500] max-w-[14rem] rounded-2xl bg-white/95 px-3 py-2 text-xs text-stone-700 shadow-lg ring-1 ring-stone-200">
+      <p className="mb-1 font-semibold text-stone-900">Cómo leer el mapa</p>
       <ul className="space-y-1">
         <li className="flex items-center gap-2">
           <Dot color="#c2410c" /> Antes de las 9:00
@@ -223,6 +227,9 @@ function Legend({ plates }: { plates: string[] }) {
           <Dot color="#4d7c0f" /> Después de las 12:00
         </li>
       </ul>
+      {plates.length > 0 ? (
+        <p className="mt-2 text-stone-500">El número dentro del punto es el orden de la parada.</p>
+      ) : null}
       {plates.length > 0 ? (
         <ul className="mt-2 space-y-1 border-t border-stone-200 pt-2">
           {plates.map((plate) => (

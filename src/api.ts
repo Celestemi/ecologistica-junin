@@ -42,6 +42,17 @@ export function fetchTracking(orderCode: string): Promise<OrderTracking> {
   return request<OrderTracking>(`/api/v1/seguimiento/${encodeURIComponent(orderCode)}`);
 }
 
+export async function fetchPublishedRoute(): Promise<RouteOptimization | null> {
+  try {
+    return await request<RouteOptimization>("/api/v1/rutas/mapa");
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 export function fetchActiveRoute(plate?: string): Promise<ActiveRoute> {
   const query = plate ? `?placa=${encodeURIComponent(plate)}` : "";
   return request<ActiveRoute>(`/api/v1/rutas/activas${query}`);

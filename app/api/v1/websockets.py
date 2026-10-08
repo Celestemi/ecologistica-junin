@@ -223,9 +223,16 @@ async def _reroute(
         )
         await _apply_reroute(session, reroute, by_code, added)
         if reroute.solution is not None and reroute.solution.itineraries:
-            from app.api.v1.routes import _persist_solution
+            from app.api.v1.routes import _persist_solution, retain_other_vehicles
 
-            _persist_solution(session, depot, _orders_in_solution(reroute, by_code, added), [vehicle], reroute.solution)
+            persisted = _persist_solution(
+                session,
+                depot,
+                _orders_in_solution(reroute, by_code, added),
+                [vehicle],
+                reroute.solution,
+            )
+            await retain_other_vehicles(session, persisted, vehicle.id)
         await session.commit()
     await fleet_state.replace_sequence(driver_id, reroute.sequence)
     codes = list(reroute.sequence) + list(reroute.blocked_codes) + list(reroute.removed_codes)
