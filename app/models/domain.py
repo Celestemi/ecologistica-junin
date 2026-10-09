@@ -150,6 +150,7 @@ class Pedido(Base):
         server_default=func.now(),
         nullable=False,
     )
+    jornada_id: Mapped[int | None] = mapped_column(ForeignKey("jornadas.id"), nullable=True)
 
     detalles: Mapped[list["RutaDetalle"]] = relationship(back_populates="pedido")
 

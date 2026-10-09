@@ -26,6 +26,7 @@ def _with_database(url: str, database: str) -> str:
 
 
 os.environ["DATABASE_URL"] = _with_database(_SOURCE_URL, "ecologistica_test")
+os.environ["AUTH_BCRYPT_ROUNDS"] = "4"
 
 from app.core.database import engine  # noqa: E402
 from app.db.init_db import init_database  # noqa: E402
@@ -54,8 +55,14 @@ async def _reset_seed() -> None:
     async with engine.begin() as connection:
         await connection.execute(
             text(
-                "TRUNCATE TABLE rutas_detalle, soluciones_ruta, pedidos, "
-                "vehiculos, depositos RESTART IDENTITY CASCADE"
+                "TRUNCATE TABLE bitacora, historial_vehiculo, rutas_detalle, soluciones_ruta, pedidos, "
+                "vehiculos, jornadas, depositos RESTART IDENTITY CASCADE"
+            )
+        )
+        await connection.execute(
+            text(
+                "UPDATE usuarios SET intentos_fallidos = 0, "
+                "bloqueado_hasta = NULL, activo = true"
             )
         )
     await init_database()

@@ -96,3 +96,36 @@ const STATUS_LABELS: Record<string, string> = {
 export function statusLabel(status: string): string {
   return STATUS_LABELS[status] ?? status;
 }
+
+const DATE_TIME = new Intl.DateTimeFormat("es-PE", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "America/Lima",
+});
+
+export function formatDateTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+  return DATE_TIME.format(date);
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  ingreso_correcto: "Ingreso correcto",
+  ingreso_fallido: "Ingreso fallido",
+  ingreso_bloqueado: "Ingreso bloqueado",
+  optimizar_rutas: "Optimización ejecutada",
+  optimizar_denegado: "Optimización denegada",
+  reporte_denegado: "Informe denegado",
+  bitacora_denegada: "Lectura de bitácora denegada",
+  importar_pedidos: "Pedidos cargados",
+  importar_denegado: "Carga de pedidos denegada",
+  flota_actualizada: "Flota actualizada",
+  flota_denegada: "Cambio de flota denegado",
+  jornada_denegada: "Consulta de jornada denegada",
+};
+
+export function actionLabel(action: string): string {
+  return ACTION_LABELS[action] ?? action;
+}

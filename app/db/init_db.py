@@ -14,8 +14,12 @@ from sqlalchemy import func, select, text
 
 from app.core.database import async_session_factory, engine
 from app.core.geo import point_wkt
+from app.db.accounts import DEMO_ACCOUNTS, DEMO_PASSWORD_BY_ROLE
 from app.models.domain import Base, Deposito, Pedido, Vehiculo
 from app.models.enums import EstadoPedido, TipoCombustible
+from app.models.identity import Usuario
+from app.models.operations import HistorialVehiculo, Jornada
+from app.services.passwords import hash_password
 
 logger = logging.getLogger("ecologistica.init_db")
 
@@ -142,17 +146,42 @@ def _window(moment: time) -> datetime:
     )
 
 
+async def ensure_users(session) -> None:
+    """Crea las cuentas de demostración que todavía no existen. No pisa claves ya guardadas."""
+    existing = set(await session.scalars(select(Usuario.correo)))
+    created = 0
+    for nombre, correo, rol in DEMO_ACCOUNTS:
+        if correo in existing:
+            continue
+        session.add(
+            Usuario(
+                nombre=nombre,
+                correo=correo,
+                rol=rol,
+                clave_hash=hash_password(DEMO_PASSWORD_BY_ROLE[rol]),
+            )
+        )
+        created += 1
+    if created:
+        logger.info("Cuentas de acceso creadas: %s.", created)
+
+
 async def init_database() -> None:
     """Habilita PostGIS, crea el esquema y carga la semilla si aún no hay depósito."""
     async with engine.begin() as connection:
         await connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
         await connection.run_sync(Base.metadata.create_all)
+        await connection.execute(
+            text("ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS jornada_id INTEGER REFERENCES jornadas(id)")
+        )
     logger.info("Esquema PostGIS listo.")
 
     async with async_session_factory() as session:
+        await ensure_users(session)
         existing = await session.scalar(select(func.count()).select_from(Deposito))
         if existing:
-            logger.info("La semilla ya existe (%s depósitos). No se insertó nada.", existing)
+            await session.commit()
+            logger.info("La semilla ya existe (%s depósitos). Usuarios de acceso verificados.", existing)
             return
 
         depot = Deposito(

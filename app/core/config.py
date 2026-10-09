@@ -22,7 +22,11 @@ class Settings(BaseSettings):
     db_password: str = "ecologistica"
     db_name: str = "ecologistica"
     database_url: str = ""
-    secret_key: str = "cambia-esta-clave-en-produccion"
+    secret_key: str = "cambia-esta-clave-en-produccion-local"
+    auth_bcrypt_rounds: int = 12
+    auth_token_hours: int = 12
+    auth_max_attempts: int = 3
+    auth_lock_minutes: int = 15
     cors_origins: str = (
         "http://localhost,http://127.0.0.1,"
         "http://localhost:5173,http://127.0.0.1:5173,"

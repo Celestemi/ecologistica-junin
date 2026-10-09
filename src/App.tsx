@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { fetchDepots, fetchOrders, fetchPublishedRoute, fetchVehicles, optimizeRoutes } from "./api";
-import { Brand } from "./components/Brand";
 import { Dashboard } from "./components/Dashboard";
 import { MapView } from "./components/Map";
 import { Sidebar } from "./components/Sidebar";
+import { StaffHeader } from "./components/StaffHeader";
+import { canOptimize, watchNote } from "./lib/access";
+import { loadSession } from "./lib/session";
 import type { Depot, Order, RouteOptimization, Vehicle } from "./types";
 
 export function App() {
+  const session = loadSession();
+  const rol = session?.usuario.rol;
+  const optimize = rol ? canOptimize(rol) : false;
+  const note = rol ? watchNote(rol) : null;
   const [depot, setDepot] = useState<Depot | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -44,8 +50,14 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    const token = loadSession()?.token;
+    if (!token) {
+      return;
+    }
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const socket = new WebSocket(`${protocol}//${window.location.host}/ws/tracking/despacho`);
+    const socket = new WebSocket(
+      `${protocol}//${window.location.host}/ws/tracking/despacho?token=${encodeURIComponent(token)}`,
+    );
     socket.onmessage = (event) => {
       try {
         const message = JSON.parse(String(event.data)) as { type?: string };
@@ -81,21 +93,13 @@ export function App() {
 
   return (
     <div className="flex h-full min-h-screen flex-col bg-[#f3efe6] text-stone-900">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 bg-white/80 px-4 py-3">
-        <Brand title="EcoLogística Huancayo" />
-        <nav className="flex gap-2 text-sm font-semibold" aria-label="Otras vistas">
-          <a className="rounded-full bg-emerald-50 px-3 py-2 text-emerald-950 hover:bg-emerald-100" href="/seguimiento">
-            Rastrear pedido
-          </a>
-          <a className="rounded-full bg-[#14532d] px-3 py-2 text-white hover:bg-emerald-950" href="/conductor">
-            Modo conductor
-          </a>
-        </nav>
-      </header>
+      <StaffHeader title="EcoLogística Huancayo" />
       <Dashboard metadata={solution?.metadata ?? null} />
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <Sidebar
           loading={loading}
+          canOptimize={optimize}
+          roleNote={note}
           orderCount={orders.length}
           vehicles={vehicles}
           optimizing={optimizing}

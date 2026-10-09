@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 import pytest
+from httpx import AsyncClient
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
@@ -149,20 +150,36 @@ async def test_connection_manager_fans_out_and_drops_dead_sockets() -> None:
     assert len(watcher.sent) == 2
 
 
-def test_driver_socket_rejects_a_fix_outside_the_valley() -> None:
-    with TestClient(app) as client:
-        with client.websocket_connect("/ws/driver/W4U-158") as socket:
+@pytest.mark.asyncio
+async def test_driver_socket_rejects_a_fix_outside_the_valley(client: AsyncClient) -> None:
+    from tests.helpers import login_headers
+
+    headers = await login_headers(client, "operador@distrirapido.pe", "Operador.2026")
+    token = headers["Authorization"].removeprefix("Bearer ")
+    with TestClient(app) as sync:
+        with pytest.raises(WebSocketDisconnect):
+            with sync.websocket_connect("/ws/driver/W4U-158") as socket:
+                socket.receive_text()
+        with sync.websocket_connect(f"/ws/driver/W4U-158?token={token}") as socket:
             socket.send_json({"type": "position", "lat": 0, "lon": 0})
             body = socket.receive_json()
     assert body["type"] == "error"
     assert "Mantaro" in body["detail"]
 
 
-def test_tracking_desk_receives_the_hello_and_a_bad_driver_id_is_refused() -> None:
-    with TestClient(app) as client:
-        with client.websocket_connect("/ws/tracking/despacho") as socket:
+@pytest.mark.asyncio
+async def test_tracking_desk_receives_the_hello_and_a_bad_driver_id_is_refused(client: AsyncClient) -> None:
+    from tests.helpers import login_headers
+
+    headers = await login_headers(client, "operador@distrirapido.pe", "Operador.2026")
+    token = headers["Authorization"].removeprefix("Bearer ")
+    with TestClient(app) as sync:
+        with pytest.raises(WebSocketDisconnect):
+            with sync.websocket_connect("/ws/tracking/despacho") as socket:
+                socket.receive_text()
+        with sync.websocket_connect(f"/ws/tracking/despacho?token={token}") as socket:
             hello = socket.receive_json()
         assert hello["channel"] == "despacho"
         with pytest.raises(WebSocketDisconnect):
-            with client.websocket_connect("/ws/driver/placa con espacios") as socket:
+            with sync.websocket_connect(f"/ws/driver/placa con espacios?token={token}") as socket:
                 socket.receive_text()

@@ -31,7 +31,7 @@ services:
       DB_USER: ${DB_USER:-ecologistica}
       DB_PASSWORD: ${DB_PASSWORD:-ecologistica}
       DB_NAME: ${DB_NAME:-ecologistica}
-      SECRET_KEY: ${SECRET_KEY:-cambia-esta-clave-en-produccion}
+      SECRET_KEY: ${SECRET_KEY:-cambia-esta-clave-en-produccion-local}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://127.0.0.1,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080}
       APP_DEBUG: ${APP_DEBUG:-false}
       DATABASE_URL: postgresql+asyncpg://${DB_USER:-ecologistica}:${DB_PASSWORD:-ecologistica}@db:5432/${DB_NAME:-ecologistica}

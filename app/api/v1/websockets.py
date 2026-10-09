@@ -20,7 +20,8 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import async_session_factory
 from app.models.domain import Deposito, Pedido, RutaDetalle, SolucionRuta, Vehiculo
-from app.models.enums import EstadoPedido
+from app.models.enums import EstadoPedido, RolUsuario
+from app.services.tokens import read_access_token
 from app.services.realtime_router import (
     ADMIN_CHANNEL,
     GpsFix,
@@ -40,12 +41,26 @@ logger = logging.getLogger("ecologistica.realtime")
 router = APIRouter(tags=["tiempo-real"])
 LIMA = ZoneInfo("America/Lima")
 MAX_MESSAGE_CHARS = 8_000
+DESK_ROLES = {RolUsuario.ADMIN, RolUsuario.OPERADOR, RolUsuario.GERENTE, RolUsuario.AUDITOR}
+FIELD_ROLES = {RolUsuario.OPERADOR, RolUsuario.CONDUCTOR}
+
+
+async def _staff_socket(websocket: WebSocket, roles: set[RolUsuario]) -> bool:
+    """El canal de personal exige el mismo JWT que el resto de la API."""
+    payload = read_access_token(websocket.query_params.get("token", ""))
+    if payload is None:
+        return False
+    try:
+        rol = RolUsuario(str(payload.get("rol")))
+    except ValueError:
+        return False
+    return rol in roles
 
 
 @router.websocket("/ws/driver/{driver_id}")
 async def driver_socket(websocket: WebSocket, driver_id: str) -> None:
     """Recibe coordenadas e imprevistos y empuja la ETA recalculada."""
-    if not _valid_driver_id(driver_id):
+    if not _valid_driver_id(driver_id) or not await _staff_socket(websocket, FIELD_ROLES):
         await websocket.close(code=1008)
         return
     await manager.connect_driver(driver_id, websocket)
@@ -69,6 +84,9 @@ async def driver_socket(websocket: WebSocket, driver_id: str) -> None:
 async def tracking_socket(websocket: WebSocket, order_code: str) -> None:
     """Entrega al cliente, o al despacho, la posición y la ETA del pedido."""
     if not _valid_order_code(order_code):
+        await websocket.close(code=1008)
+        return
+    if order_code == ADMIN_CHANNEL and not await _staff_socket(websocket, DESK_ROLES):
         await websocket.close(code=1008)
         return
     await manager.connect_tracker(order_code, websocket)

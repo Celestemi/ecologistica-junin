@@ -4,18 +4,26 @@ from app.models.domain import Deposito, Pedido, RutaDetalle, SolucionRuta, Vehic
 from app.models.enums import (
     EstadoPedido,
     EstadoSolucion,
+    RolUsuario,
     TipoCombustible,
     TipoParada,
 )
+from app.models.identity import Bitacora, Usuario
+from app.models.operations import HistorialVehiculo, Jornada
 
 __all__ = [
+    "Bitacora",
     "Deposito",
     "EstadoPedido",
     "EstadoSolucion",
+    "HistorialVehiculo",
+    "Jornada",
     "Pedido",
+    "RolUsuario",
     "RutaDetalle",
     "SolucionRuta",
     "TipoCombustible",
     "TipoParada",
+    "Usuario",
     "Vehiculo",
 ]

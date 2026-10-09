@@ -24,12 +24,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from starlette.requests import Request
 
+from app.api.deps import require_roles
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.emissions import quinual_equivalent
 from app.core.geo import geometry_to_geojson, point_wkt
 from app.models.domain import Deposito, Pedido, RutaDetalle, SolucionRuta, Vehiculo
-from app.models.enums import EstadoPedido, EstadoSolucion, TipoParada, TipoParada
+from app.models.enums import EstadoPedido, EstadoSolucion, RolUsuario, TipoParada
 from app.schemas.logistics import (
     OptimizedRouteResponse,
     DepositoRead,
@@ -43,7 +44,10 @@ from app.schemas.logistics import (
     VehiculoRead,
     _feature_collection,
 )
+from app.services.access import OPTIMIZAR_DENEGADO, OPTIMIZAR_RUTAS, REPORTE_DENEGADO, record
+from app.services.order_import import ensure_jornada
 from app.services.genetic_solver import RouteSolution, StopItinerary, solve_vrptw
+from app.models.identity import Usuario
 from app.services.pdf_generator import build_sustainability_pdf, load_sustainability_report
 
 logger = logging.getLogger("ecologistica.api")
@@ -89,6 +93,10 @@ OPENAPI_TAGS = [
         "name": "sistema",
         "description": "Salud del proceso y de PostGIS.",
     },
+    {
+        "name": "acceso",
+        "description": "Ingreso, roles y bitácora. El cliente final no usa esta puerta.",
+    },
 ]
 
 router = APIRouter(prefix="/api/v1")
@@ -121,6 +129,14 @@ async def list_pending_orders(session: AsyncSession = Depends(get_db)) -> list[P
 async def create_order(
     payload: PedidoCreateRequest,
     session: AsyncSession = Depends(get_db),
+    actor: Usuario = Depends(
+        require_roles(
+            RolUsuario.ADMIN,
+            RolUsuario.OPERADOR,
+            accion="importar_denegado",
+            detail="Solo el operador o el administrador pueden cargar pedidos.",
+        )
+    ),
 ) -> Pedido:
     """Crea un pedido. `lat`/`lon` se convierten a un Point PostGIS (SRID 4326)."""
     duplicate = await session.scalar(
@@ -131,6 +147,13 @@ async def create_order(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Ya existe un pedido con el código {payload.codigo_pedido}.",
         )
+    start = _as_lima(payload.ventana_inicio)
+    end = _as_lima(payload.ventana_fin)
+    if payload.fecha is not None and (start.date() != payload.fecha or end.date() != payload.fecha):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La ventana no cae en la jornada indicada.",
+        )
     order = Pedido(
         codigo_pedido=payload.codigo_pedido,
         cliente_nombre=payload.cliente_nombre,
@@ -138,11 +161,21 @@ async def create_order(
         ubicacion=point_wkt(payload.lon, payload.lat),
         altitud_msnm=payload.altitud_msnm,
         peso_kg=payload.peso_kg,
-        ventana_inicio=_as_lima(payload.ventana_inicio),
-        ventana_fin=_as_lima(payload.ventana_fin),
+        ventana_inicio=start,
+        ventana_fin=end,
         estado=EstadoPedido.PENDING,
     )
+    if payload.fecha is not None:
+        jornada = await ensure_jornada(session, payload.fecha)
+        order.jornada_id = jornada.id
     session.add(order)
+    await record(
+        session,
+        correo=actor.correo,
+        accion="importar_pedidos",
+        detalle=f"Alta de {order.codigo_pedido}.",
+        usuario=actor,
+    )
     await session.commit()
     await session.refresh(order)
     return order
@@ -181,12 +214,24 @@ async def list_depots(session: AsyncSession = Depends(get_db)) -> list[Deposito]
     responses={
         200: {"content": {"application/pdf": {}}, "description": "PDF del periodo."},
         400: {"description": "El rango de fechas está invertido."},
+        401: {"description": "No hay sesión."},
+        403: {"description": "El rol no puede descargar el informe."},
     },
 )
 async def sustainability_pdf(
     fecha_inicio: date | None = None,
     fecha_fin: date | None = None,
     session: AsyncSession = Depends(get_db),
+    _: Usuario = Depends(
+        require_roles(
+            RolUsuario.ADMIN,
+            RolUsuario.OPERADOR,
+            RolUsuario.GERENTE,
+            RolUsuario.AUDITOR,
+            accion=REPORTE_DENEGADO,
+            detail="Tu rol no puede descargar el informe de sostenibilidad.",
+        )
+    ),
 ) -> StreamingResponse:
     """Emite el informe ISO 14083 del periodo como archivo PDF."""
     try:
@@ -309,11 +354,20 @@ async def track_order(codigo_pedido: str, session: AsyncSession = Depends(get_db
     summary="Optimizar las rutas del día",
     responses={
         400: {"description": "La corrida no pudo interpretarse."},
+        401: {"description": "No hay sesión."},
+        403: {"description": "El rol no puede ejecutar la optimización."},
         404: {"description": "Falta depósito, flota activa o pedidos pendientes."},
     },
 )
 async def optimize_routes(
     session: AsyncSession = Depends(get_db),
+    actor: Usuario = Depends(
+        require_roles(
+            RolUsuario.OPERADOR,
+            accion=OPTIMIZAR_DENEGADO,
+            detail="Solo el operador de logística puede ejecutar la optimización.",
+        )
+    ),
 ) -> RouteOptimizationGeoJSON:
     """Corre el GA, guarda la solución y responde con el mapa y los KPIs."""
     depot = await _require_depot(session)
@@ -325,6 +379,13 @@ async def optimize_routes(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     solution = _persist_solution(session, depot, orders, vehicles, solved)
+    await record(
+        session,
+        correo=actor.correo,
+        accion=OPTIMIZAR_RUTAS,
+        detalle=f"Solución {solution.codigo}.",
+        usuario=actor,
+    )
     await session.commit()
     geojson = OptimizedRouteResponse.from_solution(solution).geojson
     return RouteOptimizationGeoJSON(

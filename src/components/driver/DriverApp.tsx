@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { fetchActiveRoute, fetchVehicles } from "../../api";
-import { Brand } from "../Brand";
+import { StaffHeader } from "../StaffHeader";
 import { formatKg, formatTime, formatWindow, fuelLabel } from "../../lib/format";
+import { loadSession } from "../../lib/session";
 import type { ActiveRoute, DriverStop, Vehicle } from "../../types";
 
 type Coords = { lat: number; lon: number; alt: number };
@@ -134,8 +135,14 @@ export function DriverApp() {
     let retry = 0;
 
     const connect = () => {
+      const token = loadSession()?.token;
+      if (!token) {
+        return;
+      }
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      socket = new WebSocket(`${protocol}//${window.location.host}/ws/driver/${encodeURIComponent(plate)}`);
+      socket = new WebSocket(
+        `${protocol}//${window.location.host}/ws/driver/${encodeURIComponent(plate)}?token=${encodeURIComponent(token)}`,
+      );
       socketRef.current = socket;
       socket.onopen = () => {
         setLink("conectado");
@@ -245,14 +252,7 @@ export function DriverApp() {
 
   return (
     <div className="min-h-screen bg-[#f6f3ec] text-stone-950">
-      <header className="sticky top-0 z-10 border-b border-emerald-950 bg-[#14532d] px-4 py-3 text-white">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
-          <Brand light title="Modo conductor" />
-          <a className="rounded-full bg-white/15 px-3 py-2 text-sm font-semibold" href="/">
-            Despacho
-          </a>
-        </div>
-      </header>
+      <StaffHeader title="Modo conductor" tone="field" />
 
       <main className="mx-auto flex max-w-lg flex-col gap-4 px-4 py-4 pb-8">
         <section className="flex gap-2 overflow-x-auto" aria-label="Vehículo">

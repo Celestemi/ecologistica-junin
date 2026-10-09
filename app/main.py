@@ -7,6 +7,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import __version__
+from app.api.v1.auth import router as auth_router
+from app.api.v1.desk import router as desk_router
 from app.api.v1.routes import API_DESCRIPTION, OPENAPI_TAGS, register_exception_handlers, router
 from app.api.v1.websockets import router as ws_router
 from app.core.config import get_settings
@@ -30,6 +32,8 @@ app.add_middleware(
 )
 register_exception_handlers(app)
 app.include_router(router)
+app.include_router(auth_router)
+app.include_router(desk_router)
 app.include_router(ws_router)
 
 

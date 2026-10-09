@@ -3,6 +3,8 @@ import { ROUTE_COLORS, type RouteOptimization, type Vehicle } from "../types";
 
 type SidebarProps = {
   loading: boolean;
+  canOptimize: boolean;
+  roleNote: string | null;
   orderCount: number;
   vehicles: Vehicle[];
   optimizing: boolean;
@@ -20,28 +22,41 @@ type ItineraryStop = {
   kind: string;
 };
 
-export function Sidebar({ loading, orderCount, vehicles, optimizing, error, solution, onOptimize }: SidebarProps) {
+export function Sidebar({
+  loading,
+  canOptimize,
+  roleNote,
+  orderCount,
+  vehicles,
+  optimizing,
+  error,
+  solution,
+  onOptimize,
+}: SidebarProps) {
   const groups = groupItinerary(solution, vehicles);
 
   return (
     <aside className="flex h-full w-full flex-col border-stone-200 bg-[#fbf9f4] md:w-80 md:border-r">
       <div className="border-b border-stone-200 px-4 py-4">
-        <p className="text-xs tracking-[0.16em] text-emerald-900/70">DESPACHO</p>
-        <h2 className="mt-1 text-lg font-semibold text-stone-900">Control de ruta</h2>
+        <p className="text-xs tracking-[0.16em] text-emerald-900/70">{canOptimize ? "DESPACHO" : "LECTURA"}</p>
+        <h2 className="mt-1 text-lg font-semibold text-stone-900">{canOptimize ? "Control de ruta" : "Ruta publicada"}</h2>
         <p className="mt-2 text-sm text-stone-600">
           {loading ? "Cargando el día de operación…" : `${orderCount} pedidos pendientes · ${vehicles.length} vehículos activos`}
         </p>
-        <button
-          type="button"
-          onClick={onOptimize}
-          disabled={loading || optimizing || orderCount === 0}
-          aria-busy={optimizing}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#14532d] px-3 py-3 text-center text-sm font-semibold leading-snug text-white transition hover:bg-emerald-950 disabled:cursor-not-allowed disabled:bg-stone-400"
-        >
-          {optimizing ? <Spinner /> : null}
-          {optimizing ? "Calculando rutas…" : "Ejecutar Optimización Ecológica VRPTW"}
-        </button>
-        {!loading && orderCount === 0 && !optimizing ? (
+        {canOptimize ? (
+          <button
+            type="button"
+            onClick={onOptimize}
+            disabled={loading || optimizing || orderCount === 0}
+            aria-busy={optimizing}
+            className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#14532d] px-3 py-3 text-center text-sm font-semibold leading-snug text-white hover:bg-emerald-950 disabled:cursor-not-allowed disabled:bg-stone-400"
+          >
+            {optimizing ? <Spinner /> : null}
+            {optimizing ? "Calculando rutas…" : "Ejecutar Optimización Ecológica VRPTW"}
+          </button>
+        ) : null}
+        {!loading && roleNote ? <p className="mt-3 text-sm leading-snug text-stone-600">{roleNote}</p> : null}
+        {!loading && canOptimize && orderCount === 0 && !optimizing ? (
           <p className="mt-2 text-xs text-stone-500">No hay pedidos pendientes.</p>
         ) : null}
         {error ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}

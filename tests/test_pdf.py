@@ -71,14 +71,25 @@ def test_pdf_bytes_include_the_iso_frame_and_tco() -> None:
 
 @pytest.mark.asyncio
 async def test_sustainability_pdf_endpoint(client: AsyncClient) -> None:
-    response = await client.get("/api/v1/reportes/sostenibilidad/pdf")
+    from tests.helpers import login_headers
+
+    gerente = await login_headers(client, "gerente@distrirapido.pe", "Gerente.2026")
+    response = await client.get("/api/v1/reportes/sostenibilidad/pdf", headers=gerente)
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/pdf"
     assert response.content.startswith(b"%PDF")
     assert "attachment;" in response.headers["content-disposition"]
 
+    anonymous = await client.get("/api/v1/reportes/sostenibilidad/pdf")
+    assert anonymous.status_code == 401
+
+    conductor = await login_headers(client, "conductor@distrirapido.pe", "Conductor.2026")
+    denied = await client.get("/api/v1/reportes/sostenibilidad/pdf", headers=conductor)
+    assert denied.status_code == 403
+
     inverted = await client.get(
         "/api/v1/reportes/sostenibilidad/pdf",
         params={"fecha_inicio": "2026-10-10", "fecha_fin": "2026-10-01"},
+        headers=gerente,
     )
     assert inverted.status_code == 400

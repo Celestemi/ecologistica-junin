@@ -32,6 +32,16 @@ class EstadoSolucion(str, Enum):
     ARCHIVED = "archived"  # archivada
 
 
+class RolUsuario(str, Enum):
+    """Rol de acceso. El cliente final no tiene cuenta: entra con un enlace."""
+
+    ADMIN = "admin"
+    OPERADOR = "operador"
+    CONDUCTOR = "conductor"
+    GERENTE = "gerente"
+    AUDITOR = "auditor"
+
+
 class TipoParada(str, Enum):
     """Papel de una fila de detalle dentro de la ruta de un vehículo."""
 

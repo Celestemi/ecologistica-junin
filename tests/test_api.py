@@ -6,6 +6,8 @@ from zoneinfo import ZoneInfo
 import pytest
 from httpx import AsyncClient
 
+from tests.helpers import login_headers
+
 LIMA = ZoneInfo("America/Lima")
 
 
@@ -47,7 +49,8 @@ async def test_list_vehicles_and_pending_orders(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_create_order_and_reject_invalid_payloads(client: AsyncClient) -> None:
-    created = await client.post("/api/v1/pedidos", json=_order_payload())
+    headers = await login_headers(client, "operador@distrirapido.pe", "Operador.2026")
+    created = await client.post("/api/v1/pedidos", json=_order_payload(), headers=headers)
     assert created.status_code == 201
     body = created.json()
     assert body["codigo_pedido"] == "PED-900"
@@ -55,10 +58,10 @@ async def test_create_order_and_reject_invalid_payloads(client: AsyncClient) -> 
     assert body["ubicacion"]["coordinates"] == [-75.21, -12.06806]
     assert body["estado"] == "pending"
 
-    duplicate = await client.post("/api/v1/pedidos", json=_order_payload())
+    duplicate = await client.post("/api/v1/pedidos", json=_order_payload(), headers=headers)
     assert duplicate.status_code == 400
 
-    outside = await client.post("/api/v1/pedidos", json=_order_payload(codigo_pedido="PED-901", lat=-10.0))
+    outside = await client.post("/api/v1/pedidos", json=_order_payload(codigo_pedido="PED-901", lat=-10.0), headers=headers)
     assert outside.status_code == 400
 
     inverted = await client.post(
@@ -68,13 +71,15 @@ async def test_create_order_and_reject_invalid_payloads(client: AsyncClient) -> 
             ventana_inicio="2026-10-07T12:00:00-05:00",
             ventana_fin="2026-10-07T09:00:00-05:00",
         ),
+        headers=headers,
     )
     assert inverted.status_code == 400
 
 
 @pytest.mark.asyncio
 async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient) -> None:
-    first = await client.post("/api/v1/optimizar-rutas")
+    headers = await login_headers(client, "operador@distrirapido.pe", "Operador.2026")
+    first = await client.post("/api/v1/optimizar-rutas", headers=headers)
     assert first.status_code == 201
     payload = first.json()
     assert payload["type"] == "FeatureCollection"
@@ -124,5 +129,5 @@ async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient)
     missing = await client.get("/api/v1/seguimiento/NO-EXISTE")
     assert missing.status_code == 404
 
-    second = await client.post("/api/v1/optimizar-rutas")
+    second = await client.post("/api/v1/optimizar-rutas", headers=headers)
     assert second.status_code == 404

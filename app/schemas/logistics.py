@@ -344,6 +344,7 @@ class PedidoCreateRequest(BaseModel):
     peso_kg: float = Field(gt=0, examples=[25])
     ventana_inicio: datetime = Field(examples=["2026-10-07T09:00:00-05:00"])
     ventana_fin: datetime = Field(examples=["2026-10-07T12:00:00-05:00"])
+    fecha: date | None = None
 
     @field_validator("lat")
     @classmethod

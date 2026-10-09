@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import { fetchTracking } from "../api";
 import { Brand } from "../components/Brand";
+import { homeFor } from "../lib/access";
 import { formatCo2, formatTime, formatWindow, statusLabel } from "../lib/format";
+import { loadSession } from "../lib/session";
 import { HUANCAYO_CENTER, type OrderTracking } from "../types";
 
 type LiveFix = {
@@ -120,15 +122,23 @@ export function Tracking() {
   const etaLabel = live?.eta ?? order?.eta ?? null;
   const minutesLabel =
     live?.minutes !== null && live?.minutes !== undefined ? formatArrival(live.minutes) : "Esperando al repartidor";
+  const session = loadSession();
 
   return (
     <div className="min-h-screen bg-[#f6f3ec] text-stone-950">
       <header className="border-b border-stone-200 bg-white px-4 py-3">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
           <Brand title="Seguimiento de tu pedido" />
-          <a className="rounded-full bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-950" href="/">
-            Inicio
-          </a>
+          <nav className="flex flex-wrap gap-2" aria-label="Seguimiento">
+            <a className="inline-flex min-h-11 items-center rounded-full bg-emerald-50 px-3 text-sm font-semibold text-emerald-950" href="/seguimiento">
+              Consultar otro pedido
+            </a>
+            {session ? (
+              <a className="inline-flex min-h-11 items-center rounded-full bg-stone-100 px-3 text-sm font-semibold text-stone-800" href={homeFor(session.usuario.rol)}>
+                Volver a mi panel
+              </a>
+            ) : null}
+          </nav>
         </div>
       </header>
 
