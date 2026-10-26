@@ -78,7 +78,8 @@ VEHICLES: tuple[VehicleSeed, ...] = (
     VehicleSeed(
         placa="E7M-304",
         modelo="Camioneta Eléctrica",
-        capacidad_kg=300.0,
+        # Debe poder cubrir sola la semilla (≈985 kg) cuando RN-002 excluye W4U-158.
+        capacidad_kg=1500.0,
         capacidad_m3=1.4,
         tipo_combustible=TipoCombustible.ELECTRIC,
         rendimiento_km_gal=4.2,
