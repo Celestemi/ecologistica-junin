@@ -79,8 +79,8 @@ La sección *Compromisos del equipo* de la retrospectiva **V_1_0_0** listaba die
 - [Informe de estado V_1_0_1](01_informe_de_estado_del_proyecto_v_1_0_1.md)
 - [Revisión del Sprint V_1_0_1](03_revision_del_sprint_v_1_0_1.md)
 - [Registro de impedimentos V_1_0_1](02_registro_de_impedimentos_v_1_0_1.md)
-- [Reporte verificación DoD](../../REPORTE_VERIFICACION_DOD_SPRINT_1.md)
+- [Reporte verificación DoD](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md)
 
 ---
 
-[← Volver al README](../../README.md)
+[← Volver al README](../../../README.md)

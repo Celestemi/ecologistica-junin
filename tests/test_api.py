@@ -98,6 +98,18 @@ async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient)
     assert metadata["arboles_quinual_eq"] == pytest.approx(metadata["co2_evitado_kg"] / 12.0)
     assert metadata["quinual_kg_co2_por_ano"] == 12.0
 
+    operation_day = metadata["fecha_operacion"]
+    indicators = await client.get(
+        f"/api/v1/indicadores?fecha_inicio={operation_day}&fecha_fin={operation_day}",
+        headers=headers,
+    )
+    assert indicators.status_code == 200
+    consolidated = indicators.json()
+    assert consolidated["rutas"] == 1
+    assert consolidated["distancia_total_km"] == pytest.approx(metadata["distancia_total_km"])
+    assert consolidated["consumo_estimado_gal"] is not None
+    assert consolidated["arboles_quinual_eq"] == pytest.approx(consolidated["co2_evitado_kg"] / 12.0)
+
     pending = await client.get("/api/v1/pedidos", headers=headers)
     assert pending.status_code == 200
     assert pending.json() == []
@@ -111,6 +123,15 @@ async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient)
     }
     assert map_plates <= {"W4U-158", "E7M-304"}
     assert len(map_plates) == metadata["vehiculos_usados"]
+    # US-011: el mismo GeoJSON autorizado que pinta el mapa entrega el detalle
+    # necesario para la parada, sin construir datos de ejemplo en el cliente.
+    map_deliveries = [
+        feature["properties"]
+        for feature in published.json()["features"]
+        if feature["geometry"]["type"] == "Point" and feature["properties"].get("stop_type") == "delivery"
+    ]
+    assert map_deliveries
+    assert all(item["customer"] and item["address"] and item["weight_kg"] > 0 for item in map_deliveries)
 
     route_plates = {
         feature["properties"].get("plate")

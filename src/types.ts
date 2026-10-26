@@ -47,6 +47,8 @@ export type FeatureProperties = {
   plate?: string;
   order_code?: string | null;
   customer?: string | null;
+  address?: string | null;
+  weight_kg?: number | null;
   window_start?: string | null;
   window_end?: string | null;
   title?: string;
@@ -102,6 +104,14 @@ export type RouteOptimization = {
   type: "FeatureCollection";
   features: RouteFeature[];
   metadata: RouteMetadata;
+};
+
+export type OperationalIndicators = {
+  fecha_inicio: string; fecha_fin: string; rutas: number; distancia_total_km: number; duracion_total_min: number;
+  consumo_estimado_gal: number | null; co2_estimado_kg: number; co2_evitado_kg: number;
+  arboles_quinual_eq: number | null; quinual_kg_co2_por_ano: number | null;
+  linea_base_secuencial_km: number | null; linea_base_secuencial_co2_kg: number | null;
+  ahorro_distancia_pct_vs_secuencial: number | null; ahorro_co2_pct_vs_secuencial: number | null;
 };
 
 export type DriverStop = {

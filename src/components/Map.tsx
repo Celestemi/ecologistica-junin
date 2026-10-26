@@ -8,6 +8,10 @@ type MapProps = {
   depot: Depot | null;
   orders: Order[];
   solution: RouteOptimization | null;
+  selectedPlate: string | null;
+  onSelectPlate: (plate: string) => void;
+  onSelectStop: (key: string) => void;
+  onMapFailure: () => void;
 };
 
 type LatLng = [number, number];
@@ -66,9 +70,9 @@ function lineFeatures(solution: RouteOptimization | null): RouteFeature[] {
   return solution.features.filter((feature) => feature.geometry.type === "LineString");
 }
 
-export function MapView({ depot, orders, solution }: MapProps) {
-  const lines = lineFeatures(solution);
-  const points = pointFeatures(solution);
+export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate, onSelectStop, onMapFailure }: MapProps) {
+  const lines = lineFeatures(solution).filter((feature) => !selectedPlate || feature.properties.plate === selectedPlate);
+  const points = pointFeatures(solution).filter((feature) => !selectedPlate || feature.properties.plate === selectedPlate);
   const plates = useMemo(() => {
     const found = new Set<string>();
     for (const feature of solution?.features ?? []) {
@@ -108,6 +112,7 @@ export function MapView({ depot, orders, solution }: MapProps) {
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          eventHandlers={{ tileerror: onMapFailure }}
         />
         <FitTo boundsKey={boundsKey} positions={positions} />
         {depot ? (
@@ -137,6 +142,7 @@ export function MapView({ depot, orders, solution }: MapProps) {
                     false,
                     feature.properties.sequence ? String(feature.properties.sequence) : "",
                   )}
+                  eventHandlers={{ click: () => { onSelectPlate(plate); onSelectStop(`${plate}:${feature.properties.sequence ?? 0}:${feature.properties.order_code ?? feature.properties.stop_type ?? "stop"}`); } }}
                 >
                   <Popup>
                     <DeliveryPopup
@@ -188,7 +194,7 @@ export function MapView({ depot, orders, solution }: MapProps) {
           );
         })}
       </MapContainer>
-      <Legend plates={plates} />
+      <Legend plates={plates} selectedPlate={selectedPlate} onSelectPlate={onSelectPlate} />
     </div>
   );
 }
@@ -217,7 +223,7 @@ function DeliveryPopup({
   );
 }
 
-function Legend({ plates }: { plates: string[] }) {
+function Legend({ plates, selectedPlate, onSelectPlate }: { plates: string[]; selectedPlate: string | null; onSelectPlate: (plate: string) => void }) {
   return (
     <div className="pointer-events-none absolute bottom-3 left-3 z-[500] max-w-[14rem] rounded-2xl bg-white/95 px-3 py-2 text-xs text-stone-700 shadow-lg ring-1 ring-stone-200">
       <p className="mb-1 font-semibold text-stone-900">Cómo leer el mapa</p>
@@ -239,11 +245,9 @@ function Legend({ plates }: { plates: string[] }) {
         <ul className="mt-2 space-y-1 border-t border-stone-200 pt-2">
           {plates.map((plate) => (
             <li key={plate} className="flex items-center gap-2">
-              <span
-                className="inline-block h-1.5 w-5 rounded"
-                style={{ background: colorForPlate(plate, plates) }}
-              />
-              {plate}
+              <button type="button" className={`pointer-events-auto flex items-center gap-2 rounded px-1 ${selectedPlate === plate ? "bg-emerald-100 font-semibold" : ""}`} onClick={() => onSelectPlate(plate)}>
+                <span className="inline-block h-1.5 w-5 rounded" style={{ background: colorForPlate(plate, plates) }} />{plate}
+              </button>
             </li>
           ))}
         </ul>

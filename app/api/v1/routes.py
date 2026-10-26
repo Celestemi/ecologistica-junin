@@ -43,6 +43,7 @@ from app.schemas.logistics import (
     DepositoRead,
     OptimizedRouteResponse,
     ActiveRouteRead,
+    DeliveryConfirmationRequest,
     DriverStopRead,
     PublicTrackingRead,
     TrackingRead,
@@ -53,6 +54,7 @@ from app.schemas.logistics import (
     RouteOptimizationGeoJSON,
     ExclusionPlacaMetadata,
     RouteOptimizationMetadata,
+    OperationalIndicatorsRead,
     VehiculoRead,
     _feature_collection,
 )
@@ -95,6 +97,7 @@ from app.services.plate_restriction import (
 )
 from app.models.identity import Usuario
 from app.services.pdf_generator import build_sustainability_pdf, load_sustainability_report
+from app.services.operational_indicators import summarize_indicators
 
 logger = logging.getLogger("ecologistica.api")
 LIMA = ZoneInfo("America/Lima")
@@ -472,6 +475,41 @@ async def active_route(
     )
 
 
+@router.post("/pedidos/{codigo_pedido}/entrega", response_model=PedidoRead, tags=["pedidos"])
+async def confirm_delivery(
+    codigo_pedido: str,
+    body: DeliveryConfirmationRequest,
+    session: AsyncSession = Depends(get_db),
+    actor: Usuario = Depends(require_roles(RolUsuario.CONDUCTOR, accion="entrega_denegada", detail=DENY_ROLE)),
+) -> Pedido:
+    """Confirma una entrega de la ruta asignada.
+
+    La transición a ``delivered`` es idempotente: reintentar la misma operación
+    (por ejemplo, después de perder la respuesta móvil) devuelve el pedido ya
+    entregado y nunca crea una segunda entrega.
+    """
+    vehicle = await assigned_vehicle(session, actor.id)
+    if vehicle is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes un vehículo asignado.")
+    order = await session.scalar(select(Pedido).where(Pedido.codigo_pedido == codigo_pedido))
+    if order is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No existe el pedido.")
+    assigned = await session.scalar(
+        select(RutaDetalle.id).where(RutaDetalle.pedido_id == order.id, RutaDetalle.vehiculo_id == vehicle.id).limit(1)
+    )
+    if assigned is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El pedido no pertenece a tu ruta asignada.")
+    if order.estado == EstadoPedido.DELIVERED:
+        return order
+    if order.estado in {EstadoPedido.CANCELLED, EstadoPedido.INCIDENT}:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El pedido ya no puede entregarse.")
+    order.estado = EstadoPedido.DELIVERED
+    await record(session, correo=actor.correo, accion="entrega_confirmada", detalle=f"{codigo_pedido}:{body.operation_id}", usuario=actor)
+    await session.commit()
+    await session.refresh(order)
+    return order
+
+
 @router.get(
     "/rutas/mapa",
     response_model=RouteOptimizationGeoJSON,
@@ -516,6 +554,23 @@ async def fleet_map(
         vehiculos_usados=len(plates),
     )
     return RouteOptimizationGeoJSON(features=_feature_collection(details).features, metadata=metadata)
+
+
+@router.get("/indicadores", response_model=OperationalIndicatorsRead, tags=["optimizacion"], summary="Consolidar indicadores operativos y ambientales")
+async def operational_indicators(
+    fecha_inicio: date = Query(...), fecha_fin: date = Query(...),
+    session: AsyncSession = Depends(get_db),
+    _: Usuario = Depends(require_roles(*MAP_READ, accion="ruta_denegada", detail=DENY_ROLE)),
+) -> OperationalIndicatorsRead:
+    if fecha_fin < fecha_inicio:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La fecha final debe ser posterior o igual a la inicial.")
+    result = await session.scalars(
+        select(SolucionRuta)
+        .where(SolucionRuta.fecha_operacion.between(fecha_inicio, fecha_fin))
+        .options(selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.vehiculo))
+        .order_by(SolucionRuta.fecha_operacion, SolucionRuta.id)
+    )
+    return OperationalIndicatorsRead.model_validate(summarize_indicators(result.all(), fecha_inicio, fecha_fin).__dict__)
 
 
 @router.get(

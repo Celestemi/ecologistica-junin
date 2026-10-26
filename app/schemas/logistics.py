@@ -252,6 +252,13 @@ class ActiveRouteRead(BaseModel):
     paradas: list[DriverStopRead]
 
 
+class DeliveryConfirmationRequest(BaseModel):
+    """Operación de entrega creada en el teléfono; su identificador permite reintentos."""
+
+    operation_id: str = Field(min_length=16, max_length=80)
+    delivered_at: datetime
+
+
 class PublicTrackingRead(BaseModel):
     """Vista pública minimizada accesible solo con token opaco."""
 
@@ -395,6 +402,11 @@ def _feature_collection(details: list[RutaDetalle]) -> GeoJSONFeatureCollection:
                     "plate": detail.vehiculo.placa,
                     "order_code": pedido.codigo_pedido if pedido is not None else None,
                     "customer": pedido.cliente_nombre if pedido is not None else None,
+                    # Estos valores son parte del detalle de parada que consume la
+                    # cartografía del despacho; no obligan al cliente a hacer una
+                    # consulta por pedido para mostrar RF-011.
+                    "address": pedido.direccion_referencia if pedido is not None else None,
+                    "weight_kg": pedido.peso_kg if pedido is not None else None,
                     "window_start": pedido.ventana_inicio.isoformat() if pedido is not None else None,
                     "window_end": pedido.ventana_fin.isoformat() if pedido is not None else None,
                     "title": title,
@@ -564,3 +576,20 @@ class RouteOptimizationGeoJSON(BaseModel):
     type: Literal["FeatureCollection"] = "FeatureCollection"
     features: list[GeoJSONFeature]
     metadata: RouteOptimizationMetadata
+
+
+class OperationalIndicatorsRead(BaseModel):
+    fecha_inicio: date
+    fecha_fin: date
+    rutas: int
+    distancia_total_km: float
+    duracion_total_min: float
+    consumo_estimado_gal: float | None = None
+    co2_estimado_kg: float
+    co2_evitado_kg: float
+    arboles_quinual_eq: float | None = None
+    quinual_kg_co2_por_ano: float | None = None
+    linea_base_secuencial_km: float | None = None
+    linea_base_secuencial_co2_kg: float | None = None
+    ahorro_distancia_pct_vs_secuencial: float | None = None
+    ahorro_co2_pct_vs_secuencial: float | None = None

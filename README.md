@@ -8,7 +8,9 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](#)
 [![Sprint](https://img.shields.io/badge/Sprint-2%20Cierre%20documental-yellow.svg)](#)
 
-Sistema web y móvil (PWA) de optimización de rutas de reparto de última milla para **DistriRápido S.A.C.** en los distritos de **Huancayo, El Tambo y Chilca** (provincia de Huancayo, Junín). Integra algoritmos de ruteo vehicular con ventanas de tiempo (**VRPTW**) y criterios ecológicos (**Green VRP**).
+Sistema web de optimización de rutas de reparto de última milla para **DistriRápido S.A.C.** en los distritos de **Huancayo, El Tambo y Chilca** (provincia de Huancayo, Junín). Integra algoritmos de ruteo vehicular con ventanas de tiempo (**VRPTW**) y criterios ecológicos (**Green VRP**). La vista de conductor existe en React; PWA offline, IndexedDB y Service Workers forman parte del alcance planificado y no están acreditados como entregados.
+
+> **Estado verificable pre-Sprint 3:** los requisitos y la arquitectura histórica se conservan como baseline. Para diferenciar esa planificación de la implementación y evidencia disponibles, consultar [Estado técnico vigente](docs/ESTADO_TECNICO_VIGENTE.md) y las auditorías centralizadas en `Auditorias-EcoLogistica/`.
 
 ---
 
@@ -64,9 +66,10 @@ ecologistica-junin/
 │           ├── 📄 02_registro_de_impedimentos_v_1_0_0.md
 │           ├── 📄 03_revision_del_sprint_v_1_0_0.md
 │           └── 📄 04_retrospectiva_del_sprint_v_1_0_0.md
-└── 📁 EcologisticaJunin/
-    ├── 📁 backend/
-    └── 📁 frontend/
+├── 📁 app/                         # Backend FastAPI activo
+├── 📁 src/                         # Frontend React/TypeScript activo
+├── 📁 backend/                     # Imagen y entrypoint del backend
+└── 📁 frontend/                    # Imagen y configuración Nginx
 ```
 
 ---
@@ -109,28 +112,28 @@ ecologistica-junin/
 ### 🚀 Fase 3: Implementación y Sprints (`docs/03 Implementación/`)
 
 #### Sprint 1 — Fundación, flota y pedidos
-* [01_informe_de_estado_del_proyecto_v_1_0_1.md](<docs/03 Implementación/01_informe_de_estado_del_proyecto_v_1_0_1.md>) — *Informe de estado (Plantilla 1, cierre documental 2026-10-26).*
-* [02_registro_de_impedimentos_v_1_0_1.md](<docs/03 Implementación/02_registro_de_impedimentos_v_1_0_1.md>) — *Registro de impedimentos (Plantilla 2).*
-* [03_revision_del_sprint_v_1_0_1.md](<docs/03 Implementación/03_revision_del_sprint_v_1_0_1.md>) — *Revisión del sprint con matriz de historias (Plantilla 3).*
-* [04_retrospectiva_del_sprint_V_1_0_1.md](<docs/03 Implementación/04_retrospectiva_del_sprint_V_1_0_1.md>) — *Retrospectiva (Plantilla 4).*
-* [REPORTE_VERIFICACION_DOD_SPRINT_1.md](REPORTE_VERIFICACION_DOD_SPRINT_1.md) — *Verificación DoD Sprint 1.*
-* [PLAN_IMPLEMENTACION_SPRINT_1.md](PLAN_IMPLEMENTACION_SPRINT_1.md) — *Plan de implementación Sprint 1.*
-* Versiones anteriores (histórico): [V_1_0_0](<docs/03 Implementación/01_informe_de_estado_del_proyecto_v_1_0_0.md>) informe, [impedimentos](<docs/03 Implementación/02_registro_de_impedimentos_v_1_0_0.md>), [revisión](<docs/03 Implementación/03_revision_del_sprint_v_1_0_0.md>), [retrospectiva](<docs/03 Implementación/04_retrospectiva_del_sprint_V_1_0_0.md>).
+* [01_informe_de_estado_del_proyecto_v_1_0_1.md](<docs/03 Implementación/Sprint 1/01_informe_de_estado_del_proyecto_v_1_0_1.md>) — *Informe de estado (Plantilla 1, cierre documental 2026-10-26).*
+* [02_registro_de_impedimentos_v_1_0_1.md](<docs/03 Implementación/Sprint 1/02_registro_de_impedimentos_v_1_0_1.md>) — *Registro de impedimentos (Plantilla 2).*
+* [03_revision_del_sprint_v_1_0_1.md](<docs/03 Implementación/Sprint 1/03_revision_del_sprint_v_1_0_1.md>) — *Revisión del sprint con matriz de historias (Plantilla 3).*
+* [04_retrospectiva_del_sprint_V_1_0_1.md](<docs/03 Implementación/Sprint 1/04_retrospectiva_del_sprint_V_1_0_1.md>) — *Retrospectiva (Plantilla 4).*
+* [REPORTE_VERIFICACION_DOD_SPRINT_1.md](Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md) — *Verificación DoD Sprint 1.*
+* [PLAN_IMPLEMENTACION_SPRINT_1.md](Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_1.md) — *Plan de implementación Sprint 1.*
+* Las versiones Sprint 1 V_1_0_1 sustituyen referencias históricas V_1_0_0 no presentes en el árbol actual; la trazabilidad y la limitación constan en `Auditorias-EcoLogistica/01_Auditorias/AUDITORIA_02_DOCUMENTACION.md`.
 
 #### Sprint 2 — Geocodificación y motor de rutas (`docs/03 Implementación/Sprint 2/`)
 * [01_informe_de_estado_del_proyecto_v_1_0_0.md](<docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md>) — *Informe de estado Sprint 2 (2026-10-26).*
 * [02_registro_de_impedimentos_v_1_0_0.md](<docs/03 Implementación/Sprint 2/02_registro_de_impedimentos_v_1_0_0.md>) — *Impedimentos Sprint 2 (IMP-010…; referencia IMP-001…009 en Sprint 1).*
 * [03_revision_del_sprint_v_1_0_0.md](<docs/03 Implementación/Sprint 2/03_revision_del_sprint_v_1_0_0.md>) — *Revisión del Sprint 2 con matriz US-005…EN-001.*
 * [04_retrospectiva_del_sprint_v_1_0_0.md](<docs/03 Implementación/Sprint 2/04_retrospectiva_del_sprint_v_1_0_0.md>) — *Retrospectiva Sprint 2 (borrador técnico; validación de equipo pendiente).*
-* [VERIFICACION_FINAL_SPRINT_2.md](VERIFICACION_FINAL_SPRINT_2.md) — *Auditoría QA integral Sprint 2.*
-* [PLAN_IMPLEMENTACION_SPRINT_2.md](PLAN_IMPLEMENTACION_SPRINT_2.md) — *Plan de implementación Sprint 2 (34 SP).*
-* [REPORTE_RENDIMIENTO_EN_001.md](REPORTE_RENDIMIENTO_EN_001.md) — *Métricas EN-001 / RNF-001 (solver).*
+* [VERIFICACION_FINAL_SPRINT_2.md](Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) — *Auditoría QA integral Sprint 2.*
+* [PLAN_IMPLEMENTACION_SPRINT_2.md](Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md) — *Plan de implementación Sprint 2 (34 SP).*
+* [REPORTE_RENDIMIENTO_EN_001.md](Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md) — *Métricas EN-001 / RNF-001 (solver).*
 
 ---
 
-### 💻 Código Fuente (`EcologisticaJunin/`)
-* [📁 Backend](EcologisticaJunin/backend/) — *API REST en FastAPI, Python 3.11, OR-Tools, DEAP, PostgreSQL/PostGIS y Celery/Redis.*
-* [📁 Frontend](EcologisticaJunin/frontend/) — *Aplicación Web/Desktop en React.js, Tailwind CSS, Leaflet.js y PWA móvil con IndexedDB.*
+### 💻 Código fuente activo
+* [📁 Backend](app/) — *API REST en FastAPI, SQLAlchemy asíncrono y PostgreSQL/PostGIS.*
+* [📁 Frontend](src/) — *Aplicación React, TypeScript, Vite, Tailwind, Leaflet y Recharts.*
 
 ---
 
@@ -139,12 +142,12 @@ ecologistica-junin/
 | Componente | Tecnología Seleccionada | Justificación |
 | :--- | :--- | :--- |
 | **Backend API** | Python 3.11 + FastAPI | Asincronía, alto rendimiento, documentación automática OpenAPI/Swagger. |
-| **Motor VRPTW / Green VRP** | Google OR-Tools + DEAP | Metaheurísticas avanzadas de ruteo con ventanas de tiempo sin costo de licenciamiento. |
-| **Base de Datos Geoespacial** | PostgreSQL 15 + PostGIS 3 | Modelo en 3FN con soporte nativo de tipo `GEOGRAPHY` y consultas espaciales. |
+| **Motor VRPTW / Green VRP** | Algoritmo genético propio | Implementado en `app/services/genetic_solver.py`; OR-Tools y DEAP no figuran en manifiestos activos. |
+| **Base de Datos Geoespacial** | PostgreSQL 15 + PostGIS 3 | Persistencia activa con SQLAlchemy/GeoAlchemy y geometrías SRID 4326; la decisión `geometry`/`GEOGRAPHY` sigue pendiente de consolidación. |
 | **Frontend Web** | React.js + Tailwind CSS | Interfaz modular e interactiva para operadores logísticos. |
-| **Móvil / Conductor** | React.js PWA + IndexedDB | Funcionamiento resiliente en zonas 2G/3G de baja cobertura. |
-| **Cartografía y Ruteo** | Leaflet.js + OSRM Local | Mapeo interactivo y matriz de distancias sobre tiles de OpenStreetMap (OSM). |
-| **Tareas Asíncronas** | Redis + Celery | Cola de procesamiento desacoplada para optimizaciones pesadas. |
+| **Móvil / Conductor** | React.js | Vista de conductor implementada; PWA offline, IndexedDB y Service Workers no están verificados como entregados. |
+| **Cartografía y Ruteo** | Leaflet + distancia geodésica; OSRM opcional | OSRM está apagado por defecto y no forma parte de `docker-compose.yml`. |
+| **Tareas asíncronas** | Sin servicio separado implementado | Redis/Celery pertenecen a la arquitectura prevista, no al runtime actual. |
 
 ---
 

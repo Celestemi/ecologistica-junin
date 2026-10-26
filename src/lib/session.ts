@@ -65,6 +65,8 @@ export function saveSession(token: string, usuario: SessionUser): void {
 export function clearSession(): void {
   sessionStorage.removeItem(KEY);
   localStorage.removeItem(KEY);
+  // La cola IndexedDB nunca contiene el token; se elimina también al salir.
+  void import("./offline").then(({ clearOfflineData }) => clearOfflineData()).catch(() => undefined);
 }
 
 function readExpiry(token: string): number {

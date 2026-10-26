@@ -1,100 +1,28 @@
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { formatKg, formatKm, reductionPercent } from "../lib/format";
-import type { RouteMetadata } from "../types";
+import { useEffect, useState } from "react";
+import { fetchOperationalIndicators } from "../api";
+import { formatKg, formatKm } from "../lib/format";
+import type { OperationalIndicators, RouteMetadata } from "../types";
 
-type DashboardProps = {
-  metadata: RouteMetadata | null;
-};
-
-export function Dashboard({ metadata }: DashboardProps) {
-  const avoided = metadata?.co2_evitado_kg ?? 0;
-  const reference = metadata?.co2_referencia_kg ?? 0;
-  const percent = metadata ? reductionPercent(avoided, reference) : 0;
-  const seqCo2Pct = metadata?.ahorro_co2_pct_vs_secuencial;
-  const seqDistPct = metadata?.ahorro_distancia_pct_vs_secuencial;
-  const trees = metadata?.arboles_quinual_eq ?? 0;
-  const chart = metadata
-    ? [
-        { nombre: "Convencional", co2: metadata.co2_referencia_kg },
-        { nombre: "Eco-optimizada", co2: metadata.co2_estimado_kg },
-      ]
-    : [];
-
-  return (
-    <section className="grid gap-3 border-b border-stone-200 bg-[#f7f4ee] px-4 py-3 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_1.2fr_1.4fr]">
-      <Kpi
-        label="Distancia total optimizada"
-        value={metadata ? formatKm(metadata.distancia_total_km) : "—"}
-        hint={
-          metadata
-            ? seqDistPct != null
-              ? `${metadata.codigo} · ${seqDistPct.toFixed(0)} % km vs secuencial (RN-008)`
-              : metadata.codigo
-            : "Aún sin corrida"
-        }
-      />
-      <Kpi
-        label="Reducción de CO2"
-        value={metadata ? formatKg(avoided) : "—"}
-        hint={
-          metadata
-            ? seqCo2Pct != null
-              ? `${percent.toFixed(0)} % vs FIFO · ${seqCo2Pct.toFixed(0)} % vs secuencial`
-              : `${percent.toFixed(0)} % frente al FIFO`
-            : "kg y porcentaje"
-        }
-      />
-      <article className="rounded-2xl border border-emerald-900/10 bg-emerald-950 px-4 py-3 text-emerald-50">
-        <p className="text-xs tracking-wide text-emerald-200/80">Impacto local</p>
-        <p className="mt-2 text-sm leading-snug">
-          Equivalente a{" "}
-          <span className="text-lg font-semibold text-white">{metadata ? trees.toFixed(2) : "—"}</span>{" "}
-          Árboles Quinual/Alisos sembrados en el Valle del Mantaro
-        </p>
-      </article>
-      <article className="rounded-2xl border border-stone-200 bg-white px-3 py-2">
-        <p className="px-1 text-xs tracking-wide text-stone-500">Emisiones</p>
-        {metadata ? (
-          <div className="h-28">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chart} barCategoryGap="32%">
-                <CartesianGrid vertical={false} stroke="#e7e5e4" />
-                <XAxis dataKey="nombre" tick={{ fill: "#44403c", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis
-                  tick={{ fill: "#78716c", fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={32}
-                />
-                <Tooltip
-                  formatter={(value) => {
-                    const numeric = typeof value === "number" ? value : Number(value ?? 0);
-                    return [`${numeric.toFixed(2)} kg`, "CO2"];
-                  }}
-                />
-                <Bar dataKey="co2" radius={[6, 6, 0, 0]}>
-                  <Cell fill="#a8a29e" />
-                  <Cell fill="#047857" />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className="px-1 py-8 text-sm leading-snug text-stone-500">
-          La comparación aparece cuando el despacho ejecuta la optimización.
-        </p>
-        )}
-      </article>
-    </section>
-  );
+export function Dashboard({ metadata }: { metadata: RouteMetadata | null }) {
+  const day = metadata?.fecha_operacion ?? new Date().toISOString().slice(0, 10);
+  const [start, setStart] = useState(day); const [end, setEnd] = useState(day);
+  const [data, setData] = useState<OperationalIndicators | null>(null); const [error, setError] = useState<string | null>(null); const [loading, setLoading] = useState(false);
+  useEffect(() => { if (metadata?.fecha_operacion) { setStart(metadata.fecha_operacion); setEnd(metadata.fecha_operacion); } }, [metadata?.fecha_operacion]);
+  async function load() { setLoading(true); setError(null); try { setData(await fetchOperationalIndicators(start, end)); } catch (reason) { setData(null); setError(reason instanceof Error ? reason.message : "No se pudieron cargar los indicadores."); } finally { setLoading(false); } }
+  useEffect(() => { void load(); }, [start, end]);
+  const comparable = data?.linea_base_secuencial_km != null && data?.linea_base_secuencial_co2_kg != null;
+  return <section className="border-b border-stone-200 bg-[#f7f4ee] px-4 py-3">
+    <div className="mb-3 flex flex-wrap items-end gap-2"><label className="text-xs text-stone-600">Desde<input aria-label="Desde" type="date" value={start} onChange={(e) => setStart(e.target.value)} className="mt-1 block rounded border border-stone-300 bg-white p-2" /></label><label className="text-xs text-stone-600">Hasta<input aria-label="Hasta" type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="mt-1 block rounded border border-stone-300 bg-white p-2" /></label><button type="button" onClick={() => void load()} className="rounded-xl bg-emerald-800 px-3 py-2 text-sm font-semibold text-white">Actualizar</button>{loading ? <span className="text-sm text-stone-500">Actualizando…</span> : null}</div>
+    {error ? <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-800">{error}</p> : null}
+    {data?.rutas === 0 ? <p className="rounded-xl bg-white p-3 text-sm text-stone-600">No hay información para el periodo seleccionado.</p> : null}
+    {data && data.rutas > 0 ? <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <Card label="Operación" value={formatKm(data.distancia_total_km)} hint={`${data.rutas} rutas · ${Math.round(data.duracion_total_min)} min`} />
+      <Card label="Consumo estimado" value={data.consumo_estimado_gal == null ? "Pendiente" : `${data.consumo_estimado_gal.toFixed(2)} gal`} hint="Tramos / rendimiento real del vehículo" />
+      <Card label="Emisiones estimadas" value={formatKg(data.co2_estimado_kg)} hint={`CO₂ evitado: ${formatKg(data.co2_evitado_kg)}`} />
+      <Card label="Equivalencia referencial" value={data.arboles_quinual_eq == null ? "No calculable" : `${data.arboles_quinual_eq.toFixed(2)} Quinuales`} hint={data.quinual_kg_co2_por_ano == null ? "Factor no configurado" : `CO₂ evitado / ${data.quinual_kg_co2_por_ano} kg/año; no son árboles plantados.`} />
+      <article className="rounded-2xl border border-stone-200 bg-white p-4 md:col-span-2 xl:col-span-4"><p className="text-xs tracking-wide text-stone-500">LÍNEA BASE SECUENCIAL (RN-008)</p>{comparable ? <div className="mt-2 grid gap-2 md:grid-cols-2"><p><strong>Distancia:</strong> {formatKm(data.distancia_total_km)} vs {formatKm(data.linea_base_secuencial_km!)} · {signed(data.ahorro_distancia_pct_vs_secuencial)}%</p><p><strong>CO₂:</strong> {formatKg(data.co2_estimado_kg)} vs {formatKg(data.linea_base_secuencial_co2_kg!)} · {signed(data.ahorro_co2_pct_vs_secuencial)}%</p></div> : <p className="mt-2 text-sm text-amber-900">No es posible calcular porcentajes: falta una línea base válida y comparable.</p>}</article>
+    </div> : null}
+  </section>;
 }
-
-function Kpi({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return (
-    <article className="rounded-2xl border border-stone-200 bg-white px-4 py-3">
-      <p className="text-xs tracking-wide text-stone-500">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-stone-900">{value}</p>
-      <p className="mt-1 text-xs text-stone-500">{hint}</p>
-    </article>
-  );
-}
+function Card({ label, value, hint }: { label: string; value: string; hint: string }) { return <article className="rounded-2xl border border-stone-200 bg-white p-4"><p className="text-xs tracking-wide text-stone-500">{label}</p><p className="mt-2 text-2xl font-semibold">{value}</p><p className="mt-1 text-xs text-stone-500">{hint}</p></article>; }
+function signed(value: number | null): string { return value == null || !Number.isFinite(value) ? "—" : `${value >= 0 ? "+" : ""}${value.toFixed(1)}`; }

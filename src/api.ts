@@ -4,6 +4,7 @@ import type {
   Depot,
   Order,
   OrderTracking,
+  OperationalIndicators,
   PublicOrderTracking,
   RouteOptimization,
   Vehicle,
@@ -251,9 +252,24 @@ export async function fetchPublishedRoute(): Promise<RouteOptimization | null> {
   }
 }
 
+export function fetchOperationalIndicators(start: string, end: string): Promise<OperationalIndicators> {
+  return request<OperationalIndicators>(`/api/v1/indicadores?fecha_inicio=${encodeURIComponent(start)}&fecha_fin=${encodeURIComponent(end)}`);
+}
+
 export function fetchActiveRoute(plate?: string): Promise<ActiveRoute> {
   const query = plate ? `?placa=${encodeURIComponent(plate)}` : "";
   return request<ActiveRoute>(`/api/v1/rutas/activas${query}`);
+}
+
+export function confirmDelivery(
+  orderCode: string,
+  body: { operation_id: string; delivered_at: string },
+): Promise<Order> {
+  return request<Order>(`/api/v1/pedidos/${encodeURIComponent(orderCode)}/entrega`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Idempotency-Key": body.operation_id },
+    body: JSON.stringify(body),
+  });
 }
 
 export function optimizeRoutes(): Promise<RouteOptimization> {

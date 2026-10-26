@@ -10,7 +10,7 @@
 
 ## Aviso sobre la ceremonia
 
-**No consta en el repositorio** evidencia de una retrospectiva Scrum celebrada con el equipo (fecha, participantes, votación, compromisos firmados). El presente documento es un **borrador preparado a partir de hallazgos técnicos** en [VERIFICACION_FINAL_SPRINT_2.md](../../../VERIFICACION_FINAL_SPRINT_2.md), [REPORTE_RENDIMIENTO_EN_001.md](../../../REPORTE_RENDIMIENTO_EN_001.md) y el plan de implementación.
+**No consta en el repositorio** evidencia de una retrospectiva Scrum celebrada con el equipo (fecha, participantes, votación, compromisos firmados). El presente documento es un **borrador preparado a partir de hallazgos técnicos** en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md), [REPORTE_RENDIMIENTO_EN_001.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md) y el plan de implementación.
 
 **Pendiente:** validación, enriquecimiento y aprobación por el equipo en sesión de retrospectiva real.
 
@@ -30,7 +30,7 @@
 ## 2. ¿Qué estamos haciendo bien?
 
 - Trazabilidad **historia → módulo → test** (`test_*_us005.py`, `test_hard_constraints_us008.py`, etc.).
-- Reportes de verificación y rendimiento en raíz del repo (`VERIFICACION_FINAL_SPRINT_2.md`, `REPORTE_RENDIMIENTO_EN_001.md`) separados de actas académicas.
+- Reportes de verificación y rendimiento centralizados en `Auditorias-EcoLogistica/03_Reportes_Verificacion/`, separados de actas académicas.
 - Migraciones versionadas **007** y **008** alineadas con US-005 y US-009.
 - Motor genético con presupuesto de tiempo y parámetros escalados (`optimizer_runtime.py`).
 - Documentación Sprint 1 preservada (V_1_0_1) sin reescritura retrospectiva.
@@ -91,8 +91,8 @@
 - [Informe de estado Sprint 2](01_informe_de_estado_del_proyecto_v_1_0_0.md)
 - [Revisión del Sprint 2](03_revision_del_sprint_v_1_0_0.md)
 - [Impedimentos Sprint 2](02_registro_de_impedimentos_v_1_0_0.md)
-- [Verificación integral Sprint 2](../../../VERIFICACION_FINAL_SPRINT_2.md)
-- [Retrospectiva Sprint 1](../04_retrospectiva_del_sprint_V_1_0_1.md) *(sin modificar)*
+- [Verificación integral Sprint 2](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md)
+- [Retrospectiva Sprint 1](../Sprint%201/04_retrospectiva_del_sprint_V_1_0_1.md) *(sin modificar)*
 
 ---
 

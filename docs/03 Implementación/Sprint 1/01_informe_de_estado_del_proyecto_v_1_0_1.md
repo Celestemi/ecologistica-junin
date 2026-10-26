@@ -8,7 +8,7 @@
 
 **Fecha de actualización:** 26 de octubre de 2026
 
-**Evidencias de verificación:** [REPORTE_VERIFICACION_DOD_SPRINT_1.md](../../REPORTE_VERIFICACION_DOD_SPRINT_1.md), [PLAN_IMPLEMENTACION_SPRINT_1.md](../../PLAN_IMPLEMENTACION_SPRINT_1.md), suites en `tests/`.
+**Evidencias de verificación:** [REPORTE_VERIFICACION_DOD_SPRINT_1.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md), [PLAN_IMPLEMENTACION_SPRINT_1.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_1.md), suites en `tests/`.
 
 ---
 
@@ -82,4 +82,4 @@ Cualquier minuta o acta de demo presencial debe adjuntarse aparte; no se inventa
 
 ---
 
-[← Volver al README](../../README.md)
+[← Volver al README](../../../README.md)

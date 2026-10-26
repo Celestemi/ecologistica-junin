@@ -8,7 +8,7 @@
 
 **Fecha de actualización:** 26 de octubre de 2026
 
-**Evidencias de verificación:** [VERIFICACION_FINAL_SPRINT_2.md](../../../VERIFICACION_FINAL_SPRINT_2.md), [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../PLAN_IMPLEMENTACION_SPRINT_2.md), [REPORTE_RENDIMIENTO_EN_001.md](../../../REPORTE_RENDIMIENTO_EN_001.md), suites en `tests/`.
+**Evidencias de verificación:** [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md), [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md), [REPORTE_RENDIMIENTO_EN_001.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md), suites en `tests/`.
 
 ---
 
@@ -16,7 +16,7 @@
 
 Completar la geocodificación espacial de pedidos y endurecer el motor de rutas existente para que la **solución publicada** respete capacidad, ventanas de tiempo, jornada operativa y un **presupuesto de tiempo de 45 segundos**, sin regresionar las capacidades verificables del Sprint 1.
 
-*Fuente:* [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../PLAN_IMPLEMENTACION_SPRINT_2.md) §1.
+*Fuente:* [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md) §1.
 
 ---
 
@@ -25,7 +25,7 @@ Completar la geocodificación espacial de pedidos y endurecer el motor de rutas 
 | Dimensión | Estado |
 |-----------|--------|
 | **Alcance planificado** | US-005, US-007, US-008, US-009, EN-001 — **34 SP** |
-| **Implementación funcional en código** | **Avanzada** en las cinco historias; brechas por criterio en [VERIFICACION_FINAL_SPRINT_2.md](../../../VERIFICACION_FINAL_SPRINT_2.md) |
+| **Implementación funcional en código** | **Avanzada** en las cinco historias; brechas por criterio en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) |
 | **Definition of Done global** ([DoD §2](../../02%20Planificacion/01_transformando_a_agil_v_1_0_0.md)) | **No cumplida** |
 | **Pruebas automatizadas E2E (PostGIS)** | **No ejecutadas** en la verificación 2026-10-26 (Docker/PostGIS no disponible en host de auditoría) |
 | **Cobertura ≥ 80 %** | **No alcanzada** (~50 % backend en corrida focal; frontend sin medición) |
@@ -58,9 +58,9 @@ Completar la geocodificación espacial de pedidos y endurecer el motor de rutas 
 
 ## Criterios de aceptación (referencia)
 
-Los escenarios BDD oficiales están en [01_transformando_a_agil_v_1_0_0.md](../../02%20Planificacion/01_transformando_a_agil_v_1_0_0.md) (US-005, US-007, US-008, US-009, EN-001). La matriz detallada **criterio × evidencia × prueba** figura en [VERIFICACION_FINAL_SPRINT_2.md](../../../VERIFICACION_FINAL_SPRINT_2.md) §11.
+Los escenarios BDD oficiales están en [01_transformando_a_agil_v_1_0_0.md](../../02%20Planificacion/01_transformando_a_agil_v_1_0_0.md) (US-005, US-007, US-008, US-009, EN-001). La matriz detallada **criterio × evidencia × prueba** figura en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) §11.
 
-**Decisiones técnicas aprobadas en planificación** (no confundir con el backlog ágil literal): motor **genético propio** (no OR-Tools), `geometry` 4326 vs `GEOGRAPHY`, OSRM **opcional/apagado** por defecto — ver [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../PLAN_IMPLEMENTACION_SPRINT_2.md) §7 y §14 (D-01, D-03, D-06).
+**Decisiones técnicas aprobadas en planificación** (no confundir con el backlog ágil literal): motor **genético propio** (no OR-Tools), `geometry` 4326 vs `GEOGRAPHY`, OSRM **opcional/apagado** por defecto — ver [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md) §7 y §14 (D-01, D-03, D-06).
 
 ---
 
@@ -73,7 +73,7 @@ Los escenarios BDD oficiales están en [01_transformando_a_agil_v_1_0_0.md](../.
 | Frontend Vitest | `npm run test:coverage` | **No ejecutado** (npm no disponible en host de verificación) |
 | Regresión Sprint 1 | `test_api.py`, import, flota, etc. | **No re-ejecutada** en la misma sesión |
 
-Comando documentado en [VERIFICACION_FINAL_SPRINT_2.md](../../../VERIFICACION_FINAL_SPRINT_2.md) §3.1.
+Comando documentado en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) §3.1.
 
 ---
 
@@ -81,7 +81,7 @@ Comando documentado en [VERIFICACION_FINAL_SPRINT_2.md](../../../VERIFICACION_FI
 
 | Métrica | Objetivo | Medido | Fuente |
 |---------|----------|--------|--------|
-| Tiempo solver 150×15 | ≤ 45 s | Media **~0,89 s** | [REPORTE_RENDIMIENTO_EN_001.md](../../../REPORTE_RENDIMIENTO_EN_001.md) §4.1 |
+| Tiempo solver 150×15 | ≤ 45 s | Media **~0,89 s** | [REPORTE_RENDIMIENTO_EN_001.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md) §4.1 |
 | Solución **válida** (factible dura) 150×15 | Sí (RNF-001) | `feasible=false` en 0/5 repeticiones sintéticas | Idem |
 | Tiempo HTTP `POST /optimizar-rutas` | ≤ 45 s | **No medido** | Sin PostGIS en verificación |
 
@@ -110,7 +110,7 @@ Comando documentado en [VERIFICACION_FINAL_SPRINT_2.md](../../../VERIFICACION_FI
 ## Pendientes para sprints futuros
 
 1. Cierre DoD global (cobertura, Sonar/CodeQL, peer review, staging) — continúa **IMP-009** del Sprint 1.
-2. **US-010 … US-012** (cartografía), **EN-004** (PWA offline), KPI RF-013/014 según roadmap en [03_revision_del_sprint_v_1_0_1.md](../03_revision_del_sprint_v_1_0_1.md).
+2. **US-010 … US-012** (cartografía), **EN-004** (PWA offline), KPI RF-013/014 según roadmap en [03_revision_del_sprint_v_1_0_1.md](../Sprint%201/03_revision_del_sprint_v_1_0_1.md).
 3. GeoJSON distrital oficial (decisión **D-05** del plan Sprint 2) antes de filtro en producción.
 4. Revalidación **IMP-004** / RNF-001 sobre GA con criterio “solución válida” cerrado.
 
@@ -123,7 +123,7 @@ Comando documentado en [VERIFICACION_FINAL_SPRINT_2.md](../../../VERIFICACION_FI
 | Revisión Sprint 2 | [03_revision_del_sprint_v_1_0_0.md](03_revision_del_sprint_v_1_0_0.md) |
 | Impedimentos Sprint 2 | [02_registro_de_impedimentos_v_1_0_0.md](02_registro_de_impedimentos_v_1_0_0.md) |
 | Retrospectiva Sprint 2 (borrador) | [04_retrospectiva_del_sprint_v_1_0_0.md](04_retrospectiva_del_sprint_v_1_0_0.md) |
-| Sprint 1 (sin modificar) | [01_informe_de_estado_del_proyecto_v_1_0_1.md](../01_informe_de_estado_del_proyecto_v_1_0_1.md) |
+| Sprint 1 (sin modificar) | [01_informe_de_estado_del_proyecto_v_1_0_1.md](../Sprint%201/01_informe_de_estado_del_proyecto_v_1_0_1.md) |
 | DoD global | [01_transformando_a_agil_v_1_0_0.md](../../02%20Planificacion/01_transformando_a_agil_v_1_0_0.md) §2 |
 
 ---

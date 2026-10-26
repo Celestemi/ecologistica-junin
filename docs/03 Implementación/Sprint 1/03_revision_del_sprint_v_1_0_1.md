@@ -1,6 +1,6 @@
 # 03. Revisión del Sprint V_1_0_1.md
 
-> **Control de versiones:** sustituye a `03_revision_del_sprint_v_1_0_0.md` (2026-10-26). La V_1_0_0 declaraba 100 % SP y DoD cumplida; esta versión alinea el acta con el código y con [REPORTE_VERIFICACION_DOD_SPRINT_1.md](../../REPORTE_VERIFICACION_DOD_SPRINT_1.md).
+> **Control de versiones:** sustituye a `03_revision_del_sprint_v_1_0_0.md` (2026-10-26). La V_1_0_0 declaraba 100 % SP y DoD cumplida; esta versión alinea el acta con el código y con [REPORTE_VERIFICACION_DOD_SPRINT_1.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md).
 
 # Revisión del sprint
 
@@ -63,7 +63,7 @@ La revisión **V_1_0_0** describió una *Sprint Demo* en staging con escenarios 
 
 ### Cierre de calidad Sprint 1 (DoD)
 
-Ver [REPORTE_VERIFICACION_DOD_SPRINT_1.md](../../REPORTE_VERIFICACION_DOD_SPRINT_1.md) §11 y impedimento **IMP-009** en `02_registro_de_impedimentos_v_1_0_1.md`.
+Ver [REPORTE_VERIFICACION_DOD_SPRINT_1.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md) §11 y impedimento **IMP-009** en `02_registro_de_impedimentos_v_1_0_1.md`.
 
 ### Backlog de producto (sin cambio de alcance Sprint 1)
 
@@ -87,9 +87,9 @@ Ver [REPORTE_VERIFICACION_DOD_SPRINT_1.md](../../REPORTE_VERIFICACION_DOD_SPRINT
 | Informe de estado | `01_informe_de_estado_del_proyecto_v_1_0_1.md` |
 | Impedimentos | `02_registro_de_impedimentos_v_1_0_1.md` |
 | Retrospectiva | `04_retrospectiva_del_sprint_V_1_0_1.md` |
-| Plan de implementación | [PLAN_IMPLEMENTACION_SPRINT_1.md](../../PLAN_IMPLEMENTACION_SPRINT_1.md) |
+| Plan de implementación | [PLAN_IMPLEMENTACION_SPRINT_1.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_1.md) |
 | DoD | `docs/02 Planificacion/01_transformando_a_agil_v_1_0_0.md` §2 |
 
 ---
 
-[← Volver al README](../../README.md)
+[← Volver al README](../../../README.md)

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
-import { fetchActiveRoute, fetchVehicles } from "../../api";
+import { confirmDelivery as sendDelivery, fetchActiveRoute, fetchVehicles } from "../../api";
+import { cachedRoute, cachedValue, cacheRoute, cacheValue, completedDeliveryCodes, enqueueDelivery, markDeliveryCompleted, pendingDeliveries, replacePendingDeliveries, type PendingDelivery } from "../../lib/offline";
 import { StaffHeader } from "../StaffHeader";
 import { formatKg, formatTime, formatWindow, fuelLabel } from "../../lib/format";
 import { loadSession } from "../../lib/session";
@@ -8,7 +9,6 @@ import type { ActiveRoute, DriverStop, Vehicle } from "../../types";
 type Coords = { lat: number; lon: number; alt: number };
 type LinkState = "conectando" | "conectado" | "reconectando";
 
-const DONE_KEY = "eco-driver-delivered";
 
 const INCIDENTS = [
   {
@@ -36,7 +36,8 @@ export function DriverApp() {
   const [notice, setNotice] = useState<string | null>(null);
   const [link, setLink] = useState<LinkState>("conectando");
   const [usingGps, setUsingGps] = useState(false);
-  const [done, setDone] = useState<Set<string>>(() => readDone());
+  const [done, setDone] = useState<Set<string>>(new Set());
+  const [pendingCount, setPendingCount] = useState(0);
   const [etas, setEtas] = useState<Record<string, string>>({});
   const [signing, setSigning] = useState<DriverStop | null>(null);
   const [sending, setSending] = useState(false);
@@ -50,7 +51,7 @@ export function DriverApp() {
   const vehicle = vehicles.find((item) => item.placa === plate) ?? null;
   const stops = route?.paradas ?? [];
   const nextDelivery = stops.find(
-    (stop) => stop.tipo_parada === "delivery" && !done.has(stopKey(stop)),
+    (stop) => stop.tipo_parada === "delivery" && !isDone(done, stop),
   ) ?? null;
 
   useEffect(() => {
@@ -75,29 +76,60 @@ export function DriverApp() {
     };
   }, [nextDelivery, vehicle]);
 
+  const userId = loadSession()?.usuario.id;
   const loadRoute = useCallback(async (selected: string) => {
     try {
       const active = await fetchActiveRoute(selected);
       setRoute(active);
+      if (userId) await cacheRoute(userId, active);
       setLoadError(null);
     } catch (reason: unknown) {
-      setRoute(null);
-      setLoadError(reason instanceof Error ? reason.message : "No hay una ruta activa.");
+      const saved = userId ? await cachedRoute(userId) : null;
+      if (saved) { setRoute(saved); setLoadError("Sin conexión: se muestra la última ruta guardada."); }
+      else { setRoute(null); setLoadError(reason instanceof Error ? reason.message : "No hay una ruta activa."); }
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("placa");
     fetchVehicles()
       .then((fleet) => {
         setVehicles(fleet);
+        if (userId) void cacheValue(userId, "vehicles", fleet);
         const match = fleet.find((item) => item.placa === requested) ?? fleet[0];
         setPlate(match?.placa ?? null);
       })
-      .catch((reason: unknown) => {
-        setLoadError(reason instanceof Error ? reason.message : "No se pudo leer la flota.");
+      .catch(async (reason: unknown) => {
+        const saved = userId ? await cachedValue<Vehicle[]>(userId, "vehicles") : null;
+        if (saved) { setVehicles(saved); setPlate(saved[0]?.placa ?? null); setLoadError("Sin conexión: se usa la última flota guardada."); }
+        else setLoadError(reason instanceof Error ? reason.message : "No se pudo leer la flota.");
       });
-  }, []);
+  }, [userId]);
+
+  const syncPending = useCallback(async () => {
+    if (!userId || !navigator.onLine) return;
+    const queued = await pendingDeliveries(userId);
+    const remaining: PendingDelivery[] = [];
+    for (const item of queued) {
+      try { await sendDelivery(item.orderCode, { operation_id: item.id, delivered_at: item.deliveredAt }); await markDeliveryCompleted(userId, item.orderCode); }
+      catch (error) { remaining.push({ ...item, attempts: item.attempts + 1, lastError: error instanceof Error ? error.message : "Error de sincronización" }); }
+    }
+    await replacePendingDeliveries(userId, remaining);
+    setPendingCount(remaining.length);
+    if (queued.length !== remaining.length) { setNotice(remaining.length ? "Algunas entregas siguen pendientes." : "Entregas pendientes sincronizadas."); void loadRoute(plate ?? ""); }
+  }, [loadRoute, plate, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    void Promise.all([pendingDeliveries(userId), completedDeliveryCodes(userId)]).then(([items, completed]) => {
+      setPendingCount(items.length); setDone(new Set([...completed, ...items.map((item) => item.orderCode)]));
+    });
+    const online = () => void syncPending();
+    const message = (event: MessageEvent) => { if (event.data?.type === "sync-deliveries") void syncPending(); };
+    window.addEventListener("online", online); navigator.serviceWorker?.addEventListener("message", message);
+    void syncPending();
+    return () => { window.removeEventListener("online", online); navigator.serviceWorker?.removeEventListener("message", message); };
+  }, [syncPending, userId]);
 
   useEffect(() => {
     if (!plate) {
@@ -235,18 +267,25 @@ export function DriverApp() {
     );
   }
 
-  function confirmDelivery(stop: DriverStop) {
+  async function confirmDelivery(stop: DriverStop) {
+    if (!userId || !stop.codigo_pedido) return;
+    const operation: PendingDelivery = { id: crypto.randomUUID(), userId, orderCode: stop.codigo_pedido, deliveredAt: new Date().toISOString(), attempts: 0 };
+    await enqueueDelivery(operation);
+    await markDeliveryCompleted(userId, stop.codigo_pedido);
     const next = new Set(done);
     next.add(stopKey(stop));
+    next.add(stop.codigo_pedido);
     setDone(next);
-    sessionStorage.setItem(DONE_KEY, JSON.stringify([...next]));
+    const queued = await pendingDeliveries(userId); setPendingCount(queued.length);
     setSigning(null);
-    setNotice(`Entrega de ${stop.cliente_nombre ?? stop.codigo_pedido} registrada.`);
+    setNotice(navigator.onLine ? "Entrega guardada; sincronizando…" : "Sin conexión: entrega guardada para sincronizar.");
+    if ("serviceWorker" in navigator) void navigator.serviceWorker.ready.then((registration) => (registration as ServiceWorkerRegistration & { sync?: { register(tag: string): Promise<void> } }).sync?.register("eco-deliveries").catch(() => undefined));
+    void syncPending();
   }
 
   const progress = useMemo(() => {
     const deliveries = stops.filter((stop) => stop.tipo_parada === "delivery");
-    const finished = deliveries.filter((stop) => done.has(stopKey(stop))).length;
+    const finished = deliveries.filter((stop) => isDone(done, stop)).length;
     return { finished, total: deliveries.length };
   }, [stops, done]);
 
@@ -284,6 +323,7 @@ export function DriverApp() {
               {progress.finished} de {progress.total} entregas
             </span>
           ) : null}
+          {pendingCount > 0 ? <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-950">{pendingCount} pendiente(s) de sincronización</span> : null}
         </div>
         {progress.total > 0 ? (
           <div className="h-2 overflow-hidden rounded-full bg-stone-200" aria-hidden="true">
@@ -322,7 +362,7 @@ export function DriverApp() {
           </div>
           <ol className="flex flex-col gap-2">
             {stops.map((stop) => (
-              <StopRow key={stopKey(stop)} stop={stop} done={done.has(stopKey(stop))} />
+              <StopRow key={stopKey(stop)} stop={stop} done={isDone(done, stop)} />
             ))}
           </ol>
         </section>
@@ -544,14 +584,8 @@ function stopKey(stop: DriverStop): string {
   return `${stop.placa}:${stop.secuencia}:${stop.codigo_pedido ?? stop.tipo_parada}`;
 }
 
-function readDone(): Set<string> {
-  try {
-    const raw = sessionStorage.getItem(DONE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-    return new Set(Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : []);
-  } catch {
-    return new Set();
-  }
+function isDone(done: Set<string>, stop: DriverStop): boolean {
+  return done.has(stopKey(stop)) || (stop.codigo_pedido !== null && done.has(stop.codigo_pedido));
 }
 
 function parseMessage(raw: unknown): Record<string, unknown> | null {

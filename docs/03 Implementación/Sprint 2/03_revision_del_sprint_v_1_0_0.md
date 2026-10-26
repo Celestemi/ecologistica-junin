@@ -29,7 +29,7 @@
 
 ## Objetivo del sprint (recordatorio)
 
-Endurecer geocodificación, restricciones duras, secuencia/ETA y SLA del motor, manteniendo regresión Sprint 1 — [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../PLAN_IMPLEMENTACION_SPRINT_2.md) §1.
+Endurecer geocodificación, restricciones duras, secuencia/ETA y SLA del motor, manteniendo regresión Sprint 1 — [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md) §1.
 
 ---
 
@@ -53,9 +53,9 @@ Leyenda **estado final:** *Implementado* = entregable en repo; *Done (DoD)* = cu
 
 | Artefacto | Ubicación |
 |-----------|-----------|
-| Plan Sprint 2 | [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../PLAN_IMPLEMENTACION_SPRINT_2.md) |
-| Verificación QA | [VERIFICACION_FINAL_SPRINT_2.md](../../../VERIFICACION_FINAL_SPRINT_2.md) |
-| Rendimiento EN-001 | [REPORTE_RENDIMIENTO_EN_001.md](../../../REPORTE_RENDIMIENTO_EN_001.md) |
+| Plan Sprint 2 | [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md) |
+| Verificación QA | [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) |
+| Rendimiento EN-001 | [REPORTE_RENDIMIENTO_EN_001.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md) |
 | Migraciones | `app/db/migrations.py` (`007_geocodificacion_pedido`, `008_eta_detalle_ruta`) |
 | Tests dedicados | `tests/test_geocode_us005.py`, `test_optimizer_us007.py`, `test_hard_constraints_us008.py`, `test_eta_us009.py`, `test_solver_sla_en001.py` |
 | CI | `.github/workflows/ci.yml` (**ejecución remota no verificada**) |
@@ -69,7 +69,7 @@ Leyenda **estado final:** *Implementado* = entregable en repo; *Done (DoD)* = cu
 Evidencias **verificables** sustitutivas de narrativa de demo:
 
 1. Inspección de código y anotaciones OpenAPI en `app/api/v1/routes.py`.
-2. Corrida pytest parcial documentada en [VERIFICACION_FINAL_SPRINT_2.md](../../../VERIFICACION_FINAL_SPRINT_2.md) §3.
+2. Corrida pytest parcial documentada en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) §3.
 3. Benchmark solver archivable vía `EN001_WRITE=1` y `tests/test_solver_sla_en001.py -m slow`.
 
 ---
@@ -100,7 +100,7 @@ Evidencias **verificables** sustitutivas de narrativa de demo:
 |-----------|--------|
 | Informe de estado Sprint 2 | [01_informe_de_estado_del_proyecto_v_1_0_0.md](01_informe_de_estado_del_proyecto_v_1_0_0.md) |
 | Retrospectiva (borrador) | [04_retrospectiva_del_sprint_v_1_0_0.md](04_retrospectiva_del_sprint_v_1_0_0.md) |
-| Sprint 1 (histórico) | [03_revision_del_sprint_v_1_0_1.md](../03_revision_del_sprint_v_1_0_1.md) |
+| Sprint 1 (histórico) | [03_revision_del_sprint_v_1_0_1.md](../Sprint%201/03_revision_del_sprint_v_1_0_1.md) |
 | Backlog / DoD | [01_transformando_a_agil_v_1_0_0.md](../../02%20Planificacion/01_transformando_a_agil_v_1_0_0.md) |
 
 ---
