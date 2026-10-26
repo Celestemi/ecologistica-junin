@@ -39,8 +39,9 @@ services:
       FORCE_HTTPS: ${FORCE_HTTPS:-false}
       AUTH_TOKEN_HOURS: ${AUTH_TOKEN_HOURS:-12}
       DATABASE_URL: postgresql+asyncpg://${DB_USER:-ecologistica}:${DB_PASSWORD:-ecologistica}@db:5432/${DB_NAME:-ecologistica}
-      OSRM_BASE_URL: ${OSRM_BASE_URL:-}
-      OSRM_REQUEST_TIMEOUT_SECONDS: ${OSRM_REQUEST_TIMEOUT_SECONDS:-5}
+      # Demo local: enrutamiento vial OSRM (sobrescribir vacío en prod si no usa calles).
+      OSRM_BASE_URL: ${OSRM_BASE_URL:-https://router.project-osrm.org}
+      OSRM_REQUEST_TIMEOUT_SECONDS: ${OSRM_REQUEST_TIMEOUT_SECONDS:-15}
     ports:
       - "8000:8000"
     depends_on:

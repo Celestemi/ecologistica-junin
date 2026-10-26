@@ -536,6 +536,7 @@ async def fleet_map(
     anchor = max((group[0].solucion for group in grouped), key=lambda item: item.id)
     deliveries = [detail for detail in details if detail.tipo_parada == TipoParada.DELIVERY]
     plates = {detail.vehiculo.placa for detail in details}
+    road_geometry = _details_have_road_geometry(details)
     metadata = RouteOptimizationMetadata(
         id=anchor.id,
         codigo=anchor.codigo,
@@ -552,6 +553,8 @@ async def fleet_map(
         feasible=True,
         pedidos=len(deliveries),
         vehiculos_usados=len(plates),
+        geometria_vial_disponible=road_geometry,
+        nota_distancia=_distance_note_for_fleet_map(road_geometry),
     )
     return RouteOptimizationGeoJSON(features=_feature_collection(details).features, metadata=metadata)
 
@@ -1244,15 +1247,37 @@ def _metadata(
     )
 
 
-def _solution_has_road_geometry(solution: SolucionRuta) -> bool:
-    for detail in solution.detalles:
+def _details_have_road_geometry(details: list[RutaDetalle]) -> bool:
+    for detail in details:
         if detail.geometria_tramo is None:
             continue
         segment = geometry_to_geojson(detail.geometria_tramo)
-        coords = segment.get("coordinates") or []
-        if isinstance(coords, list) and len(coords) >= 2:
+        coords = segment.get("coordinates") or ()
+        if len(coords) >= 2:
             return True
     return False
+
+
+def _solution_has_road_geometry(solution: SolucionRuta) -> bool:
+    return _details_have_road_geometry(list(solution.detalles))
+
+
+def _distance_note_for_fleet_map(road_geometry: bool) -> str:
+    settings = get_settings()
+    if (settings.osrm_base_url or "").strip():
+        if road_geometry:
+            return (
+                "Distancias, ETAs y trazado del mapa usan la red vial OpenStreetMap vía OSRM "
+                "(perfil driving, sin tráfico en vivo)."
+            )
+        return (
+            "OSRM está configurado pero no devolvió geometría vial para esta corrida. "
+            "El mapa muestra las paradas sin trazado entre ellas; revise OSRM_BASE_URL o la conectividad."
+        )
+    return (
+        "Configure OSRM_BASE_URL para distancias y trazado sobre calles. "
+        "Sin OSRM, el optimizador usa Haversine (cuerda geodésica), no longitud vial."
+    )
 
 
 def _distance_note_for_solution(solution: SolucionRuta) -> str:
