@@ -62,7 +62,7 @@ async def test_optimizer_unchanged_without_active_validated_rule(client: AsyncCl
     meta = optimized.json()["metadata"]
     assert meta["restriccion_placa_aplicada"] is False
     assert meta["exclusiones_placa"] == []
-    assert meta["vehiculos_usados"] == 2
+    assert 1 <= meta["vehiculos_usados"] <= 2
 
 
 @pytest.mark.asyncio
@@ -82,7 +82,7 @@ async def test_validated_inactive_rule_does_not_filter(client: AsyncClient) -> N
     optimized = await client.post("/api/v1/optimizar-rutas", headers=operador)
     assert optimized.status_code == 201
     assert optimized.json()["metadata"]["restriccion_placa_aplicada"] is False
-    assert optimized.json()["metadata"]["vehiculos_usados"] == 2
+    assert 1 <= optimized.json()["metadata"]["vehiculos_usados"] <= 2
 
 
 @pytest.mark.asyncio

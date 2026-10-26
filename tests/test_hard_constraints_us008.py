@@ -352,7 +352,7 @@ async def test_fleet_insufficient_409_without_persisting(client: AsyncClient) ->
             text("UPDATE pedidos SET peso_kg = 2500 WHERE codigo_pedido = 'PED-002'")
         )
     before = await client.get("/api/v1/pedidos", headers=operador)
-    pending_before = sum(1 for row in before.json() if row["estado"] == "pendiente")
+    pending_before = sum(1 for row in before.json() if row["estado"] == "pending")
 
     denied = await client.post("/api/v1/optimizar-rutas", headers=operador)
     assert denied.status_code == 409
@@ -365,7 +365,7 @@ async def test_fleet_insufficient_409_without_persisting(client: AsyncClient) ->
     assert count == 0
 
     after = await client.get("/api/v1/pedidos", headers=operador)
-    pending_after = sum(1 for row in after.json() if row["estado"] == "pendiente")
+    pending_after = sum(1 for row in after.json() if row["estado"] == "pending")
     assert pending_after == pending_before
 
 

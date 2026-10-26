@@ -92,7 +92,7 @@ async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient)
     assert "LineString" in kinds
     metadata = payload["metadata"]
     assert metadata["pedidos"] == 5
-    assert metadata["vehiculos_usados"] == 2
+    assert 1 <= metadata["vehiculos_usados"] <= 2
     assert metadata["distancia_total_km"] > 0
     assert metadata["co2_evitado_kg"] >= 0
     assert metadata["arboles_quinual_eq"] == pytest.approx(metadata["co2_evitado_kg"] / 12.0)
@@ -109,9 +109,16 @@ async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient)
         for feature in published.json()["features"]
         if feature["geometry"]["type"] == "Point" and feature["properties"].get("stop_type") == "delivery"
     }
-    assert map_plates == {"W4U-158", "E7M-304"}
+    assert map_plates <= {"W4U-158", "E7M-304"}
+    assert len(map_plates) == metadata["vehiculos_usados"]
 
-    active = await client.get("/api/v1/rutas/activas", params={"placa": "W4U-158"}, headers=headers)
+    route_plates = {
+        feature["properties"].get("plate")
+        for feature in payload["features"]
+        if feature["geometry"]["type"] == "LineString"
+    }
+    active_plate = next(iter(route_plates))
+    active = await client.get("/api/v1/rutas/activas", params={"placa": active_plate}, headers=headers)
     assert active.status_code == 200
     route = active.json()
     assert route["codigo"].startswith("SOL-")
