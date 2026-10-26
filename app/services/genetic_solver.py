@@ -584,7 +584,11 @@ def _adapt_order(order: Pedido) -> _OrderNode:
         longitude=longitude,
         altitude_m=float(order.altitud_msnm),
         weight_kg=float(order.peso_kg),
-        volume_m3=float(order.volumen_m3) if order.volumen_m3 is not None else None,
+        volume_m3=(
+            float(volume)
+            if (volume := getattr(order, "volumen_m3", None)) is not None
+            else None
+        ),
         window_start=_as_aware(order.ventana_inicio),
         window_end=_as_aware(order.ventana_fin),
     )

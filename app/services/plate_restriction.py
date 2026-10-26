@@ -61,17 +61,19 @@ async def load_config(session: AsyncSession) -> RestriccionPlacaConfig:
         .order_by(RestriccionPlacaConfig.id)
         .limit(1)
     )
-    if row is not None:
-        return row
-    config = RestriccionPlacaConfig(
-        ambito=AMBITO_PROYECTO,
-        etiqueta_validacion=ETIQUETA_PENDIENTE,
-        validada_normativamente=False,
-        activa=False,
-    )
-    session.add(config)
-    await session.flush()
-    return config
+    if row is None:
+        row = RestriccionPlacaConfig(
+            ambito=AMBITO_PROYECTO,
+            etiqueta_validacion=ETIQUETA_PENDIENTE,
+            validada_normativamente=False,
+            activa=False,
+        )
+        session.add(row)
+        await session.flush()
+    # `refresh` async carga `reglas` en este loop. Un acceso perezoso posterior
+    # dispara MissingGreenlet (no hay greenlet_spawn en AsyncSession).
+    await session.refresh(row, attribute_names=["reglas"])
+    return row
 
 
 def assert_can_activate(config: RestriccionPlacaConfig, activa: bool) -> None:

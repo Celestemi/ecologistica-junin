@@ -132,7 +132,7 @@ async def update_plate_restrictions(
         usuario=actor,
     )
     await session.commit()
-    await session.refresh(config)
+    config = await load_config(session)
     return _to_read(config)
 
 

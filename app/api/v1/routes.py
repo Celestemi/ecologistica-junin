@@ -1183,6 +1183,8 @@ def _metadata(
         solver_elapsed_seconds=solved.solver_elapsed_seconds,
         ga_elapsed_seconds=solved.ga_elapsed_seconds,
         optimizer_stop_reason=solved.stop_reason,
+        jornada_max_min=get_settings().max_shift_minutes,
+        jornada_normativa_validada=get_settings().shift_limit_normative_validated,
     )
 
 

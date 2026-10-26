@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 from app.core.emissions import quinual_equivalent
 from app.core.geo import geometry_to_geojson, linestring_geojson
@@ -138,18 +138,15 @@ class PedidoCreate(BaseModel):
 
 
 class PedidoWindowUpdate(BaseModel):
-    """Actualización de ventana horaria (US-006)."""
+    """Actualización de ventana horaria (US-006).
+
+    El orden cronológico lo valida el servicio y responde HTTP 400 con el
+    mensaje de negocio. Un validador de esquema lo convertiría en un 400
+    genérico sin la frase «posterior».
+    """
 
     ventana_inicio: datetime
     ventana_fin: datetime
-
-    @field_validator("ventana_fin")
-    @classmethod
-    def window_is_ordered(cls, value: datetime, info) -> datetime:
-        start = info.data.get("ventana_inicio")
-        if isinstance(start, datetime) and _as_lima(value) <= _as_lima(start):
-            raise ValueError("La ventana de fin debe ser posterior a la de inicio.")
-        return value
 
 
 class PedidoRead(BaseModel):
@@ -167,6 +164,11 @@ class PedidoRead(BaseModel):
     ventana_fin: datetime
     estado: EstadoPedido
     estado_ubicacion: EstadoUbicacion
+
+    @field_serializer("ventana_inicio", "ventana_fin")
+    def serialize_windows(self, value: datetime) -> str:
+        """La API publica la hora civil de Huancayo, no el instante en UTC."""
+        return _as_lima(value).isoformat()
 
     @field_validator("ubicacion", mode="before")
     @classmethod
@@ -552,6 +554,8 @@ class RouteOptimizationMetadata(BaseModel):
     solver_elapsed_seconds: float | None = None
     ga_elapsed_seconds: float | None = None
     optimizer_stop_reason: str | None = None
+    jornada_max_min: float | None = None
+    jornada_normativa_validada: bool = False
 
 
 class RouteOptimizationGeoJSON(BaseModel):

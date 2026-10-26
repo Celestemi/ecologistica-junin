@@ -14,6 +14,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from starlette.websockets import WebSocketState
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -49,6 +50,13 @@ DESK_ROLES = {RolUsuario.ADMIN, RolUsuario.OPERADOR, RolUsuario.GERENTE, RolUsua
 FIELD_ROLES = {RolUsuario.OPERADOR, RolUsuario.CONDUCTOR}
 
 
+async def _reject_socket(websocket: WebSocket) -> None:
+    """Cierra con 1008 después de accept. Sin accept, el cliente recibe EndOfStream."""
+    if websocket.application_state != WebSocketState.CONNECTED:
+        await websocket.accept()
+    await websocket.close(code=1008)
+
+
 async def _socket_user(websocket: WebSocket) -> Usuario | None:
     payload = read_access_token(websocket.query_params.get("token", ""))
     if payload is None:
@@ -61,6 +69,7 @@ async def _socket_user(websocket: WebSocket) -> Usuario | None:
         user = await session.get(Usuario, user_id)
         if user is None or not user.activo:
             return None
+        session.expunge(user)
         return user
 
 
@@ -77,13 +86,13 @@ async def driver_socket(websocket: WebSocket, driver_id: str) -> None:
     """Recibe coordenadas e imprevistos y empuja la ETA recalculada."""
     actor = await _staff_socket(websocket, FIELD_ROLES)
     if not _valid_driver_id(driver_id) or actor is None:
-        await websocket.close(code=1008)
+        await _reject_socket(websocket)
         return
     if actor.rol == RolUsuario.CONDUCTOR:
         async with async_session_factory() as session:
             allowed = await conductor_may_drive(session, actor.id, driver_id)
         if not allowed:
-            await websocket.close(code=1008)
+            await _reject_socket(websocket)
             return
     await manager.connect_driver(driver_id, websocket)
     try:
@@ -108,7 +117,7 @@ async def tracking_socket(websocket: WebSocket, order_code: str) -> None:
     channel_code = order_code
     if order_code == ADMIN_CHANNEL:
         if await _staff_socket(websocket, DESK_ROLES) is None:
-            await websocket.close(code=1008)
+            await _reject_socket(websocket)
             return
     elif is_tracking_token(order_code):
         async with async_session_factory() as session:
@@ -116,11 +125,11 @@ async def tracking_socket(websocket: WebSocket, order_code: str) -> None:
                 select(Pedido).where(Pedido.token_seguimiento == order_code)
             )
         if order is None:
-            await websocket.close(code=1008)
+            await _reject_socket(websocket)
             return
         channel_code = order.codigo_pedido
     elif not _valid_order_code(order_code) or await _staff_socket(websocket, DESK_ROLES) is None:
-        await websocket.close(code=1008)
+        await _reject_socket(websocket)
         return
     await manager.connect_tracker(channel_code, websocket)
     try:

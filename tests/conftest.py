@@ -27,6 +27,7 @@ def _with_database(url: str, database: str) -> str:
 
 _TEST_DATABASE = "ecologistica_test"
 os.environ["DATABASE_URL"] = _with_database(_SOURCE_URL, _TEST_DATABASE)
+os.environ["ECOLOGISTICA_PYTEST"] = "1"
 
 
 def _assert_test_database_isolated() -> None:

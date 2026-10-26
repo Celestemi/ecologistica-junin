@@ -98,7 +98,7 @@ async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient)
     assert metadata["arboles_quinual_eq"] == pytest.approx(metadata["co2_evitado_kg"] / 12.0)
     assert metadata["quinual_kg_co2_por_ano"] == 12.0
 
-    pending = await client.get("/api/v1/pedidos")
+    pending = await client.get("/api/v1/pedidos", headers=headers)
     assert pending.status_code == 200
     assert pending.json() == []
 
