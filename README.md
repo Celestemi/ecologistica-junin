@@ -6,7 +6,7 @@
 [![React](https://img.shields.io/badge/React-18.0-61DAFB.svg)](https://reactjs.org/)
 [![PostGIS](https://img.shields.io/badge/PostgreSQL-15%20%2B%20PostGIS%203-336791.svg)](https://postgis.net/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](#)
-[![Sprint](https://img.shields.io/badge/Sprint-1%20Completado-success.svg)](#)
+[![Sprint](https://img.shields.io/badge/Sprint-2%20Cierre%20documental-yellow.svg)](#)
 
 Sistema web y móvil (PWA) de optimización de rutas de reparto de última milla para **DistriRápido S.A.C.** en los distritos de **Huancayo, El Tambo y Chilca** (provincia de Huancayo, Junín). Integra algoritmos de ruteo vehicular con ventanas de tiempo (**VRPTW**) y criterios ecológicos (**Green VRP**).
 
@@ -55,9 +55,15 @@ ecologistica-junin/
 │   │   ├── 📄 03_registro_de_riesgos_v_1_0_0.md
 │   │   └── 📄 04_presupuesto_del_proyecto_v_1_0_0.md
 │   └── 📁 03 Implementación/
-│       ├── 📄 01_informe_de_estado_del_proyecto_v_1_0_0.md
-│       ├── 📄 02_registro_de_impedimentos_v_1_0_0.md
-│       └── 📄 03_revision_del_sprint_v_1_0_0.md
+│       ├── 📄 01_informe_de_estado_del_proyecto_v_1_0_1.md
+│       ├── 📄 02_registro_de_impedimentos_v_1_0_1.md
+│       ├── 📄 03_revision_del_sprint_v_1_0_1.md
+│       ├── 📄 04_retrospectiva_del_sprint_V_1_0_1.md
+│       └── 📁 Sprint 2/
+│           ├── 📄 01_informe_de_estado_del_proyecto_v_1_0_0.md
+│           ├── 📄 02_registro_de_impedimentos_v_1_0_0.md
+│           ├── 📄 03_revision_del_sprint_v_1_0_0.md
+│           └── 📄 04_retrospectiva_del_sprint_v_1_0_0.md
 └── 📁 EcologisticaJunin/
     ├── 📁 backend/
     └── 📁 frontend/
@@ -101,13 +107,24 @@ ecologistica-junin/
 ---
 
 ### 🚀 Fase 3: Implementación y Sprints (`docs/03 Implementación/`)
-* [01_informe_de_estado_del_proyecto_v_1_0_1.md](<docs/03 Implementación/01_informe_de_estado_del_proyecto_v_1_0_1.md>) — *Informe de estado del Sprint 1 (Plantilla 1, cierre documental 2026-10-26).*
-* [02_registro_de_impedimentos_v_1_0_1.md](<docs/03 Implementación/02_registro_de_impedimentos_v_1_0_1.md>) — *Registro y trazabilidad de impedimentos (Plantilla 2).*
-* [03_revision_del_sprint_v_1_0_1.md](<docs/03 Implementación/03_revision_del_sprint_v_1_0_1.md>) — *Revisión del Sprint con matriz de historias y evidencias (Plantilla 3).*
-* [04_retrospectiva_del_sprint_V_1_0_1.md](<docs/03 Implementación/04_retrospectiva_del_sprint_V_1_0_1.md>) — *Retrospectiva Sprint 1 (Plantilla 4).*
-* [REPORTE_VERIFICACION_DOD_SPRINT_1.md](REPORTE_VERIFICACION_DOD_SPRINT_1.md) — *Verificación técnica Definition of Done (no sustituye actas; complementa V_1_0_1).*
-* [PLAN_IMPLEMENTACION_SPRINT_1.md](PLAN_IMPLEMENTACION_SPRINT_1.md) — *Plan de implementación y trazabilidad código ↔ historias.*
+
+#### Sprint 1 — Fundación, flota y pedidos
+* [01_informe_de_estado_del_proyecto_v_1_0_1.md](<docs/03 Implementación/01_informe_de_estado_del_proyecto_v_1_0_1.md>) — *Informe de estado (Plantilla 1, cierre documental 2026-10-26).*
+* [02_registro_de_impedimentos_v_1_0_1.md](<docs/03 Implementación/02_registro_de_impedimentos_v_1_0_1.md>) — *Registro de impedimentos (Plantilla 2).*
+* [03_revision_del_sprint_v_1_0_1.md](<docs/03 Implementación/03_revision_del_sprint_v_1_0_1.md>) — *Revisión del sprint con matriz de historias (Plantilla 3).*
+* [04_retrospectiva_del_sprint_V_1_0_1.md](<docs/03 Implementación/04_retrospectiva_del_sprint_V_1_0_1.md>) — *Retrospectiva (Plantilla 4).*
+* [REPORTE_VERIFICACION_DOD_SPRINT_1.md](REPORTE_VERIFICACION_DOD_SPRINT_1.md) — *Verificación DoD Sprint 1.*
+* [PLAN_IMPLEMENTACION_SPRINT_1.md](PLAN_IMPLEMENTACION_SPRINT_1.md) — *Plan de implementación Sprint 1.*
 * Versiones anteriores (histórico): [V_1_0_0](<docs/03 Implementación/01_informe_de_estado_del_proyecto_v_1_0_0.md>) informe, [impedimentos](<docs/03 Implementación/02_registro_de_impedimentos_v_1_0_0.md>), [revisión](<docs/03 Implementación/03_revision_del_sprint_v_1_0_0.md>), [retrospectiva](<docs/03 Implementación/04_retrospectiva_del_sprint_V_1_0_0.md>).
+
+#### Sprint 2 — Geocodificación y motor de rutas (`docs/03 Implementación/Sprint 2/`)
+* [01_informe_de_estado_del_proyecto_v_1_0_0.md](<docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md>) — *Informe de estado Sprint 2 (2026-10-26).*
+* [02_registro_de_impedimentos_v_1_0_0.md](<docs/03 Implementación/Sprint 2/02_registro_de_impedimentos_v_1_0_0.md>) — *Impedimentos Sprint 2 (IMP-010…; referencia IMP-001…009 en Sprint 1).*
+* [03_revision_del_sprint_v_1_0_0.md](<docs/03 Implementación/Sprint 2/03_revision_del_sprint_v_1_0_0.md>) — *Revisión del Sprint 2 con matriz US-005…EN-001.*
+* [04_retrospectiva_del_sprint_v_1_0_0.md](<docs/03 Implementación/Sprint 2/04_retrospectiva_del_sprint_v_1_0_0.md>) — *Retrospectiva Sprint 2 (borrador técnico; validación de equipo pendiente).*
+* [VERIFICACION_FINAL_SPRINT_2.md](VERIFICACION_FINAL_SPRINT_2.md) — *Auditoría QA integral Sprint 2.*
+* [PLAN_IMPLEMENTACION_SPRINT_2.md](PLAN_IMPLEMENTACION_SPRINT_2.md) — *Plan de implementación Sprint 2 (34 SP).*
+* [REPORTE_RENDIMIENTO_EN_001.md](REPORTE_RENDIMIENTO_EN_001.md) — *Métricas EN-001 / RNF-001 (solver).*
 
 ---
 
