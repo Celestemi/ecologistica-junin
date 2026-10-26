@@ -60,6 +60,8 @@ def _order(
     lat: float,
     start_h: int,
     end_h: int,
+    start_m: int = 0,
+    end_m: int = 0,
     weight_kg: float = 10.0,
 ) -> SimpleNamespace:
     return SimpleNamespace(
@@ -70,8 +72,8 @@ def _order(
         altitud_msnm=3270.0,
         peso_kg=weight_kg,
         volumen_m3=None,
-        ventana_inicio=DAY.replace(hour=start_h, minute=0),
-        ventana_fin=DAY.replace(hour=end_h, minute=0),
+        ventana_inicio=DAY.replace(hour=start_h, minute=start_m),
+        ventana_fin=DAY.replace(hour=end_h, minute=end_m),
     )
 
 
@@ -143,8 +145,8 @@ def test_sequential_baseline_reported_not_as_hard_gate() -> None:
 
 def test_infeasible_windows_not_marked_feasible() -> None:
     orders = [
-        _order(1, lon=-75.20486, lat=-12.06513, start_h=8, end_h=8, weight_kg=10),
-        _order(2, lon=-75.20550, lat=-12.06600, start_h=8, end_h=8, weight_kg=10),
+        _order(1, lon=-75.20486, lat=-12.06513, start_h=8, end_h=8, start_m=0, end_m=1, weight_kg=10),
+        _order(2, lon=-75.20550, lat=-12.06600, start_h=8, end_h=8, start_m=0, end_m=1, weight_kg=10),
     ]
     solution = solve_vrptw(
         orders,

@@ -201,7 +201,7 @@ def test_precheck_volume_exact_and_over() -> None:
     assert ok.feasible is True
     assert ok.excess_m3 == 0.0
 
-    heavy = [_pedido(1, "A", 1.0, 6.0)]
+    heavy = [_pedido(1, "A", 1.0, 11.0)]
     bad = precheck_fleet_capacity(heavy, vehicles)  # type: ignore[arg-type]
     assert bad.feasible is False
     assert bad.excess_m3 == pytest.approx(1.0)

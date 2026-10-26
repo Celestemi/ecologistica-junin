@@ -182,4 +182,46 @@ async def apply_migrations(connection: AsyncConnection) -> None:
 
 
 def _split_sql(script: str) -> list[str]:
-    return [chunk.strip() for chunk in script.split(";") if chunk.strip()]
+    """Divide un script SQL en sentencias sin partir bloques `DO $$ ... $$`."""
+    statements: list[str] = []
+    buf: list[str] = []
+    i = 0
+    n = len(script)
+    dollar_tag: str | None = None
+
+    while i < n:
+        if dollar_tag is not None:
+            if script.startswith(dollar_tag, i):
+                buf.append(dollar_tag)
+                i += len(dollar_tag)
+                dollar_tag = None
+                continue
+            buf.append(script[i])
+            i += 1
+            continue
+
+        if script[i] == "$":
+            j = i + 1
+            while j < n and script[j] != "$":
+                j += 1
+            if j < n:
+                dollar_tag = script[i : j + 1]
+                buf.append(dollar_tag)
+                i = j + 1
+                continue
+
+        if script[i] == ";":
+            stmt = "".join(buf).strip()
+            if stmt:
+                statements.append(stmt)
+            buf = []
+            i += 1
+            continue
+
+        buf.append(script[i])
+        i += 1
+
+    tail = "".join(buf).strip()
+    if tail:
+        statements.append(tail)
+    return statements
