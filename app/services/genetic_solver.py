@@ -10,7 +10,7 @@ Emisión de un tramo, con Δh en metros de subida:
     E = distancia_km × emision_base_g_km × (1 + penalizacion_pendiente × max(0, Δh / 100))
 
 El tiempo de viaje usa 25 km/h sobre distancia geodésica (Haversine), salvo tramos
-con OSRM configurado. No representa longitud vial real salvo esos tramos.
+con OSRM configurado (duración de la red vial). No implica tráfico en tiempo real.
 Llegar después de `ventana_fin` y exceder `capacidad_kg` reciben una penalización
 alta. Un vehículo grande que entra al Centro Histórico también la recibe.
 """
@@ -99,6 +99,7 @@ class StopItinerary:
     delivery_index: int | None = None
     distance_model: ModeloDistancia = ModeloDistancia.GEODESICA
     matrix_trusted: bool = True
+    leg_coordinates: tuple[tuple[float, float], ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -256,6 +257,7 @@ class _Problem:
         depot_altitude_m: float,
         depot_name: str,
         distance_adjuster: Callable[[float, float, float, float, float], float | None] | None = None,
+        routing_cache: Any | None = None,
     ) -> None:
         self.orders = orders
         self.vehicles = vehicles
@@ -263,11 +265,14 @@ class _Problem:
         self.depot_lon = depot_lon
         self.depot_altitude_m = depot_altitude_m
         self.depot_name = depot_name
+        self.routing_cache = routing_cache
         self.order_ids = [order.id for order in orders]
         self.orders_by_id = {order.id: order for order in orders}
         self.id_to_index = {order.id: index for index, order in enumerate(orders)}
         latitudes = [depot_lat, *[order.latitude for order in orders]]
         longitudes = [depot_lon, *[order.longitude for order in orders]]
+        self._latitudes = latitudes
+        self._longitudes = longitudes
         altitudes = [depot_altitude_m, *[order.altitude_m for order in orders]]
         size = len(latitudes)
         self.distance_km = [
@@ -320,6 +325,34 @@ class _Problem:
         if order_id is None:
             return 0
         return self.id_to_index[order_id] + 1
+
+    def leg_travel_minutes(self, origin: int, destination: int) -> float:
+        distance = self.distance_km[origin][destination]
+        if self.routing_cache is not None:
+            leg = self.routing_cache.get_leg(
+                self._latitudes[origin],
+                self._longitudes[origin],
+                self._latitudes[destination],
+                self._longitudes[destination],
+            )
+            if leg is not None:
+                return leg.duration_minutes
+        return travel_minutes(distance)
+
+    def leg_coordinates(
+        self, origin: int, destination: int
+    ) -> tuple[tuple[float, float], ...] | None:
+        if self.routing_cache is None:
+            return None
+        leg = self.routing_cache.get_leg(
+            self._latitudes[origin],
+            self._longitudes[origin],
+            self._latitudes[destination],
+            self._longitudes[destination],
+        )
+        if leg is None:
+            return None
+        return leg.coordinates
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -405,6 +438,7 @@ def solve_vrptw(
     seed: int = 42,
     service_minutes: float = SERVICE_MINUTES,
     distance_adjuster: Callable[[float, float, float, float, float], float | None] | None = None,
+    routing_cache: Any | None = None,
     time_budget_seconds: float | None = None,
 ) -> RouteSolution:
     """Resuelve el VRPTW y devuelve el itinerario, el CO2 y el ahorro frente al FIFO.
@@ -425,7 +459,13 @@ def solve_vrptw(
     )
     budget = max(0.0, float(budget)) if budget is not None else None
 
-    problem = _build_problem(orders, vehicles, depot, distance_adjuster=distance_adjuster)
+    problem = _build_problem(
+        orders,
+        vehicles,
+        depot,
+        distance_adjuster=distance_adjuster,
+        routing_cache=routing_cache,
+    )
     if not problem.orders:
         return _empty_solution(generations, population_size, seed)
 
@@ -546,6 +586,7 @@ def _build_problem(
     vehicles: Sequence[Vehiculo],
     depot: Deposito,
     distance_adjuster: Callable[[float, float, float, float, float], float | None] | None = None,
+    routing_cache: Any | None = None,
 ) -> _Problem:
     active = [vehicle for vehicle in vehicles if getattr(vehicle, "activo", True)]
     if not active:
@@ -571,6 +612,7 @@ def _build_problem(
         depot_altitude_m=float(depot.altitud_msnm),
         depot_name=str(depot.nombre),
         distance_adjuster=distance_adjuster,
+        routing_cache=routing_cache,
     )
 
 
@@ -960,7 +1002,7 @@ def _schedule_vehicle(
         )
 
     first = orders_by_id[order_ids[0]]
-    first_travel = travel_minutes(problem.distance_km[0][problem.node_index(first.id)])
+    first_travel = problem.leg_travel_minutes(0, problem.node_index(first.id))
     departure = first.window_start - timedelta(minutes=first_travel)
     clock = departure
     previous = 0
@@ -1047,7 +1089,8 @@ def _visit(
     delta_h = problem.elevation_delta_m[previous][current]
     trusted = problem.matrix_trusted[previous][current]
     leg_model = problem.distance_model[previous][current]
-    minutes = travel_minutes(distance)
+    minutes = problem.leg_travel_minutes(previous, current)
+    leg_coordinates = problem.leg_coordinates(previous, current)
     arrival = clock + timedelta(minutes=minutes)
     enters = vehicle.large and problem.enters_historic[previous][current]
     gain = positive_elevation_gain_m(0.0, delta_h)
@@ -1074,6 +1117,7 @@ def _visit(
             delivery_index=delivery_index,
             distance_model=leg_model,
             matrix_trusted=False,
+            leg_coordinates=leg_coordinates,
         )
         return stop, service_start_after_arrival(arrival, order.window_start, service_minutes)
     eta_state, wait_min, late = classify_delivery_arrival(
@@ -1103,6 +1147,7 @@ def _visit(
         delivery_index=delivery_index,
         distance_model=leg_model,
         matrix_trusted=True,
+        leg_coordinates=leg_coordinates,
     )
     return stop, service_start_after_arrival(arrival, order.window_start, service_minutes)
 
@@ -1117,7 +1162,8 @@ def _return_to_depot(
 ) -> tuple[StopItinerary, datetime]:
     distance = problem.distance_km[previous][0]
     delta_h = problem.elevation_delta_m[previous][0]
-    minutes = travel_minutes(distance)
+    minutes = problem.leg_travel_minutes(previous, 0)
+    leg_coordinates = problem.leg_coordinates(previous, 0)
     arrival = clock + timedelta(minutes=minutes)
     enters = vehicle.large and problem.enters_historic[previous][0]
     gain = positive_elevation_gain_m(0.0, delta_h)
@@ -1135,6 +1181,7 @@ def _return_to_depot(
         eta_estado=EstadoEta.CALCULADO,
         distance_model=problem.distance_model[previous][0],
         matrix_trusted=problem.matrix_trusted[previous][0],
+        leg_coordinates=leg_coordinates,
     )
     return stop, arrival
 
@@ -1153,6 +1200,7 @@ def _depot_stop(
     eta_estado: EstadoEta = EstadoEta.CALCULADO,
     distance_model: ModeloDistancia = ModeloDistancia.GEODESICA,
     matrix_trusted: bool = True,
+    leg_coordinates: tuple[tuple[float, float], ...] | None = None,
 ) -> StopItinerary:
     return StopItinerary(
         sequence=sequence,
@@ -1173,6 +1221,7 @@ def _depot_stop(
         eta_estado=eta_estado,
         distance_model=distance_model,
         matrix_trusted=matrix_trusted,
+        leg_coordinates=leg_coordinates,
     )
 
 

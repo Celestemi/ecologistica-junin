@@ -86,6 +86,11 @@ export function Sidebar({
             Sin asignar: {solution.metadata.pedidos_sin_asignar.join(", ")}
           </p>
         ) : null}
+        {solution?.metadata.geometria_vial_disponible === false ? (
+          <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-950">
+            Trazado vial no disponible: configure OSRM o revise la conectividad. No se muestran líneas rectas como calles.
+          </p>
+        ) : null}
         {solution?.metadata.nota_distancia ? (
           <p className="mt-2 text-[11px] leading-snug text-stone-500">{solution.metadata.nota_distancia}</p>
         ) : null}

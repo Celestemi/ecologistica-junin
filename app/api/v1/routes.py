@@ -28,7 +28,7 @@ from app.api.deps import require_roles
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.emissions import quinual_equivalent
-from app.core.geo import geometry_to_geojson, point_wkt
+from app.core.geo import geometry_to_geojson, linestring_wkt, point_wkt
 from app.models.domain import Deposito, Pedido, RutaDetalle, SolucionRuta, Vehiculo
 from app.models.enums import (
     EstadoEta,
@@ -87,7 +87,7 @@ from app.services.route_constraints import (
     validate_for_publication,
 )
 from app.services.optimizer_runtime import optimization_time_budget_seconds, resolve_ga_parameters
-from app.services.routing_matrix import active_distance_adjuster
+from app.services.routing_matrix import prepare_osrm_routing
 from app.services.sequence_eta import recalculate_solution_etas
 from app.services.plate_restriction import (
     ExclusionPlaca,
@@ -672,6 +672,7 @@ async def optimize_routes(
         )
     try:
         generations, population_size = resolve_ga_parameters(len(orders), len(vehicles))
+        distance_adjuster, routing_cache = prepare_osrm_routing()
         solved = solve_vrptw(
             orders,
             vehicles,
@@ -679,7 +680,8 @@ async def optimize_routes(
             generations=generations,
             population_size=population_size,
             seed=get_settings().optimizer_seed,
-            distance_adjuster=active_distance_adjuster(),
+            distance_adjuster=distance_adjuster,
+            routing_cache=routing_cache,
             time_budget_seconds=optimization_time_budget_seconds(),
         )
     except ValueError as exc:
@@ -1159,14 +1161,11 @@ def _detail_from_stop(
     previous: tuple[float, float] | None,
 ) -> RutaDetalle:
     line = None
-    if previous is not None and stop.distance_km > 0:
-        line = WKTElement(
-            (
-                f"LINESTRING({previous[0]} {previous[1]}, "
-                f"{stop.longitude} {stop.latitude})"
-            ),
-            srid=get_settings().storage_srid,
-        )
+    if stop.leg_coordinates and len(stop.leg_coordinates) >= 2:
+        line = linestring_wkt(stop.leg_coordinates)
+    elif previous is not None and stop.distance_km > 0:
+        # Sin geometría OSRM: no persistir cuerda recta como si fuera calle.
+        line = None
     distance_m = stop.distance_km * 1000.0
     slope = (stop.elevation_delta_m / distance_m) * 100.0 if distance_m > 0 else 0.0
     return RutaDetalle(
@@ -1240,6 +1239,37 @@ def _metadata(
         optimizer_stop_reason=solved.stop_reason,
         jornada_max_min=get_settings().max_shift_minutes,
         jornada_normativa_validada=get_settings().shift_limit_normative_validated,
+        geometria_vial_disponible=_solution_has_road_geometry(solution),
+        nota_distancia=_distance_note_for_solution(solution),
+    )
+
+
+def _solution_has_road_geometry(solution: SolucionRuta) -> bool:
+    for detail in solution.detalles:
+        if detail.geometria_tramo is None:
+            continue
+        segment = geometry_to_geojson(detail.geometria_tramo)
+        coords = segment.get("coordinates") or []
+        if isinstance(coords, list) and len(coords) >= 2:
+            return True
+    return False
+
+
+def _distance_note_for_solution(solution: SolucionRuta) -> str:
+    settings = get_settings()
+    if (settings.osrm_base_url or "").strip():
+        if _solution_has_road_geometry(solution):
+            return (
+                "Distancias, ETAs y trazado del mapa usan la red vial OpenStreetMap vía OSRM "
+                "(perfil driving, sin tráfico en vivo)."
+            )
+        return (
+            "OSRM está configurado pero no devolvió geometría vial para esta corrida. "
+            "El mapa muestra las paradas sin trazado entre ellas; revise OSRM_BASE_URL o la conectividad."
+        )
+    return (
+        "Configure OSRM_BASE_URL para distancias y trazado sobre calles. "
+        "Sin OSRM, el optimizador usa Haversine (cuerda geodésica), no longitud vial."
     )
 
 

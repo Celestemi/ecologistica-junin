@@ -1,5 +1,6 @@
 """Conversión entre GeoJSON (lon, lat) y elementos GeoAlchemy2."""
 
+from collections.abc import Sequence
 from typing import Any
 
 from geoalchemy2.elements import WKBElement, WKTElement
@@ -32,3 +33,15 @@ def linestring_geojson(coordinates: list[list[float]]) -> dict[str, Any]:
     if len(coordinates) < 2:
         raise ValueError("Un LineString necesita al menos dos puntos.")
     return mapping(LineString(coordinates))
+
+
+def linestring_wkt(coordinates: Sequence[tuple[float, float] | list[float]]) -> WKTElement:
+    """LineString WGS84 desde pares (lon, lat)."""
+    if len(coordinates) < 2:
+        raise ValueError("Un LineString necesita al menos dos puntos.")
+    parts = []
+    for pair in coordinates:
+        lon, lat = float(pair[0]), float(pair[1])
+        parts.append(f"{lon} {lat}")
+    srid = get_settings().storage_srid
+    return WKTElement(f"LINESTRING({', '.join(parts)})", srid=srid)

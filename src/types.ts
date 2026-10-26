@@ -98,6 +98,7 @@ export type RouteMetadata = {
   rn008_meta_co2_cumplida?: boolean | null;
   pedidos_sin_asignar?: string[];
   nota_distancia?: string;
+  geometria_vial_disponible?: boolean;
 };
 
 export type RouteOptimization = {

@@ -125,11 +125,18 @@ async def test_allowed_vehicle_still_routes(client: AsyncClient) -> None:
         },
     )
     optimized = await client.post("/api/v1/optimizar-rutas", headers=operador)
+    payload = optimized.json()
     plates = {
         feature["properties"].get("plate")
-        for feature in optimized.json()["features"]
+        for feature in payload["features"]
         if feature["geometry"]["type"] == "LineString"
     }
+    if not plates:
+        plates = {
+            feature["properties"].get("plate")
+            for feature in payload["features"]
+            if feature["properties"].get("stop_type") == "delivery"
+        }
     assert "E7M-304" in plates
     assert "W4U-158" not in plates
 

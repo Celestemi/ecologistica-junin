@@ -147,10 +147,16 @@ async def test_historical_routes_remain_after_inactivation(client: AsyncClient) 
     optimized = await client.post("/api/v1/optimizar-rutas", headers=operador)
     assert optimized.status_code == 201
 
-    plate = next(
+    features = optimized.json()["features"]
+    line_plates = [
         feature["properties"]["plate"]
-        for feature in optimized.json()["features"]
-        if feature["geometry"]["type"] == "LineString"
+        for feature in features
+        if feature["geometry"]["type"] == "LineString" and feature["properties"].get("plate")
+    ]
+    plate = line_plates[0] if line_plates else next(
+        feature["properties"]["plate"]
+        for feature in features
+        if feature["properties"].get("stop_type") == "delivery"
     )
     fleet = await client.get("/api/v1/flota", headers=operador)
     vehicle = next(item for item in fleet.json() if item["placa"] == plate)

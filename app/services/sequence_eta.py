@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.models.domain import Deposito, Pedido, RutaDetalle, SolucionRuta, Vehiculo
 from app.models.enums import EstadoPedido, TipoParada
 from app.services.genetic_solver import SERVICE_MINUTES, StopItinerary, _build_problem, _schedule_vehicle
-from app.services.routing_matrix import active_distance_adjuster
+from app.services.routing_matrix import prepare_osrm_routing
 
 
 async def recalculate_solution_etas(session: AsyncSession, solution_id: int) -> SolucionRuta:
@@ -43,11 +43,13 @@ async def recalculate_solution_etas(session: AsyncSession, solution_id: int) -> 
     vehicle_ids = {detail.vehiculo_id for detail in solution.detalles}
     vehicles = list(await session.scalars(select(Vehiculo).where(Vehiculo.id.in_(vehicle_ids))))
 
+    distance_adjuster, routing_cache = prepare_osrm_routing()
     problem = _build_problem(
         orders,
         vehicles,
         depot,
-        distance_adjuster=active_distance_adjuster(),
+        distance_adjuster=distance_adjuster,
+        routing_cache=routing_cache,
     )
     vehicles_by_id = {vehicle.id: vehicle for vehicle in problem.vehicles}
     orders_by_id = {order.id: order for order in problem.orders}

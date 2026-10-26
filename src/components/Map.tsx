@@ -67,11 +67,17 @@ function lineFeatures(solution: RouteOptimization | null): RouteFeature[] {
   if (!solution) {
     return [];
   }
-  return solution.features.filter((feature) => feature.geometry.type === "LineString");
+  return solution.features.filter(
+    (feature) =>
+      feature.geometry.type === "LineString"
+      && feature.properties.geometry_kind === "road"
+      && feature.geometry.coordinates.length >= 2,
+  );
 }
 
 export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate, onSelectStop, onMapFailure }: MapProps) {
-  const lines = lineFeatures(solution).filter((feature) => !selectedPlate || feature.properties.plate === selectedPlate);
+  const roadLines = lineFeatures(solution);
+  const lines = roadLines.filter((feature) => !selectedPlate || feature.properties.plate === selectedPlate);
   const points = pointFeatures(solution).filter((feature) => !selectedPlate || feature.properties.plate === selectedPlate);
   const plates = useMemo(() => {
     const found = new Set<string>();
@@ -194,7 +200,12 @@ export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate,
           );
         })}
       </MapContainer>
-      <Legend plates={plates} selectedPlate={selectedPlate} onSelectPlate={onSelectPlate} />
+      <Legend
+        plates={plates}
+        selectedPlate={selectedPlate}
+        onSelectPlate={onSelectPlate}
+        showRoadWarning={plates.length > 0 && roadLines.length === 0}
+      />
     </div>
   );
 }
@@ -223,7 +234,17 @@ function DeliveryPopup({
   );
 }
 
-function Legend({ plates, selectedPlate, onSelectPlate }: { plates: string[]; selectedPlate: string | null; onSelectPlate: (plate: string) => void }) {
+function Legend({
+  plates,
+  selectedPlate,
+  onSelectPlate,
+  showRoadWarning,
+}: {
+  plates: string[];
+  selectedPlate: string | null;
+  onSelectPlate: (plate: string) => void;
+  showRoadWarning: boolean;
+}) {
   return (
     <div className="pointer-events-none absolute bottom-3 left-3 z-[500] max-w-[14rem] rounded-2xl bg-white/95 px-3 py-2 text-xs text-stone-700 shadow-lg ring-1 ring-stone-200">
       <p className="mb-1 font-semibold text-stone-900">Cómo leer el mapa</p>
@@ -240,6 +261,9 @@ function Legend({ plates, selectedPlate, onSelectPlate }: { plates: string[]; se
       </ul>
       {plates.length > 0 ? (
         <p className="mt-2 text-stone-500">El número dentro del punto es el orden de la parada.</p>
+      ) : null}
+      {showRoadWarning ? (
+        <p className="mt-2 text-amber-800">Sin trazado vial en el mapa (OSRM no disponible o sin geometría).</p>
       ) : null}
       {plates.length > 0 ? (
         <ul className="mt-2 space-y-1 border-t border-stone-200 pt-2">

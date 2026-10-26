@@ -89,6 +89,7 @@ class Settings(BaseSettings):
     optimizer_seed: int = 42
     # Vacío = solo distancia geodésica (Haversine). Si apunta a OSRM, los tramos fallidos no publican ETA.
     osrm_base_url: str = ""
+    osrm_request_timeout_seconds: float = 5.0
     # EN-001 / RNF-001 — SLA de generación (solver + API en pruebas documentadas).
     optimizer_time_budget_seconds: float = 45.0
     optimizer_max_generations: int = 100

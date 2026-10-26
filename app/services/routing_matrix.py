@@ -9,12 +9,9 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from typing import Any
-from urllib.error import URLError
-from urllib.parse import urlencode
-from urllib.request import urlopen
 
 from app.core.config import get_settings
+from app.services.osrm_client import OsrmLegCache, create_osrm_cache
 
 logger = logging.getLogger("ecologistica.routing_matrix")
 
@@ -32,11 +29,11 @@ def geodesic_adjuster(
     return max(0.0, haversine_km)
 
 
-def optional_osrm_adjuster() -> DistanceAdjuster | None:
-    """Adaptador OSRM si hay URL; None = solo geodésica en el solver."""
-    base = (get_settings().osrm_base_url or "").strip().rstrip("/")
-    if not base:
-        return None
+def prepare_osrm_routing() -> tuple[DistanceAdjuster | None, OsrmLegCache | None]:
+    """Adaptador de distancia + cache de tramos (geometría y duración)."""
+    cache = create_osrm_cache()
+    if cache is None:
+        return None, None
 
     def adjust(
         origin_lat: float,
@@ -46,34 +43,18 @@ def optional_osrm_adjuster() -> DistanceAdjuster | None:
         haversine_km: float,
     ) -> float | None:
         del haversine_km
-        try:
-            params = urlencode(
-                {
-                    "overview": "false",
-                    "steps": "false",
-                }
-            )
-            url = (
-                f"{base}/route/v1/driving/"
-                f"{origin_lon},{origin_lat};{dest_lon},{dest_lat}?{params}"
-            )
-            with urlopen(url, timeout=3.0) as response:
-                payload: dict[str, Any] = __import__("json").load(response)
-            if payload.get("code") != "Ok":
-                logger.warning("OSRM respondió sin ruta: %s", payload.get("code"))
-                return None
-            routes = payload.get("routes") or []
-            if not routes:
-                return None
-            meters = float(routes[0].get("distance", 0.0))
-            if meters <= 0:
-                return None
-            return meters / 1000.0
-        except (URLError, TimeoutError, ValueError, KeyError, OSError) as exc:
-            logger.warning("OSRM no disponible para el tramo: %s", exc)
+        leg = cache.get_leg(origin_lat, origin_lon, dest_lat, dest_lon)
+        if leg is None:
             return None
+        return leg.distance_km
 
-    return adjust
+    return adjust, cache
+
+
+def optional_osrm_adjuster() -> DistanceAdjuster | None:
+    """Solo distancia (compatibilidad con llamadas que no necesitan cache)."""
+    adjuster, _ = prepare_osrm_routing()
+    return adjuster
 
 
 def active_distance_adjuster() -> DistanceAdjuster | None:

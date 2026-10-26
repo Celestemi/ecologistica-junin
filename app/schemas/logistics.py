@@ -429,11 +429,7 @@ def _feature_collection(details: list[RutaDetalle]) -> GeoJSONFeatureCollection:
 
     for vehicle_stops in by_vehicle.values():
         ordered = sorted(vehicle_stops, key=lambda item: item.secuencia)
-        stop_coordinates = [
-            [float(pair) for pair in geometry_to_geojson(stop.ubicacion)["coordinates"]]
-            for stop in ordered
-        ]
-        line_coordinates = _road_or_chord(ordered, stop_coordinates)
+        line_coordinates = _merge_road_segments(ordered)
         if len(line_coordinates) < 2:
             continue
         features.append(
@@ -444,19 +440,16 @@ def _feature_collection(details: list[RutaDetalle]) -> GeoJSONFeatureCollection:
                 properties={
                     "plate": ordered[0].vehiculo.placa,
                     "kind": "route",
-                    "geometry_kind": "chord",
-                    "distance_note": "Línea geodésica entre paradas; no representa calles.",
+                    "geometry_kind": "road",
+                    "distance_note": "Recorrido sobre red vial (OSRM / OpenStreetMap).",
                 },
             )
         )
     return GeoJSONFeatureCollection(features=features)
 
 
-def _road_or_chord(
-    ordered: list[RutaDetalle],
-    stop_coordinates: list[list[float]],
-) -> list[list[float]]:
-    """Usa la geometría de calle guardada o, si no existe, la cuerda entre paradas."""
+def _merge_road_segments(ordered: list[RutaDetalle]) -> list[list[float]]:
+    """Concatena geometrías viales persistidas; no dibuja cuerdas entre paradas."""
     road: list[list[float]] = []
     for stop in ordered:
         if stop.geometria_tramo is None:
@@ -469,7 +462,7 @@ def _road_or_chord(
             if road and road[-1] == pair:
                 continue
             road.append(pair)
-    return road or stop_coordinates
+    return road
 
 
 def avoided_co2_to_quinual(co2_avoided_kg: float) -> float:
@@ -561,8 +554,9 @@ class RouteOptimizationMetadata(BaseModel):
     rn008_meta_co2_cumplida: bool | None = None
     pedidos_sin_asignar: list[str] = Field(default_factory=list)
     nota_distancia: str = (
-        "Las distancias y ETAs del MVP usan Haversine y 25 km/h salvo tramos OSRM configurados."
+        "Configure OSRM_BASE_URL para distancias y trazado sobre calles."
     )
+    geometria_vial_disponible: bool = False
     solver_elapsed_seconds: float | None = None
     ga_elapsed_seconds: float | None = None
     optimizer_stop_reason: str | None = None
