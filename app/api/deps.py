@@ -11,6 +11,7 @@ from app.core.database import get_db
 from app.models.enums import RolUsuario
 from app.models.identity import Usuario
 from app.services.access import record
+from app.services.rbac import DENY_ANON
 from app.services.tokens import read_access_token
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -23,7 +24,7 @@ async def get_current_user(
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Debes iniciar sesión.",
+            detail=DENY_ANON,
         )
     payload = read_access_token(credentials.credentials)
     if payload is None:

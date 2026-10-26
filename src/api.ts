@@ -1,5 +1,13 @@
 import { loadSession, clearSession, type SessionUser } from "./lib/session";
-import type { ActiveRoute, Depot, Order, OrderTracking, RouteOptimization, Vehicle } from "./types";
+import type {
+  ActiveRoute,
+  Depot,
+  Order,
+  OrderTracking,
+  PublicOrderTracking,
+  RouteOptimization,
+  Vehicle,
+} from "./types";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -38,6 +46,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       detail = response.statusText;
     }
+    if (response.status === 403) {
+      throw new ApiError(detail || "No tienes permiso para esta acción.", 403);
+    }
     throw new ApiError(detail || "No se pudo completar la solicitud.", response.status);
   }
   return (await response.json()) as T;
@@ -53,6 +64,9 @@ export function fetchVehicles(): Promise<Vehicle[]> {
 
 export type VehicleHistory = {
   activo: boolean;
+  estado_anterior: string | null;
+  estado_nuevo: string | null;
+  motivo: string | null;
   detalle: string;
   correo: string;
   creado_en: string;
@@ -71,11 +85,17 @@ export type ImportRow = {
   altitud_msnm: number | null;
   resultado: "aceptado" | "rechazado" | "pendiente_punto";
   motivo: string | null;
+  campo: string | null;
+  pedido_id: number | null;
 };
 
 export type ImportReport = {
   fecha: string;
   aceptados: number;
+  rechazados: number;
+  pendientes_punto: number;
+  total_filas: number;
+  resumen: string;
   filas: ImportRow[];
 };
 
@@ -88,17 +108,42 @@ export function fetchDay(fecha: string): Promise<DayOrders> {
   return request<DayOrders>(`/api/v1/jornadas/${fecha}`);
 }
 
-export function importDay(fecha: string, csv: string): Promise<ImportReport> {
+export function importDay(
+  fecha: string,
+  payload: { csv?: string; xlsx_base64?: string },
+): Promise<ImportReport> {
   return request<ImportReport>(`/api/v1/jornadas/${fecha}/importar`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ csv }),
+    body: JSON.stringify(payload),
   });
 }
 
 export function createOrder(body: Record<string, unknown>): Promise<Order> {
   return request<Order>("/api/v1/pedidos", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateOrderWindow(
+  pedidoId: number,
+  body: { ventana_inicio: string; ventana_fin: string },
+): Promise<Order> {
+  return request<Order>(`/api/v1/pedidos/${pedidoId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateOrderLocation(
+  pedidoId: number,
+  body: { lat: number; lon: number; altitud_msnm?: number },
+): Promise<Order> {
+  return request<Order>(`/api/v1/pedidos/${pedidoId}/ubicacion`, {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
@@ -128,12 +173,71 @@ export function fetchVehicleHistory(id: number): Promise<VehicleHistory[]> {
   return request<VehicleHistory[]>(`/api/v1/flota/${id}/historial`);
 }
 
+export type PlateRestrictionRule = {
+  id: number;
+  ultimo_digito: number;
+  dias_semana: number[];
+};
+
+export type PlateRestrictionConfig = {
+  id: number;
+  ambito: string;
+  etiqueta_validacion: string;
+  validada_normativamente: boolean;
+  activa: boolean;
+  referencia_normativa: string | null;
+  reglas: PlateRestrictionRule[];
+  advertencia: string;
+};
+
+export type PlateRestrictionHistory = {
+  correo: string;
+  detalle: string;
+  creado_en: string;
+};
+
+export function fetchPlateRestrictionConfig(): Promise<PlateRestrictionConfig> {
+  return request<PlateRestrictionConfig>("/api/v1/restricciones-placa");
+}
+
+export function updatePlateRestrictionConfig(
+  body: Record<string, unknown>,
+): Promise<PlateRestrictionConfig> {
+  return request<PlateRestrictionConfig>("/api/v1/restricciones-placa", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export function fetchPlateRestrictionHistory(): Promise<PlateRestrictionHistory[]> {
+  return request<PlateRestrictionHistory[]>("/api/v1/restricciones-placa/historial");
+}
+
 export function fetchDepots(): Promise<Depot[]> {
   return request<Depot[]>("/api/v1/depositos");
 }
 
 export function fetchTracking(orderCode: string): Promise<OrderTracking> {
   return request<OrderTracking>(`/api/v1/seguimiento/${encodeURIComponent(orderCode)}`);
+}
+
+export function fetchPublicTracking(token: string): Promise<PublicOrderTracking> {
+  return fetch(`/api/v1/seguimiento/publico/${encodeURIComponent(token)}`).then(async (response) => {
+    if (!response.ok) {
+      let detail = "Enlace de seguimiento inválido.";
+      try {
+        const body = (await response.json()) as { detail?: string };
+        if (body.detail) {
+          detail = body.detail;
+        }
+      } catch {
+        /* respuesta vacía */
+      }
+      throw new ApiError(detail, response.status);
+    }
+    return (await response.json()) as PublicOrderTracking;
+  });
 }
 
 export async function fetchPublishedRoute(): Promise<RouteOptimization | null> {

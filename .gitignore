@@ -19,7 +19,10 @@ env/
 .mypy_cache/
 .ruff_cache/
 .coverage
+en001_benchmark_last.json
 htmlcov/
+coverage.xml
+coverage/
 
 # ==============================
 # Node.js / Frontend

@@ -1,5 +1,7 @@
 # 01. Informe de estado del proyecto V_1_0_0.md
 
+> **Documento histórico.** Supersedido por [01_informe_de_estado_del_proyecto_v_1_0_1.md](01_informe_de_estado_del_proyecto_v_1_0_1.md) (2026-10-26).
+
 # Revisión del sprint
 
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C. [1, 28, 55]

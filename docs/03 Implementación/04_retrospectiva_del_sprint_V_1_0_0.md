@@ -1,5 +1,7 @@
 # Retrospectiva del Sprint 1
 
+> **Documento histórico.** Supersedido por [04_retrospectiva_del_sprint_V_1_0_1.md](04_retrospectiva_del_sprint_V_1_0_1.md) (2026-10-26).
+
 **Nombre del Proyecto:** EcoLogística Junín
 
 **Versión:** V_1_0_0

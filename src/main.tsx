@@ -7,6 +7,7 @@ import { homeFor, screenAllowed } from "./lib/access";
 import { loadSession } from "./lib/session";
 import { AuditLog } from "./pages/AuditLog";
 import { Fleet } from "./pages/Fleet";
+import { PlateRestrictions } from "./pages/PlateRestrictions";
 import { Login } from "./pages/Login";
 import { OrdersDay } from "./pages/OrdersDay";
 import { Tracking } from "./pages/Tracking";
@@ -41,6 +42,9 @@ function Root() {
   }
   if (path.startsWith("/pedidos")) {
     return <OrdersDay />;
+  }
+  if (path.startsWith("/flota/restricciones-placa")) {
+    return <PlateRestrictions />;
   }
   if (path.startsWith("/flota")) {
     return <Fleet />;

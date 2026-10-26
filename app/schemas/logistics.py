@@ -9,7 +9,15 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.core.emissions import quinual_equivalent
 from app.core.geo import geometry_to_geojson, linestring_geojson
 from app.models.domain import RutaDetalle, SolucionRuta
-from app.models.enums import EstadoPedido, EstadoSolucion, TipoCombustible, TipoParada
+from app.models.enums import (
+    EstadoEta,
+    EstadoOperativoVehiculo,
+    EstadoPedido,
+    EstadoSolucion,
+    EstadoUbicacion,
+    TipoCombustible,
+    TipoParada,
+)
 
 # Caja amplia del valle del Mantaro para rechazar coordenadas fuera de la operación.
 _LAT_RANGE = (-12.30, -11.70)
@@ -52,17 +60,61 @@ class GeoJSONFeatureCollection(BaseModel):
 class VehiculoCreate(BaseModel):
     deposito_id: int
     placa: str = Field(min_length=5, max_length=16)
+    modelo: str = Field(min_length=2, max_length=120)
     capacidad_kg: float = Field(gt=0)
     capacidad_m3: float = Field(gt=0)
     tipo_combustible: TipoCombustible
-    emision_base_co2_g_km: float = Field(ge=0)
+    rendimiento_km_gal: float = Field(gt=0, description="Rendimiento en km por galón.")
+    emision_base_co2_g_km: float = Field(
+        ge=0,
+        description="Factor de emisión base en gramos de CO₂ por kilómetro.",
+    )
     factor_penalizacion_pendiente: float = Field(ge=0)
+
+    @field_validator("placa")
+    @classmethod
+    def normalize_placa(cls, value: str) -> str:
+        cleaned = value.strip().upper()
+        if not cleaned.replace("-", "").isalnum():
+            raise ValueError("La placa solo puede incluir letras, números y guiones.")
+        return cleaned
+
+    @field_validator("modelo")
+    @classmethod
+    def normalize_modelo(cls, value: str) -> str:
+        cleaned = value.strip()
+        if len(cleaned) < 2:
+            raise ValueError("El modelo debe tener al menos 2 caracteres.")
+        return cleaned
+
+
+class VehiculoUpdate(BaseModel):
+    modelo: str | None = Field(default=None, min_length=2, max_length=120)
+    capacidad_kg: float | None = Field(default=None, gt=0)
+    capacidad_m3: float | None = Field(default=None, gt=0)
+    tipo_combustible: TipoCombustible | None = None
+    rendimiento_km_gal: float | None = Field(default=None, gt=0)
+    emision_base_co2_g_km: float | None = Field(default=None, ge=0)
+    factor_penalizacion_pendiente: float | None = Field(default=None, ge=0)
+    estado_operativo: EstadoOperativoVehiculo | None = None
+    motivo: str | None = Field(default=None, max_length=240)
+
+    @field_validator("modelo")
+    @classmethod
+    def normalize_modelo(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = value.strip()
+        if len(cleaned) < 2:
+            raise ValueError("El modelo debe tener al menos 2 caracteres.")
+        return cleaned
 
 
 class VehiculoRead(VehiculoCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    estado_operativo: EstadoOperativoVehiculo
     activo: bool
 
 
@@ -85,27 +137,68 @@ class PedidoCreate(BaseModel):
         return value
 
 
+class PedidoWindowUpdate(BaseModel):
+    """Actualización de ventana horaria (US-006)."""
+
+    ventana_inicio: datetime
+    ventana_fin: datetime
+
+    @field_validator("ventana_fin")
+    @classmethod
+    def window_is_ordered(cls, value: datetime, info) -> datetime:
+        start = info.data.get("ventana_inicio")
+        if isinstance(start, datetime) and _as_lima(value) <= _as_lima(start):
+            raise ValueError("La ventana de fin debe ser posterior a la de inicio.")
+        return value
+
+
 class PedidoRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     codigo_pedido: str
+    token_seguimiento: str | None = None
     cliente_nombre: str
     direccion_referencia: str
-    ubicacion: GeoJSONPoint
-    altitud_msnm: float
+    ubicacion: GeoJSONPoint | None = None
+    altitud_msnm: float | None = None
     peso_kg: float
     ventana_inicio: datetime
     ventana_fin: datetime
     estado: EstadoPedido
+    estado_ubicacion: EstadoUbicacion
 
     @field_validator("ubicacion", mode="before")
     @classmethod
     def coerce_point(cls, value: Any) -> Any:
+        if value is None:
+            return None
         if isinstance(value, GeoJSONPoint):
             return value
         geojson = geometry_to_geojson(value)
         return GeoJSONPoint.model_validate(geojson)
+
+
+class PedidoLocationUpdate(BaseModel):
+    """Corrección manual del punto de entrega (RF-005 Feliz)."""
+
+    lat: float
+    lon: float
+    altitud_msnm: float | None = Field(default=None, gt=0, le=6000)
+
+    @field_validator("lat")
+    @classmethod
+    def lat_in_valley(cls, value: float) -> float:
+        if not _LAT_RANGE[0] <= value <= _LAT_RANGE[1]:
+            raise ValueError("La latitud queda fuera del valle del Mantaro.")
+        return float(value)
+
+    @field_validator("lon")
+    @classmethod
+    def lon_in_valley(cls, value: float) -> float:
+        if not _LON_RANGE[0] <= value <= _LON_RANGE[1]:
+            raise ValueError("La longitud queda fuera del valle del Mantaro.")
+        return float(value)
 
 
 class DepositoRead(BaseModel):
@@ -141,6 +234,11 @@ class DriverStopRead(BaseModel):
     lat: float
     lon: float
     eta: datetime | None = None
+    estado_eta: EstadoEta | None = None
+    minutos_espera_ventana: float | None = None
+    minutos_tarde_ventana: float | None = None
+    secuencia_entrega: int | None = None
+    modelo_distancia: str | None = None
     co2_tramo_g: float
 
 
@@ -152,10 +250,25 @@ class ActiveRouteRead(BaseModel):
     paradas: list[DriverStopRead]
 
 
+class PublicTrackingRead(BaseModel):
+    """Vista pública minimizada accesible solo con token opaco."""
+
+    estado: EstadoPedido
+    zona_entrega: str
+    lat_aprox: float
+    lon_aprox: float
+    ventana_inicio: datetime
+    ventana_fin: datetime
+    eta: datetime | None = None
+    paradas_previas: int
+    co2_evitado_kg: float
+
+
 class TrackingRead(BaseModel):
-    """Lo que el cliente final puede ver de su propio pedido."""
+    """Detalle interno del pedido para personal autorizado."""
 
     codigo_pedido: str
+    token_seguimiento: str | None = None
     cliente_nombre: str
     direccion_referencia: str
     estado: EstadoPedido
@@ -190,6 +303,11 @@ class RouteStopRead(BaseModel):
     pendiente_pct: float
     tiempo_viaje_min: float
     eta: datetime | None
+    estado_eta: EstadoEta | None = None
+    minutos_espera_ventana: float | None = None
+    minutos_tarde_ventana: float | None = None
+    secuencia_entrega: int | None = None
+    modelo_distancia: str | None = None
     co2_tramo_g: float
 
 
@@ -249,6 +367,11 @@ def _stop_read(detail: RutaDetalle) -> RouteStopRead:
         pendiente_pct=detail.pendiente_pct,
         tiempo_viaje_min=detail.tiempo_viaje_min,
         eta=detail.eta,
+        estado_eta=EstadoEta(detail.estado_eta) if detail.estado_eta else None,
+        minutos_espera_ventana=detail.minutos_espera_ventana,
+        minutos_tarde_ventana=detail.minutos_tarde_ventana,
+        secuencia_entrega=detail.secuencia_entrega,
+        modelo_distancia=detail.modelo_distancia,
         co2_tramo_g=detail.co2_tramo_g,
     )
 
@@ -275,6 +398,16 @@ def _feature_collection(details: list[RutaDetalle]) -> GeoJSONFeatureCollection:
                     "title": title,
                     "co2_g": detail.co2_tramo_g,
                     "eta": detail.eta.isoformat() if detail.eta is not None else None,
+                    "eta_estado": detail.estado_eta,
+                    "wait_minutes": detail.minutos_espera_ventana or 0.0,
+                    "late_minutes": detail.minutos_tarde_ventana or 0.0,
+                    "delivery_index": detail.secuencia_entrega,
+                    "distance_model": detail.modelo_distancia or "geodesica",
+                    "distance_note": (
+                        "Distancia geodésica (cuerda); no es longitud vial."
+                        if (detail.modelo_distancia or "geodesica") == "geodesica"
+                        else "Distancia vía OSRM."
+                    ),
                 },
             )
         )
@@ -297,6 +430,8 @@ def _feature_collection(details: list[RutaDetalle]) -> GeoJSONFeatureCollection:
                 properties={
                     "plate": ordered[0].vehiculo.placa,
                     "kind": "route",
+                    "geometry_kind": "chord",
+                    "distance_note": "Línea geodésica entre paradas; no representa calles.",
                 },
             )
         )
@@ -376,6 +511,12 @@ def _as_lima(value: datetime) -> datetime:
     return value.astimezone(lima)
 
 
+class ExclusionPlacaMetadata(BaseModel):
+    placa: str
+    ultimo_digito: int | None = None
+    motivo: str
+
+
 class RouteOptimizationMetadata(BaseModel):
     """KPIs de la corrida, pensados para el panel del mapa."""
 
@@ -394,6 +535,23 @@ class RouteOptimizationMetadata(BaseModel):
     feasible: bool
     pedidos: int
     vehiculos_usados: int
+    restriccion_placa_aplicada: bool = False
+    exclusiones_placa: list[ExclusionPlacaMetadata] = Field(default_factory=list)
+    linea_base_secuencial_km: float | None = None
+    linea_base_secuencial_co2_kg: float | None = None
+    linea_base_fifo_co2_kg: float | None = None
+    linea_base_fifo_km: float | None = None
+    ahorro_distancia_pct_vs_secuencial: float | None = None
+    ahorro_co2_pct_vs_secuencial: float | None = None
+    rn008_meta_distancia_cumplida: bool | None = None
+    rn008_meta_co2_cumplida: bool | None = None
+    pedidos_sin_asignar: list[str] = Field(default_factory=list)
+    nota_distancia: str = (
+        "Las distancias y ETAs del MVP usan Haversine y 25 km/h salvo tramos OSRM configurados."
+    )
+    solver_elapsed_seconds: float | None = None
+    ga_elapsed_seconds: float | None = None
+    optimizer_stop_reason: str | None = None
 
 
 class RouteOptimizationGeoJSON(BaseModel):

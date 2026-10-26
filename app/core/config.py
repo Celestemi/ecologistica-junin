@@ -23,8 +23,12 @@ class Settings(BaseSettings):
     db_name: str = "ecologistica"
     database_url: str = ""
     secret_key: str = "cambia-esta-clave-en-produccion-local"
+    app_environment: str = "demo"
+    allow_demo_accounts: bool | None = None
+    force_https: bool = False
     auth_bcrypt_rounds: int = 12
     auth_token_hours: int = 12
+    auth_token_minutes: int | None = None
     auth_max_attempts: int = 3
     auth_lock_minutes: int = 15
     cors_origins: str = (
@@ -44,7 +48,14 @@ class Settings(BaseSettings):
                 f"postgresql+asyncpg://{quote(self.db_user, safe='')}:"
                 f"{password}@{self.db_host}:{self.db_port}/{self.db_name}"
             )
+        if self.allow_demo_accounts is None:
+            self.allow_demo_accounts = self.app_environment == "demo"
         return self
+
+    def token_lifetime_seconds(self) -> int:
+        if self.auth_token_minutes is not None:
+            return max(1, self.auth_token_minutes) * 60
+        return max(1, self.auth_token_hours) * 3600
 
     def allowed_origins(self) -> list[str]:
         """Orígenes CORS separados por coma en CORS_ORIGINS."""
@@ -67,6 +78,23 @@ class Settings(BaseSettings):
 
     # SRID de almacenamiento. Las distancias métricas del optimizador usarán UTM 18S (EPSG:32718).
     storage_srid: int = 4326
+    # GeoJSON con MultiPolygon validado. Vacío = sobre provisional en app/data (solo desarrollo).
+    operating_area_geojson_path: str = ""
+    # RF-008 / RN-003: límite operativo de jornada (conducción + servicio, sin espera en ventana).
+    max_shift_minutes: float = 480.0
+    enforce_shift_limit: bool = True
+    # RN-003 sigue [PENDIENTE DE VALIDACIÓN NORMATIVA]; no implica confirmación legal.
+    shift_limit_normative_validated: bool = False
+    # Semilla del GA para corridas reproducibles (RF-007 / pruebas).
+    optimizer_seed: int = 42
+    # Vacío = solo distancia geodésica (Haversine). Si apunta a OSRM, los tramos fallidos no publican ETA.
+    osrm_base_url: str = ""
+    # EN-001 / RNF-001 — SLA de generación (solver + API en pruebas documentadas).
+    optimizer_time_budget_seconds: float = 45.0
+    optimizer_max_generations: int = 100
+    optimizer_max_population: int = 50
+    optimizer_early_stop_feasible: bool = True
+    optimizer_stagnation_generations: int = 6
 
 
 @lru_cache

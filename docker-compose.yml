@@ -34,6 +34,10 @@ services:
       SECRET_KEY: ${SECRET_KEY:-cambia-esta-clave-en-produccion-local}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://127.0.0.1,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080}
       APP_DEBUG: ${APP_DEBUG:-false}
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-demo}
+      ALLOW_DEMO_ACCOUNTS: ${ALLOW_DEMO_ACCOUNTS:-true}
+      FORCE_HTTPS: ${FORCE_HTTPS:-false}
+      AUTH_TOKEN_HOURS: ${AUTH_TOKEN_HOURS:-12}
       DATABASE_URL: postgresql+asyncpg://${DB_USER:-ecologistica}:${DB_PASSWORD:-ecologistica}@db:5432/${DB_NAME:-ecologistica}
     ports:
       - "8000:8000"

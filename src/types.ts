@@ -6,25 +6,30 @@ export type GeoPoint = {
 export type Order = {
   id: number;
   codigo_pedido: string;
+  token_seguimiento?: string | null;
   cliente_nombre: string;
   direccion_referencia: string;
-  ubicacion: GeoPoint;
-  altitud_msnm: number;
+  ubicacion: GeoPoint | null;
+  altitud_msnm: number | null;
   peso_kg: number;
   ventana_inicio: string;
   ventana_fin: string;
   estado: string;
+  estado_ubicacion: "geocodificado" | "pendiente_validacion";
 };
 
 export type Vehicle = {
   id: number;
   deposito_id: number;
   placa: string;
+  modelo: string;
   capacidad_kg: number;
   capacidad_m3: number;
   tipo_combustible: string;
+  rendimiento_km_gal: number;
   emision_base_co2_g_km: number;
   factor_penalizacion_pendiente: number;
+  estado_operativo: "activo" | "mantenimiento" | "inactivo";
   activo: boolean;
 };
 
@@ -47,7 +52,14 @@ export type FeatureProperties = {
   title?: string;
   co2_g?: number;
   eta?: string | null;
+  eta_estado?: string | null;
+  wait_minutes?: number;
+  late_minutes?: number;
+  delivery_index?: number | null;
+  distance_model?: string;
+  distance_note?: string;
   kind?: string;
+  geometry_kind?: string;
 };
 
 export type RouteFeature = {
@@ -74,6 +86,16 @@ export type RouteMetadata = {
   feasible: boolean;
   pedidos: number;
   vehiculos_usados: number;
+  restriccion_placa_aplicada?: boolean;
+  exclusiones_placa?: { placa: string; ultimo_digito: number | null; motivo: string }[];
+  linea_base_secuencial_km?: number | null;
+  linea_base_secuencial_co2_kg?: number | null;
+  ahorro_distancia_pct_vs_secuencial?: number | null;
+  ahorro_co2_pct_vs_secuencial?: number | null;
+  rn008_meta_distancia_cumplida?: boolean | null;
+  rn008_meta_co2_cumplida?: boolean | null;
+  pedidos_sin_asignar?: string[];
+  nota_distancia?: string;
 };
 
 export type RouteOptimization = {
@@ -103,6 +125,18 @@ export type ActiveRoute = {
   codigo: string;
   fecha_operacion: string;
   paradas: DriverStop[];
+};
+
+export type PublicOrderTracking = {
+  estado: string;
+  zona_entrega: string;
+  lat_aprox: number;
+  lon_aprox: number;
+  ventana_inicio: string;
+  ventana_fin: string;
+  eta: string | null;
+  paradas_previas: number;
+  co2_evitado_kg: number;
 };
 
 export type OrderTracking = {

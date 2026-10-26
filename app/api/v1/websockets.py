@@ -21,7 +21,11 @@ from sqlalchemy.orm import selectinload
 from app.core.database import async_session_factory
 from app.models.domain import Deposito, Pedido, RutaDetalle, SolucionRuta, Vehiculo
 from app.models.enums import EstadoPedido, RolUsuario
+from app.models.identity import Usuario
+from app.services.driver_assignment import conductor_may_drive
+from app.services.vehicle_state import is_available_for_routing
 from app.services.tokens import read_access_token
+from app.services.tracking_tokens import is_tracking_token
 from app.services.realtime_router import (
     ADMIN_CHANNEL,
     GpsFix,
@@ -45,24 +49,42 @@ DESK_ROLES = {RolUsuario.ADMIN, RolUsuario.OPERADOR, RolUsuario.GERENTE, RolUsua
 FIELD_ROLES = {RolUsuario.OPERADOR, RolUsuario.CONDUCTOR}
 
 
-async def _staff_socket(websocket: WebSocket, roles: set[RolUsuario]) -> bool:
-    """El canal de personal exige el mismo JWT que el resto de la API."""
+async def _socket_user(websocket: WebSocket) -> Usuario | None:
     payload = read_access_token(websocket.query_params.get("token", ""))
     if payload is None:
-        return False
+        return None
     try:
-        rol = RolUsuario(str(payload.get("rol")))
-    except ValueError:
-        return False
-    return rol in roles
+        user_id = int(str(payload["sub"]))
+    except (KeyError, TypeError, ValueError):
+        return None
+    async with async_session_factory() as session:
+        user = await session.get(Usuario, user_id)
+        if user is None or not user.activo:
+            return None
+        return user
+
+
+async def _staff_socket(websocket: WebSocket, roles: set[RolUsuario]) -> Usuario | None:
+    """El canal de personal exige JWT válido, usuario activo y rol permitido."""
+    user = await _socket_user(websocket)
+    if user is None or user.rol not in roles:
+        return None
+    return user
 
 
 @router.websocket("/ws/driver/{driver_id}")
 async def driver_socket(websocket: WebSocket, driver_id: str) -> None:
     """Recibe coordenadas e imprevistos y empuja la ETA recalculada."""
-    if not _valid_driver_id(driver_id) or not await _staff_socket(websocket, FIELD_ROLES):
+    actor = await _staff_socket(websocket, FIELD_ROLES)
+    if not _valid_driver_id(driver_id) or actor is None:
         await websocket.close(code=1008)
         return
+    if actor.rol == RolUsuario.CONDUCTOR:
+        async with async_session_factory() as session:
+            allowed = await conductor_may_drive(session, actor.id, driver_id)
+        if not allowed:
+            await websocket.close(code=1008)
+            return
     await manager.connect_driver(driver_id, websocket)
     try:
         while True:
@@ -83,15 +105,26 @@ async def driver_socket(websocket: WebSocket, driver_id: str) -> None:
 @router.websocket("/ws/tracking/{order_code}")
 async def tracking_socket(websocket: WebSocket, order_code: str) -> None:
     """Entrega al cliente, o al despacho, la posición y la ETA del pedido."""
-    if not _valid_order_code(order_code):
+    channel_code = order_code
+    if order_code == ADMIN_CHANNEL:
+        if await _staff_socket(websocket, DESK_ROLES) is None:
+            await websocket.close(code=1008)
+            return
+    elif is_tracking_token(order_code):
+        async with async_session_factory() as session:
+            order = await session.scalar(
+                select(Pedido).where(Pedido.token_seguimiento == order_code)
+            )
+        if order is None:
+            await websocket.close(code=1008)
+            return
+        channel_code = order.codigo_pedido
+    elif not _valid_order_code(order_code) or await _staff_socket(websocket, DESK_ROLES) is None:
         await websocket.close(code=1008)
         return
-    if order_code == ADMIN_CHANNEL and not await _staff_socket(websocket, DESK_ROLES):
-        await websocket.close(code=1008)
-        return
-    await manager.connect_tracker(order_code, websocket)
+    await manager.connect_tracker(channel_code, websocket)
     try:
-        snapshot = await _tracking_snapshot(order_code)
+        snapshot = await _tracking_snapshot(channel_code)
         if snapshot is not None:
             await websocket.send_json(snapshot)
         while True:
@@ -333,15 +366,15 @@ async def _remaining_for_vehicle(
 async def _vehicle_for_driver(session: AsyncSession, driver_id: str, vehicle_id: int | None) -> Vehiculo:
     if vehicle_id is not None:
         vehicle = await session.get(Vehiculo, vehicle_id)
-        if vehicle is None or not vehicle.activo:
+        if vehicle is None or not is_available_for_routing(vehicle):
             raise ValueError("El vehículo indicado no está activo.")
         return vehicle
     if driver_id.isdigit():
         vehicle = await session.get(Vehiculo, int(driver_id))
-        if vehicle is not None and vehicle.activo:
+        if vehicle is not None and is_available_for_routing(vehicle):
             return vehicle
-    vehicle = await session.scalar(select(Vehiculo).where(Vehiculo.placa == driver_id, Vehiculo.activo.is_(True)))
-    if vehicle is None:
+    vehicle = await session.scalar(select(Vehiculo).where(Vehiculo.placa == driver_id))
+    if vehicle is None or not is_available_for_routing(vehicle):
         raise ValueError("No hay un vehículo activo para ese conductor.")
     return vehicle
 

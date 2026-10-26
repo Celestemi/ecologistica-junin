@@ -1,5 +1,7 @@
 # 02. Registro de Impedimentos V_1_0_0.md
 
+> **Documento histórico.** Supersedido por [02_registro_de_impedimentos_v_1_0_1.md](02_registro_de_impedimentos_v_1_0_1.md) (2026-10-26).
+
 # Registro de impedimentos
 
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.

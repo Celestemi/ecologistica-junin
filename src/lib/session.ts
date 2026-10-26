@@ -27,30 +27,43 @@ export function roleLabel(rol: Role): string {
   return ROLE_LABELS[rol];
 }
 
-export function loadSession(): Session | null {
-  const raw = localStorage.getItem(KEY);
+function readStored(): Session | null {
+  const raw = sessionStorage.getItem(KEY) ?? localStorage.getItem(KEY);
   if (!raw) {
     return null;
   }
   try {
     const parsed = JSON.parse(raw) as Session;
     if (!parsed.token || !parsed.usuario || parsed.exp < Date.now()) {
+      sessionStorage.removeItem(KEY);
       localStorage.removeItem(KEY);
       return null;
     }
     return parsed;
   } catch {
+    sessionStorage.removeItem(KEY);
     localStorage.removeItem(KEY);
     return null;
   }
 }
 
+export function loadSession(): Session | null {
+  const session = readStored();
+  if (session && localStorage.getItem(KEY)) {
+    sessionStorage.setItem(KEY, JSON.stringify(session));
+    localStorage.removeItem(KEY);
+  }
+  return session;
+}
+
 export function saveSession(token: string, usuario: SessionUser): void {
   const exp = readExpiry(token);
-  localStorage.setItem(KEY, JSON.stringify({ token, exp, usuario }));
+  sessionStorage.setItem(KEY, JSON.stringify({ token, exp, usuario }));
+  localStorage.removeItem(KEY);
 }
 
 export function clearSession(): void {
+  sessionStorage.removeItem(KEY);
   localStorage.removeItem(KEY);
 }
 

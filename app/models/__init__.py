@@ -9,7 +9,8 @@ from app.models.enums import (
     TipoParada,
 )
 from app.models.identity import Bitacora, Usuario
-from app.models.operations import HistorialVehiculo, Jornada
+from app.models.operations import AreaOperacion, HistorialVehiculo, Jornada
+from app.models import restrictions as _restrictions  # noqa: F401 — registra tablas RN-002
 
 __all__ = [
     "Bitacora",

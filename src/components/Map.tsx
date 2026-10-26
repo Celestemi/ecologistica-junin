@@ -93,7 +93,9 @@ export function MapView({ depot, orders, solution }: MapProps) {
       return next;
     }
     for (const order of orders) {
-      next.push(toLatLng(order.ubicacion.coordinates));
+      if (order.ubicacion) {
+        next.push(toLatLng(order.ubicacion.coordinates));
+      }
     }
     return next;
   }, [depot, orders, points, solution]);
@@ -149,6 +151,9 @@ export function MapView({ depot, orders, solution }: MapProps) {
               );
             })
           : orders.map((order) => {
+              if (!order.ubicacion) {
+                return null;
+              }
               const [lon, lat] = order.ubicacion.coordinates;
               return (
                 <Marker

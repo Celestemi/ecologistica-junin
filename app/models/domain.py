@@ -29,10 +29,25 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.config import get_settings
 from app.core.database import Base
-from app.models.enums import EstadoPedido, EstadoSolucion, TipoCombustible, TipoParada
+from app.models.enums import (
+    EstadoOperativoVehiculo,
+    EstadoPedido,
+    EstadoSolucion,
+    EstadoUbicacion,
+    TipoCombustible,
+    TipoParada,
+)
 
 
-def _enum_values(enum_cls: type[EstadoPedido] | type[EstadoSolucion] | type[TipoCombustible] | type[TipoParada], name: str) -> Enum:
+def _enum_values(
+    enum_cls: type[EstadoPedido]
+    | type[EstadoSolucion]
+    | type[EstadoUbicacion]
+    | type[TipoCombustible]
+    | type[TipoParada]
+    | type[EstadoOperativoVehiculo],
+    name: str,
+) -> Enum:
     """Persiste el valor del enum (`pending`), no el nombre (`PENDING`)."""
     return Enum(
         enum_cls,
@@ -51,6 +66,10 @@ def _point_column() -> Geometry:
 
 def _linestring_column() -> Geometry:
     return Geometry(geometry_type="LINESTRING", srid=_SRID, spatial_index=False)
+
+
+def _multipolygon_column() -> Geometry:
+    return Geometry(geometry_type="MULTIPOLYGON", srid=_SRID, spatial_index=True)
 
 
 class Deposito(Base):
@@ -88,21 +107,30 @@ class Vehiculo(Base):
             "factor_penalizacion_pendiente >= 0",
             name="ck_vehiculos_penalizacion",
         ),
+        CheckConstraint("rendimiento_km_gal > 0", name="ck_vehiculos_rendimiento"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     deposito_id: Mapped[int] = mapped_column(ForeignKey("depositos.id"), nullable=False)
     placa: Mapped[str] = mapped_column(String(16), unique=True, nullable=False)
+    modelo: Mapped[str] = mapped_column(String(120), nullable=False)
     capacidad_kg: Mapped[float] = mapped_column(Float, nullable=False)
     capacidad_m3: Mapped[float] = mapped_column(Float, nullable=False)
     tipo_combustible: Mapped[TipoCombustible] = mapped_column(
         _enum_values(TipoCombustible, "tipo_combustible"),
         nullable=False,
     )
+    rendimiento_km_gal: Mapped[float] = mapped_column(Float, nullable=False)
     # Gramos de CO2 por kilómetro en llano, referidos a ~3 250 m s.n.m.
     emision_base_co2_g_km: Mapped[float] = mapped_column(Float, nullable=False)
     # Incremento relativo de emisión por cada 1% de pendiente positiva.
     factor_penalizacion_pendiente: Mapped[float] = mapped_column(Float, nullable=False)
+    estado_operativo: Mapped[EstadoOperativoVehiculo] = mapped_column(
+        _enum_values(EstadoOperativoVehiculo, "estado_operativo_vehiculo"),
+        default=EstadoOperativoVehiculo.ACTIVO,
+        server_default=text("'activo'"),
+        nullable=False,
+    )
     activo: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
@@ -125,17 +153,40 @@ class Pedido(Base):
     __tablename__ = "pedidos"
     __table_args__ = (
         CheckConstraint("peso_kg > 0", name="ck_pedidos_peso"),
-        CheckConstraint("altitud_msnm > 0", name="ck_pedidos_altitud"),
+        CheckConstraint(
+            "altitud_msnm IS NULL OR altitud_msnm > 0",
+            name="ck_pedidos_altitud",
+        ),
         CheckConstraint("ventana_fin > ventana_inicio", name="ck_pedidos_ventana"),
+        CheckConstraint(
+            "(estado_ubicacion = 'pendiente_validacion' AND ubicacion IS NULL "
+            "AND altitud_msnm IS NULL) OR "
+            "(estado_ubicacion = 'geocodificado' AND ubicacion IS NOT NULL "
+            "AND altitud_msnm IS NOT NULL)",
+            name="ck_pedidos_estado_ubicacion",
+        ),
+        CheckConstraint(
+            "volumen_m3 IS NULL OR volumen_m3 > 0",
+            name="ck_pedidos_volumen",
+        ),
         Index("ix_pedidos_estado", "estado"),
+        Index("ix_pedidos_estado_ubicacion", "estado_ubicacion"),
+        Index("ix_pedidos_token_seguimiento", "token_seguimiento", unique=True),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     codigo_pedido: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     cliente_nombre: Mapped[str] = mapped_column(String(160), nullable=False)
     direccion_referencia: Mapped[str] = mapped_column(String(240), nullable=False)
-    ubicacion: Mapped[WKBElement] = mapped_column(_point_column(), nullable=False)
-    altitud_msnm: Mapped[float] = mapped_column(Float, nullable=False)
+    ubicacion: Mapped[WKBElement | None] = mapped_column(_point_column(), nullable=True)
+    altitud_msnm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    volumen_m3: Mapped[float | None] = mapped_column(Float, nullable=True)
+    estado_ubicacion: Mapped[EstadoUbicacion] = mapped_column(
+        _enum_values(EstadoUbicacion, "estado_ubicacion"),
+        default=EstadoUbicacion.GEOCODIFICADO,
+        server_default=text("'geocodificado'"),
+        nullable=False,
+    )
     peso_kg: Mapped[float] = mapped_column(Float, nullable=False)
     ventana_inicio: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     ventana_fin: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -151,6 +202,7 @@ class Pedido(Base):
         nullable=False,
     )
     jornada_id: Mapped[int | None] = mapped_column(ForeignKey("jornadas.id"), nullable=True)
+    token_seguimiento: Mapped[str | None] = mapped_column(String(36), nullable=True)
 
     detalles: Mapped[list["RutaDetalle"]] = relationship(back_populates="pedido")
 
@@ -241,6 +293,11 @@ class RutaDetalle(Base):
     pendiente_pct: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     tiempo_viaje_min: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     eta: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    estado_eta: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    minutos_espera_ventana: Mapped[float | None] = mapped_column(Float, nullable=True)
+    minutos_tarde_ventana: Mapped[float | None] = mapped_column(Float, nullable=True)
+    secuencia_entrega: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    modelo_distancia: Mapped[str | None] = mapped_column(String(16), nullable=True)
     co2_tramo_g: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     # Geometría de calle cuando el ruteador la tenga. Vacía en la cuerda inicial.
     geometria_tramo: Mapped[WKBElement | None] = mapped_column(

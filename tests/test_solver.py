@@ -62,6 +62,7 @@ def _order(
         ubicacion=_point(lon, lat),
         altitud_msnm=altitude_m,
         peso_kg=weight_kg,
+        volumen_m3=None,
         ventana_inicio=DAY.replace(hour=start_hour, minute=start_minute),
         ventana_fin=DAY.replace(hour=end_hour, minute=end_minute),
     )

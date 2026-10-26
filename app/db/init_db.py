@@ -12,14 +12,18 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select, text
 
+from app.core.config import get_settings
 from app.core.database import async_session_factory, engine
+from app.db.migrations import apply_migrations
 from app.core.geo import point_wkt
 from app.db.accounts import DEMO_ACCOUNTS, DEMO_PASSWORD_BY_ROLE
 from app.models.domain import Base, Deposito, Pedido, Vehiculo
-from app.models.enums import EstadoPedido, TipoCombustible
+from app.models.enums import EstadoPedido, EstadoUbicacion, TipoCombustible
 from app.models.identity import Usuario
-from app.models.operations import HistorialVehiculo, Jornada
+from app.models.operations import AsignacionConductor, HistorialVehiculo, Jornada
+from app.services.operating_area import ensure_operating_area
 from app.services.passwords import hash_password
+from app.services.tracking_tokens import new_tracking_token
 
 logger = logging.getLogger("ecologistica.init_db")
 
@@ -31,9 +35,11 @@ OPERATION_DAY = datetime(2026, 10, 6, tzinfo=LIMA)
 @dataclass(frozen=True)
 class VehicleSeed:
     placa: str
+    modelo: str
     capacidad_kg: float
     capacidad_m3: float
     tipo_combustible: TipoCombustible
+    rendimiento_km_gal: float
     emision_base_co2_g_km: float
     factor_penalizacion_pendiente: float
 
@@ -61,17 +67,21 @@ DEPOT_ALTITUDE_M = 3250.0
 VEHICLES: tuple[VehicleSeed, ...] = (
     VehicleSeed(
         placa="W4U-158",
+        modelo="Furgón Diésel",
         capacidad_kg=1500.0,
         capacidad_m3=9.0,
         tipo_combustible=TipoCombustible.DIESEL,
+        rendimiento_km_gal=12.5,
         emision_base_co2_g_km=220.0,
         factor_penalizacion_pendiente=0.045,
     ),
     VehicleSeed(
         placa="E7M-304",
+        modelo="Camioneta Eléctrica",
         capacidad_kg=300.0,
         capacidad_m3=1.4,
         tipo_combustible=TipoCombustible.ELECTRIC,
+        rendimiento_km_gal=4.2,
         emision_base_co2_g_km=38.0,
         factor_penalizacion_pendiente=0.012,
     ),
@@ -125,11 +135,11 @@ ORDERS: tuple[OrderSeed, ...] = (
     ),
     OrderSeed(
         codigo_pedido="PED-005",
-        cliente_nombre="Agropecuaria Tunán",
-        direccion_referencia="Plaza de Armas, San Jerónimo de Tunán",
-        lat=-11.94903,
-        lon=-75.28268,
-        altitud_msnm=3274.0,
+        cliente_nombre="Agropecuaria Centenario",
+        direccion_referencia="Jr. Calixto 220, Huancayo",
+        lat=-12.06940,
+        lon=-75.20749,
+        altitud_msnm=3268.0,
         peso_kg=260.0,
         ventana_inicio=time(8, 30),
         ventana_fin=time(12, 30),
@@ -148,6 +158,8 @@ def _window(moment: time) -> datetime:
 
 async def ensure_users(session) -> None:
     """Crea las cuentas de demostración que todavía no existen. No pisa claves ya guardadas."""
+    if not get_settings().allow_demo_accounts:
+        return
     existing = set(await session.scalars(select(Usuario.correo)))
     created = 0
     for nombre, correo, rol in DEMO_ACCOUNTS:
@@ -166,6 +178,43 @@ async def ensure_users(session) -> None:
         logger.info("Cuentas de acceso creadas: %s.", created)
 
 
+async def backfill_tracking_tokens(session) -> None:
+    missing = list(
+        await session.scalars(select(Pedido).where(Pedido.token_seguimiento.is_(None)))
+    )
+    for order in missing:
+        order.token_seguimiento = new_tracking_token()
+    if missing:
+        logger.info("Tokens de seguimiento generados: %s pedidos.", len(missing))
+
+
+async def ensure_demo_driver_assignment(session) -> None:
+    if not get_settings().allow_demo_accounts:
+        return
+    conductor = await session.scalar(
+        select(Usuario).where(Usuario.correo == "conductor@distrirapido.pe")
+    )
+    vehicle = await session.scalar(select(Vehiculo).where(Vehiculo.placa == "W4U-158"))
+    if conductor is None or vehicle is None:
+        return
+    exists = await session.scalar(
+        select(AsignacionConductor.id).where(
+            AsignacionConductor.usuario_id == conductor.id,
+            AsignacionConductor.activa.is_(True),
+        )
+    )
+    if exists is not None:
+        return
+    session.add(
+        AsignacionConductor(
+            usuario_id=conductor.id,
+            vehiculo_id=vehicle.id,
+            activa=True,
+        )
+    )
+    logger.info("Asignación demo: conductor → %s.", vehicle.placa)
+
+
 async def init_database() -> None:
     """Habilita PostGIS, crea el esquema y carga la semilla si aún no hay depósito."""
     async with engine.begin() as connection:
@@ -174,12 +223,16 @@ async def init_database() -> None:
         await connection.execute(
             text("ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS jornada_id INTEGER REFERENCES jornadas(id)")
         )
+        await apply_migrations(connection)
     logger.info("Esquema PostGIS listo.")
 
     async with async_session_factory() as session:
         await ensure_users(session)
         existing = await session.scalar(select(func.count()).select_from(Deposito))
         if existing:
+            await ensure_operating_area(session)
+            await backfill_tracking_tokens(session)
+            await ensure_demo_driver_assignment(session)
             await session.commit()
             logger.info("La semilla ya existe (%s depósitos). Usuarios de acceso verificados.", existing)
             return
@@ -198,9 +251,11 @@ async def init_database() -> None:
                 Vehiculo(
                     deposito_id=depot.id,
                     placa=vehicle.placa,
+                    modelo=vehicle.modelo,
                     capacidad_kg=vehicle.capacidad_kg,
                     capacidad_m3=vehicle.capacidad_m3,
                     tipo_combustible=vehicle.tipo_combustible,
+                    rendimiento_km_gal=vehicle.rendimiento_km_gal,
                     emision_base_co2_g_km=vehicle.emision_base_co2_g_km,
                     factor_penalizacion_pendiente=vehicle.factor_penalizacion_pendiente,
                 )
@@ -218,9 +273,14 @@ async def init_database() -> None:
                     ventana_inicio=_window(order.ventana_inicio),
                     ventana_fin=_window(order.ventana_fin),
                     estado=EstadoPedido.PENDING,
+                    estado_ubicacion=EstadoUbicacion.GEOCODIFICADO,
+                    token_seguimiento=new_tracking_token(),
                 )
             )
 
+        await ensure_operating_area(session)
+        await backfill_tracking_tokens(session)
+        await ensure_demo_driver_assignment(session)
         await session.commit()
         logger.info(
             "Semilla cargada: 1 depósito, %s vehículos, %s pedidos.",

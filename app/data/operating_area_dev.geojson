@@ -1,0 +1,29 @@
+{
+  "type": "FeatureCollection",
+  "properties": {
+    "provisional": true,
+    "note": "Sobre de desarrollo — no es límite distrital oficial"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Envelope Huancayo–El Tambo–Chilca (dev)"
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [-75.265, -12.115],
+              [-75.165, -12.115],
+              [-75.165, -12.015],
+              [-75.265, -12.015],
+              [-75.265, -12.115]
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

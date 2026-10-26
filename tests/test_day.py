@@ -34,26 +34,25 @@ async def test_csv_accepts_known_places_and_leaves_the_pin_for_the_rest(client: 
     assert rows["PED-212"]["resultado"] == "pendiente_punto"
     assert rows["PED-213"]["resultado"] == "rechazado"
 
-    saved = await client.post(
-        "/api/v1/pedidos",
-        headers=headers,
-        json={
-            "codigo_pedido": "PED-212",
-            "cliente_nombre": "Puesto Sin Mapa",
-            "direccion_referencia": "Callejón sin nombre, El Tambo",
-            "lat": -12.07,
-            "lon": -75.21,
-            "altitud_msnm": 3270,
-            "peso_kg": 15,
-            "ventana_inicio": "2026-10-08T10:00:00-05:00",
-            "ventana_fin": "2026-10-08T13:00:00-05:00",
-            "fecha": DAY,
-        },
-    )
-    assert saved.status_code == 201
+    assert imported.json()["pendientes_punto"] == 1
+    assert rows["PED-212"]["pedido_id"] is not None
 
     day = await client.get(f"/api/v1/jornadas/{DAY}", headers=headers)
     assert day.status_code == 200
+    ped212 = next(order for order in day.json()["pedidos"] if order["codigo_pedido"] == "PED-212")
+    assert ped212["estado_ubicacion"] == "pendiente_validacion"
+    assert ped212["ubicacion"] is None
+
+    patched = await client.patch(
+        f"/api/v1/pedidos/{ped212['id']}/ubicacion",
+        headers=headers,
+        json={"lat": -12.07, "lon": -75.21, "altitud_msnm": 3270},
+    )
+    assert patched.status_code == 200
+    assert patched.json()["estado_ubicacion"] == "geocodificado"
+    assert patched.json()["ubicacion"]["coordinates"] == pytest.approx([-75.21, -12.07])
+
+    day = await client.get(f"/api/v1/jornadas/{DAY}", headers=headers)
     codes = {order["codigo_pedido"] for order in day.json()["pedidos"]}
     assert codes == {"PED-210", "PED-211", "PED-212"}
 
@@ -62,7 +61,7 @@ async def test_csv_accepts_known_places_and_leaves_the_pin_for_the_rest(client: 
 async def test_admin_registers_a_vehicle_and_operator_can_inactivate_it(client: AsyncClient) -> None:
     admin = await login_headers(client, "admin@distrirapido.pe", "Admin.2026")
     operador = await login_headers(client, "operador@distrirapido.pe", "Operador.2026")
-    depot = await client.get("/api/v1/depositos")
+    depot = await client.get("/api/v1/depositos", headers=operador)
     depot_id = depot.json()[0]["id"]
 
     blocked = await client.post(
@@ -71,9 +70,11 @@ async def test_admin_registers_a_vehicle_and_operator_can_inactivate_it(client: 
         json={
             "deposito_id": depot_id,
             "placa": "X1Y-200",
+            "modelo": "Furgón",
             "capacidad_kg": 800,
             "capacidad_m3": 4,
             "tipo_combustible": "diesel",
+            "rendimiento_km_gal": 12,
             "emision_base_co2_g_km": 200,
             "factor_penalizacion_pendiente": 0.04,
         },
@@ -86,9 +87,11 @@ async def test_admin_registers_a_vehicle_and_operator_can_inactivate_it(client: 
         json={
             "deposito_id": depot_id,
             "placa": "X1Y-200",
+            "modelo": "Furgón",
             "capacidad_kg": 800,
             "capacidad_m3": 4,
             "tipo_combustible": "diesel",
+            "rendimiento_km_gal": 12,
             "emision_base_co2_g_km": 200,
             "factor_penalizacion_pendiente": 0.04,
         },
@@ -99,13 +102,14 @@ async def test_admin_registers_a_vehicle_and_operator_can_inactivate_it(client: 
     updated = await client.patch(
         f"/api/v1/flota/{vehicle_id}",
         headers=operador,
-        json={"activo": False, "capacidad_kg": 700},
+        json={"estado_operativo": "inactivo", "capacidad_kg": 700},
     )
     assert updated.status_code == 200
     assert updated.json()["activo"] is False
+    assert updated.json()["estado_operativo"] == "inactivo"
     assert updated.json()["capacidad_kg"] == 700
 
-    active = await client.get("/api/v1/vehiculos")
+    active = await client.get("/api/v1/vehiculos", headers=operador)
     assert "X1Y-200" not in {item["placa"] for item in active.json()}
 
     history = await client.get(f"/api/v1/flota/{vehicle_id}/historial", headers=operador)

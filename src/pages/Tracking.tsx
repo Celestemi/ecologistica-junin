@@ -1,12 +1,12 @@
 import L from "leaflet";
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
-import { fetchTracking } from "../api";
+import { fetchPublicTracking } from "../api";
 import { Brand } from "../components/Brand";
 import { homeFor } from "../lib/access";
 import { formatCo2, formatTime, formatWindow, statusLabel } from "../lib/format";
 import { loadSession } from "../lib/session";
-import { HUANCAYO_CENTER, type OrderTracking } from "../types";
+import { HUANCAYO_CENTER, type PublicOrderTracking } from "../types";
 
 type LiveFix = {
   lat: number;
@@ -20,23 +20,23 @@ type Channel = "whatsapp" | "sms";
 const FIVE_MINUTES = 5;
 
 export function Tracking() {
-  const initialCode = codeFromPath();
-  const [draft, setDraft] = useState(initialCode);
-  const [order, setOrder] = useState<OrderTracking | null>(null);
+  const initialToken = tokenFromPath();
+  const [draft, setDraft] = useState(initialToken);
+  const [order, setOrder] = useState<PublicOrderTracking | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState<LiveFix | null>(null);
   const [linked, setLinked] = useState(false);
   const [channels, setChannels] = useState<Record<Channel, boolean>>({ whatsapp: true, sms: false });
   const [alerts, setAlerts] = useState<Channel[]>([]);
   const [stopsBefore, setStopsBefore] = useState<number | null>(null);
-  const [loading, setLoading] = useState(Boolean(initialCode));
+  const [loading, setLoading] = useState(Boolean(initialToken));
 
   useEffect(() => {
-    if (!initialCode) {
+    if (!initialToken) {
       return;
     }
     let active = true;
-    fetchTracking(initialCode)
+    fetchPublicTracking(initialToken)
       .then((card) => {
         if (active) {
           setOrder(card);
@@ -55,10 +55,10 @@ export function Tracking() {
     return () => {
       active = false;
     };
-  }, [initialCode]);
+  }, [initialToken]);
 
   useEffect(() => {
-    if (!initialCode) {
+    if (!initialToken) {
       return;
     }
     let socket: WebSocket | null = null;
@@ -68,7 +68,7 @@ export function Tracking() {
     const connect = () => {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       socket = new WebSocket(
-        `${protocol}//${window.location.host}/ws/tracking/${encodeURIComponent(initialCode)}`,
+        `${protocol}//${window.location.host}/ws/tracking/${encodeURIComponent(initialToken)}`,
       );
       socket.onopen = () => setLinked(true);
       socket.onmessage = (event) => {
@@ -76,14 +76,8 @@ export function Tracking() {
         if (!message) {
           return;
         }
-        if (message.type === "route_update" && Array.isArray(message.sequence)) {
-          const index = message.sequence.indexOf(initialCode);
-          if (index >= 0) {
-            setStopsBefore(index);
-          }
-        }
-        if (message.order_code !== initialCode) {
-          return;
+        if (typeof message.paradas_previas === "number") {
+          setStopsBefore(message.paradas_previas);
         }
         if (typeof message.lat === "number" || typeof message.minutes === "number" || typeof message.eta === "string") {
           setLive((current) => ({
@@ -108,7 +102,7 @@ export function Tracking() {
       closed = true;
       socket?.close();
     };
-  }, [initialCode]);
+  }, [initialToken]);
 
   useEffect(() => {
     const minutes = live?.minutes;
@@ -146,10 +140,10 @@ export function Tracking() {
         <section className="overflow-hidden rounded-3xl bg-stone-200 ring-1 ring-stone-300 lg:min-h-[560px]">
           <div className="h-[46vh] min-h-[280px] lg:h-full">
             {order ? (
-              <CustomerMap destination={[order.lat, order.lon]} driver={driverPoint(live)} />
+              <CustomerMap destination={[order.lat_aprox, order.lon_aprox]} driver={driverPoint(live)} />
             ) : (
               <div className="flex h-full items-center justify-center px-6 text-center text-stone-600">
-                {loading ? "Buscando tu pedido…" : "Ingresa tu código para ver el mapa de la entrega."}
+                {loading ? "Buscando tu pedido…" : "Pega el enlace de seguimiento que te envió DistriRápido."}
               </div>
             )}
           </div>
@@ -166,15 +160,15 @@ export function Tracking() {
               }
             }}
           >
-            <label className="text-sm font-medium" htmlFor="codigo">
-              Código de pedido
+            <label className="text-sm font-medium" htmlFor="enlace">
+              Enlace de seguimiento
             </label>
             <div className="mt-2 flex gap-2">
               <input
-                id="codigo"
+                id="enlace"
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
-                placeholder="PED-001"
+                placeholder="UUID del enlace seguro"
                 className="min-h-12 flex-1 rounded-2xl border border-stone-300 px-3 text-lg"
               />
               <button type="submit" className="min-h-12 rounded-2xl bg-[#14532d] px-4 font-semibold text-white">
@@ -194,7 +188,7 @@ export function Tracking() {
                   {etaLabel ? `Hora estimada ${formatTime(etaLabel)}` : "La hora se confirma cuando el vehículo sale."}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <p className="text-lg font-medium">{order.cliente_nombre}</p>
+                  <p className="text-lg font-medium">{order.zona_entrega}</p>
                   <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-950">
                     {statusLabel(order.estado)}
                   </span>
@@ -202,17 +196,13 @@ export function Tracking() {
                     {linked ? "En vivo" : "Conectando"}
                   </span>
                 </div>
-                <p>{order.direccion_referencia}</p>
                 <p className="mt-2 text-sm text-stone-600">
                   Ventana {formatWindow(order.ventana_inicio, order.ventana_fin)}
-                  {order.placa ? ` · Vehículo ${order.placa}` : ""}
                 </p>
                 <p className="mt-3 rounded-2xl bg-emerald-50 px-3 py-2 text-sm">
-                  {order.codigo_ruta
-                    ? (stopsBefore ?? order.paradas_previas) === 0
-                      ? "Eres la siguiente entrega de esta ruta."
-                      : `${stopsBefore ?? order.paradas_previas} ${(stopsBefore ?? order.paradas_previas) === 1 ? "parada previa" : "paradas previas"} antes de la tuya.`
-                    : "Tu pedido todavía no está en una ruta publicada."}
+                  {(stopsBefore ?? order.paradas_previas) === 0
+                    ? "Eres la siguiente entrega en la ruta eco-optimizada."
+                    : `${stopsBefore ?? order.paradas_previas} ${(stopsBefore ?? order.paradas_previas) === 1 ? "parada previa" : "paradas previas"} antes de la tuya.`}
                 </p>
               </article>
 
@@ -257,8 +247,7 @@ export function Tracking() {
               }`}
               role="status"
             >
-              {channel === "whatsapp" ? "WhatsApp" : "SMS"} · {order.codigo_pedido} está a menos de 5 minutos.{" "}
-              {order.direccion_referencia}.
+              {channel === "whatsapp" ? "WhatsApp" : "SMS"} · Tu entrega está a menos de 5 minutos ({order.zona_entrega}).
               <button type="button" className="ml-2 font-semibold underline" onClick={() => setAlerts([])}>
                 Cerrar
               </button>
@@ -358,10 +347,14 @@ function formatArrival(minutes: number): string {
   return rounded === 1 ? "En 1 minuto" : `En ${rounded} minutos`;
 }
 
-function codeFromPath(): string {
+const TOKEN_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function tokenFromPath(): string {
   const parts = window.location.pathname.split("/").filter(Boolean);
   if (parts[0] === "seguimiento" && parts[1]) {
-    return decodeURIComponent(parts[1]);
+    const candidate = decodeURIComponent(parts[1]);
+    return TOKEN_RE.test(candidate) ? candidate : "";
   }
   return "";
 }

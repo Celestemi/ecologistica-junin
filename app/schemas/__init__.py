@@ -9,6 +9,7 @@ from app.schemas.logistics import (
     PedidoRead,
     VehiculoCreate,
     VehiculoRead,
+    VehiculoUpdate,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "PedidoRead",
     "VehiculoCreate",
     "VehiculoRead",
+    "VehiculoUpdate",
 ]

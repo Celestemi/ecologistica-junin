@@ -10,6 +10,8 @@ export function Dashboard({ metadata }: DashboardProps) {
   const avoided = metadata?.co2_evitado_kg ?? 0;
   const reference = metadata?.co2_referencia_kg ?? 0;
   const percent = metadata ? reductionPercent(avoided, reference) : 0;
+  const seqCo2Pct = metadata?.ahorro_co2_pct_vs_secuencial;
+  const seqDistPct = metadata?.ahorro_distancia_pct_vs_secuencial;
   const trees = metadata?.arboles_quinual_eq ?? 0;
   const chart = metadata
     ? [
@@ -23,12 +25,24 @@ export function Dashboard({ metadata }: DashboardProps) {
       <Kpi
         label="Distancia total optimizada"
         value={metadata ? formatKm(metadata.distancia_total_km) : "—"}
-        hint={metadata ? metadata.codigo : "Aún sin corrida"}
+        hint={
+          metadata
+            ? seqDistPct != null
+              ? `${metadata.codigo} · ${seqDistPct.toFixed(0)} % km vs secuencial (RN-008)`
+              : metadata.codigo
+            : "Aún sin corrida"
+        }
       />
       <Kpi
         label="Reducción de CO2"
         value={metadata ? formatKg(avoided) : "—"}
-        hint={metadata ? `${percent.toFixed(0)} % frente al FIFO` : "kg y porcentaje"}
+        hint={
+          metadata
+            ? seqCo2Pct != null
+              ? `${percent.toFixed(0)} % vs FIFO · ${seqCo2Pct.toFixed(0)} % vs secuencial`
+              : `${percent.toFixed(0)} % frente al FIFO`
+            : "kg y porcentaje"
+        }
       />
       <article className="rounded-2xl border border-emerald-900/10 bg-emerald-950 px-4 py-3 text-emerald-50">
         <p className="text-xs tracking-wide text-emerald-200/80">Impacto local</p>

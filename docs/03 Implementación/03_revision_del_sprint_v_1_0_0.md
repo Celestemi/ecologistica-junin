@@ -1,5 +1,7 @@
 # 03. Revisión del Sprint V_1_0_0.md
 
+> **Documento histórico.** Supersedido por [03_revision_del_sprint_v_1_0_1.md](03_revision_del_sprint_v_1_0_1.md) (2026-10-26).
+
 # Revisión del sprint
 
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.

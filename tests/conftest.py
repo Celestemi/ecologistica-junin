@@ -25,8 +25,26 @@ def _with_database(url: str, database: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, f"/{database}", "", ""))
 
 
-os.environ["DATABASE_URL"] = _with_database(_SOURCE_URL, "ecologistica_test")
+_TEST_DATABASE = "ecologistica_test"
+os.environ["DATABASE_URL"] = _with_database(_SOURCE_URL, _TEST_DATABASE)
+
+
+def _assert_test_database_isolated() -> None:
+    """Evita TRUNCATE o semillas destructivas fuera de la BD de prueba."""
+    url = os.environ.get("DATABASE_URL", "")
+    parts = urlsplit(url)
+    database = (parts.path or "").lstrip("/").split("?")[0]
+    if database != _TEST_DATABASE:
+        raise RuntimeError(
+            "Abortando pruebas: DATABASE_URL debe apuntar exclusivamente a "
+            f"'{_TEST_DATABASE}', no a '{database or '(vacío)'}'."
+        )
+
+
+_assert_test_database_isolated()
 os.environ["AUTH_BCRYPT_ROUNDS"] = "4"
+os.environ["APP_ENVIRONMENT"] = "demo"
+os.environ["ALLOW_DEMO_ACCOUNTS"] = "true"
 
 from app.core.database import engine  # noqa: E402
 from app.db.init_db import init_database  # noqa: E402
@@ -52,11 +70,14 @@ async def _ensure_test_database() -> None:
 
 
 async def _reset_seed() -> None:
+    _assert_test_database_isolated()
     async with engine.begin() as connection:
         await connection.execute(
             text(
-                "TRUNCATE TABLE bitacora, historial_vehiculo, rutas_detalle, soluciones_ruta, pedidos, "
-                "vehiculos, jornadas, depositos RESTART IDENTITY CASCADE"
+                "TRUNCATE TABLE bitacora, historial_restriccion_placa, restriccion_placa_reglas, "
+                "restriccion_placa_config, asignaciones_conductor, historial_vehiculo, rutas_detalle, "
+                "soluciones_ruta, pedidos, vehiculos, jornadas, depositos, area_operacion "
+                "RESTART IDENTITY CASCADE"
             )
         )
         await connection.execute(

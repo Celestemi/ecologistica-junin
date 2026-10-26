@@ -36,8 +36,12 @@ async def test_health(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_list_vehicles_and_pending_orders(client: AsyncClient) -> None:
-    vehicles = await client.get("/api/v1/vehiculos")
-    orders = await client.get("/api/v1/pedidos")
+    anonymous_orders = await client.get("/api/v1/pedidos")
+    assert anonymous_orders.status_code == 401
+
+    headers = await login_headers(client, "operador@distrirapido.pe", "Operador.2026")
+    vehicles = await client.get("/api/v1/vehiculos", headers=headers)
+    orders = await client.get("/api/v1/pedidos", headers=headers)
     assert vehicles.status_code == 200
     assert orders.status_code == 200
     plates = {item["placa"] for item in vehicles.json()}
@@ -98,7 +102,7 @@ async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient)
     assert pending.status_code == 200
     assert pending.json() == []
 
-    published = await client.get("/api/v1/rutas/mapa")
+    published = await client.get("/api/v1/rutas/mapa", headers=headers)
     assert published.status_code == 200
     map_plates = {
         feature["properties"].get("plate")
@@ -107,7 +111,7 @@ async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient)
     }
     assert map_plates == {"W4U-158", "E7M-304"}
 
-    active = await client.get("/api/v1/rutas/activas", params={"placa": "W4U-158"})
+    active = await client.get("/api/v1/rutas/activas", params={"placa": "W4U-158"}, headers=headers)
     assert active.status_code == 200
     route = active.json()
     assert route["codigo"].startswith("SOL-")
@@ -118,15 +122,25 @@ async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient)
     assert deliveries[0]["peso_kg"] > 0
     assert isinstance(deliveries[0]["lat"], float)
 
-    tracked = await client.get(f"/api/v1/seguimiento/{deliveries[0]['codigo_pedido']}")
+    code = deliveries[0]["codigo_pedido"]
+    denied_public = await client.get(f"/api/v1/seguimiento/{code}")
+    assert denied_public.status_code == 401
+
+    tracked = await client.get(f"/api/v1/seguimiento/{code}", headers=headers)
     assert tracked.status_code == 200
     card = tracked.json()
-    assert card["codigo_pedido"] == deliveries[0]["codigo_pedido"]
-    assert card["paradas_previas"] >= 0
-    assert card["co2_evitado_kg"] >= 0
-    assert card["lat"]
+    assert card["codigo_pedido"] == code
+    token = card["token_seguimiento"]
+    assert token
 
-    missing = await client.get("/api/v1/seguimiento/NO-EXISTE")
+    public = await client.get(f"/api/v1/seguimiento/publico/{token}")
+    assert public.status_code == 200
+    public_card = public.json()
+    assert "cliente_nombre" not in public_card
+    assert public_card["zona_entrega"]
+    assert public_card["paradas_previas"] >= 0
+
+    missing = await client.get("/api/v1/seguimiento/publico/00000000-0000-4000-8000-000000000000")
     assert missing.status_code == 404
 
     second = await client.post("/api/v1/optimizar-rutas", headers=headers)

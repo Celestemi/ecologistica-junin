@@ -10,15 +10,15 @@ from __future__ import annotations
 
 import io
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
 from geoalchemy2.elements import WKTElement
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -30,23 +30,69 @@ from app.core.database import get_db
 from app.core.emissions import quinual_equivalent
 from app.core.geo import geometry_to_geojson, point_wkt
 from app.models.domain import Deposito, Pedido, RutaDetalle, SolucionRuta, Vehiculo
-from app.models.enums import EstadoPedido, EstadoSolucion, RolUsuario, TipoParada
+from app.models.enums import (
+    EstadoEta,
+    EstadoOperativoVehiculo,
+    EstadoPedido,
+    EstadoSolucion,
+    EstadoUbicacion,
+    RolUsuario,
+    TipoParada,
+)
 from app.schemas.logistics import (
-    OptimizedRouteResponse,
     DepositoRead,
+    OptimizedRouteResponse,
     ActiveRouteRead,
     DriverStopRead,
+    PublicTrackingRead,
     TrackingRead,
     PedidoCreateRequest,
     PedidoRead,
+    PedidoLocationUpdate,
+    PedidoWindowUpdate,
     RouteOptimizationGeoJSON,
+    ExclusionPlacaMetadata,
     RouteOptimizationMetadata,
     VehiculoRead,
     _feature_collection,
 )
+from app.services.driver_assignment import assigned_vehicle
+from app.services.rbac import DENY_ROLE, DESK_READ, MAP_READ, ORDER_WRITE
+from app.services.tracking_tokens import (
+    approximate_coordinate,
+    delivery_zone_hint,
+    is_tracking_token,
+    new_tracking_token,
+)
 from app.services.access import OPTIMIZAR_DENEGADO, OPTIMIZAR_RUTAS, REPORTE_DENEGADO, record
+from app.services.geocode import MSG_OUT_OF_AREA, default_altitude
 from app.services.order_import import ensure_jornada
-from app.services.genetic_solver import RouteSolution, StopItinerary, solve_vrptw
+from app.services.order_location import (
+    apply_geocoded_point,
+    assert_location_editable,
+    assert_valley_bounds,
+)
+from app.services.operating_area import point_in_operating_area
+from app.services.order_window import assert_window_editable, normalize_delivery_window
+from app.services.genetic_solver import (
+    SERVICE_MINUTES,
+    RouteSolution,
+    StopItinerary,
+    solve_vrptw,
+)
+from app.services.route_constraints import (
+    precheck_fleet_capacity,
+    validate_for_publication,
+)
+from app.services.optimizer_runtime import optimization_time_budget_seconds, resolve_ga_parameters
+from app.services.routing_matrix import active_distance_adjuster
+from app.services.sequence_eta import recalculate_solution_etas
+from app.services.plate_restriction import (
+    ExclusionPlaca,
+    filter_vehicles_for_planning,
+    load_config,
+    regla_aplicable,
+)
 from app.models.identity import Usuario
 from app.services.pdf_generator import build_sustainability_pdf, load_sustainability_report
 
@@ -97,6 +143,14 @@ OPENAPI_TAGS = [
         "name": "acceso",
         "description": "Ingreso, roles y bitácora. El cliente final no usa esta puerta.",
     },
+    {
+        "name": "jornada",
+        "description": "Consulta de jornada e importación masiva CSV/Excel (RF-004).",
+    },
+    {
+        "name": "restricciones-placa",
+        "description": "Parametrización RN-002 (validación normativa pendiente por defecto).",
+    },
 ]
 
 router = APIRouter(prefix="/api/v1")
@@ -107,8 +161,14 @@ router = APIRouter(prefix="/api/v1")
     response_model=list[PedidoRead],
     tags=["pedidos"],
     summary="Listar pedidos pendientes",
+    responses={401: {"description": "No hay sesión."}, 403: {"description": "Rol no autorizado."}},
 )
-async def list_pending_orders(session: AsyncSession = Depends(get_db)) -> list[Pedido]:
+async def list_pending_orders(
+    session: AsyncSession = Depends(get_db),
+    _: Usuario = Depends(
+        require_roles(*DESK_READ, accion="pedidos_denegado", detail=DENY_ROLE),
+    ),
+) -> list[Pedido]:
     """Devuelve los pedidos en estado pendiente, del más urgente al más tardío."""
     result = await session.scalars(
         select(Pedido)
@@ -131,8 +191,7 @@ async def create_order(
     session: AsyncSession = Depends(get_db),
     actor: Usuario = Depends(
         require_roles(
-            RolUsuario.ADMIN,
-            RolUsuario.OPERADOR,
+            *ORDER_WRITE,
             accion="importar_denegado",
             detail="Solo el operador o el administrador pueden cargar pedidos.",
         )
@@ -147,23 +206,34 @@ async def create_order(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Ya existe un pedido con el código {payload.codigo_pedido}.",
         )
-    start = _as_lima(payload.ventana_inicio)
-    end = _as_lima(payload.ventana_fin)
+    try:
+        start, end = normalize_delivery_window(payload.ventana_inicio, payload.ventana_fin)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     if payload.fecha is not None and (start.date() != payload.fecha or end.date() != payload.fecha):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La ventana no cae en la jornada indicada.",
         )
+    assert_valley_bounds(payload.lat, payload.lon)
+    if not await point_in_operating_area(session, payload.lon, payload.lat):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=MSG_OUT_OF_AREA,
+        )
+    altitude = default_altitude(payload.altitud_msnm)
     order = Pedido(
         codigo_pedido=payload.codigo_pedido,
         cliente_nombre=payload.cliente_nombre,
         direccion_referencia=payload.direccion_referencia,
         ubicacion=point_wkt(payload.lon, payload.lat),
-        altitud_msnm=payload.altitud_msnm,
+        altitud_msnm=altitude,
         peso_kg=payload.peso_kg,
         ventana_inicio=start,
         ventana_fin=end,
         estado=EstadoPedido.PENDING,
+        estado_ubicacion=EstadoUbicacion.GEOCODIFICADO,
+        token_seguimiento=new_tracking_token(),
     )
     if payload.fecha is not None:
         jornada = await ensure_jornada(session, payload.fecha)
@@ -181,16 +251,126 @@ async def create_order(
     return order
 
 
+@router.patch(
+    "/pedidos/{pedido_id}",
+    response_model=PedidoRead,
+    tags=["pedidos"],
+    summary="Actualizar ventana horaria de un pedido",
+    responses={
+        400: {"description": "Ventana horaria inválida."},
+        404: {"description": "Pedido no encontrado."},
+        409: {"description": "El pedido no admite cambios de ventana."},
+    },
+)
+async def update_order_window(
+    pedido_id: int,
+    payload: PedidoWindowUpdate,
+    session: AsyncSession = Depends(get_db),
+    actor: Usuario = Depends(
+        require_roles(
+            *ORDER_WRITE,
+            accion="importar_denegado",
+            detail="Solo el operador o el administrador pueden modificar pedidos.",
+        )
+    ),
+) -> Pedido:
+    order = await session.get(Pedido, pedido_id)
+    if order is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No existe el pedido {pedido_id}.",
+        )
+    assert_window_editable(order)
+    try:
+        start, end = normalize_delivery_window(payload.ventana_inicio, payload.ventana_fin)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    order.ventana_inicio = start
+    order.ventana_fin = end
+    await record(
+        session,
+        correo=actor.correo,
+        accion="importar_pedidos",
+        detalle=f"Ventana actualizada para {order.codigo_pedido}.",
+        usuario=actor,
+    )
+    await session.commit()
+    await session.refresh(order)
+    return order
+
+
+@router.patch(
+    "/pedidos/{pedido_id}/ubicacion",
+    response_model=PedidoRead,
+    tags=["pedidos"],
+    summary="Corregir la ubicación geográfica de un pedido",
+    responses={
+        400: {"description": "Coordenadas inválidas o fuera del ámbito."},
+        404: {"description": "Pedido no encontrado."},
+        409: {"description": "El pedido no admite cambios de ubicación."},
+    },
+)
+async def update_order_location(
+    pedido_id: int,
+    payload: PedidoLocationUpdate,
+    session: AsyncSession = Depends(get_db),
+    actor: Usuario = Depends(
+        require_roles(
+            *ORDER_WRITE,
+            accion="importar_denegado",
+            detail="Solo el operador o el administrador pueden modificar pedidos.",
+        )
+    ),
+) -> Pedido:
+    order = await session.get(Pedido, pedido_id)
+    if order is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No existe el pedido {pedido_id}.",
+        )
+    assert_location_editable(order)
+    assert_valley_bounds(payload.lat, payload.lon)
+    if not await point_in_operating_area(session, payload.lon, payload.lat):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=MSG_OUT_OF_AREA,
+        )
+    altitude = default_altitude(payload.altitud_msnm)
+    apply_geocoded_point(
+        order,
+        lon=payload.lon,
+        lat=payload.lat,
+        altitud_msnm=altitude,
+        ubicacion_wkt=point_wkt(payload.lon, payload.lat),
+    )
+    await record(
+        session,
+        correo=actor.correo,
+        accion="importar_pedidos",
+        detalle=f"Ubicación corregida para {order.codigo_pedido}.",
+        usuario=actor,
+    )
+    await session.commit()
+    await session.refresh(order)
+    return order
+
+
 @router.get(
     "/vehiculos",
     response_model=list[VehiculoRead],
     tags=["vehiculos"],
     summary="Listar la flota disponible",
+    responses={401: {"description": "No hay sesión."}, 403: {"description": "Rol no autorizado."}},
 )
-async def list_vehicles(session: AsyncSession = Depends(get_db)) -> list[Vehiculo]:
+async def list_vehicles(
+    session: AsyncSession = Depends(get_db),
+    _: Usuario = Depends(require_roles(*MAP_READ, accion="flota_denegada", detail=DENY_ROLE)),
+) -> list[Vehiculo]:
     """Devuelve los vehículos activos, ordenados por placa."""
     result = await session.scalars(
-        select(Vehiculo).where(Vehiculo.activo.is_(True)).order_by(Vehiculo.placa, Vehiculo.id)
+        select(Vehiculo)
+        .where(Vehiculo.estado_operativo == EstadoOperativoVehiculo.ACTIVO)
+        .order_by(Vehiculo.placa, Vehiculo.id)
     )
     return list(result.all())
 
@@ -200,8 +380,12 @@ async def list_vehicles(session: AsyncSession = Depends(get_db)) -> list[Vehicul
     response_model=list[DepositoRead],
     tags=["depositos"],
     summary="Listar depósitos",
+    responses={401: {"description": "No hay sesión."}, 403: {"description": "Rol no autorizado."}},
 )
-async def list_depots(session: AsyncSession = Depends(get_db)) -> list[Deposito]:
+async def list_depots(
+    session: AsyncSession = Depends(get_db),
+    _: Usuario = Depends(require_roles(*MAP_READ, accion="deposito_denegado", detail=DENY_ROLE)),
+) -> list[Deposito]:
     """Devuelve los depósitos con su punto PostGIS, para el marcador del mapa."""
     result = await session.scalars(select(Deposito).order_by(Deposito.id))
     return list(result.all())
@@ -255,13 +439,19 @@ async def sustainability_pdf(
     response_model=ActiveRouteRead,
     tags=["optimizacion"],
     summary="Leer la ruta activa para el conductor",
-    responses={404: {"description": "Todavía no hay una solución calculada."}},
+    responses={
+        401: {"description": "No hay sesión."},
+        403: {"description": "Rol no autorizado o vehículo ajeno."},
+        404: {"description": "Todavía no hay una solución calculada."},
+    },
 )
 async def active_route(
     placa: str | None = None,
     session: AsyncSession = Depends(get_db),
+    actor: Usuario = Depends(require_roles(*MAP_READ, accion="ruta_denegada", detail=DENY_ROLE)),
 ) -> ActiveRouteRead:
     """Devuelve las paradas vigentes de cada vehículo, aunque un recálculo sea más nuevo."""
+    placa = await _enforce_vehicle_scope(session, actor, placa)
     grouped = await _fleet_groups(session)
     if placa is not None:
         grouped = [details for details in grouped if details and details[0].vehiculo.placa == placa]
@@ -287,11 +477,21 @@ async def active_route(
     response_model=RouteOptimizationGeoJSON,
     tags=["optimizacion"],
     summary="Mapa vigente de toda la flota",
-    responses={404: {"description": "Todavía no hay una solución calculada."}},
+    responses={
+        401: {"description": "No hay sesión."},
+        403: {"description": "Rol no autorizado."},
+        404: {"description": "Todavía no hay una solución calculada."},
+    },
 )
-async def fleet_map(session: AsyncSession = Depends(get_db)) -> RouteOptimizationGeoJSON:
+async def fleet_map(
+    session: AsyncSession = Depends(get_db),
+    actor: Usuario = Depends(require_roles(*MAP_READ, accion="ruta_denegada", detail=DENY_ROLE)),
+) -> RouteOptimizationGeoJSON:
     """GeoJSON de la última ruta de cada vehículo. Un recálculo no borra al resto."""
+    scoped_plate = await _enforce_vehicle_scope(session, actor, None)
     grouped = await _fleet_groups(session)
+    if scoped_plate is not None:
+        grouped = [details for details in grouped if details and details[0].vehiculo.placa == scoped_plate]
     if not grouped:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No hay una ruta activa.")
     details = [detail for group in grouped for detail in group]
@@ -319,30 +519,47 @@ async def fleet_map(session: AsyncSession = Depends(get_db)) -> RouteOptimizatio
 
 
 @router.get(
+    "/seguimiento/publico/{token}",
+    response_model=PublicTrackingRead,
+    tags=["pedidos"],
+    summary="Seguimiento público con token opaco",
+    responses={404: {"description": "Enlace de seguimiento inválido."}},
+)
+async def track_order_public(token: str, session: AsyncSession = Depends(get_db)) -> PublicTrackingRead:
+    """Canal del cliente final: datos minimizados, sin identificadores predecibles."""
+    if not is_tracking_token(token):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enlace de seguimiento inválido.")
+    order = await session.scalar(select(Pedido).where(Pedido.token_seguimiento == token))
+    if order is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enlace de seguimiento inválido.")
+    solution = await _latest_solution_for_order(session, order.id)
+    return _public_tracking_read(order, solution)
+
+
+@router.get(
     "/seguimiento/{codigo_pedido}",
     response_model=TrackingRead,
     tags=["pedidos"],
-    summary="Seguimiento público de un pedido",
-    responses={404: {"description": "No existe ese código de pedido."}},
+    summary="Seguimiento interno por código de pedido",
+    responses={
+        401: {"description": "No hay sesión."},
+        403: {"description": "Rol no autorizado."},
+        404: {"description": "No existe ese código de pedido."},
+    },
 )
-async def track_order(codigo_pedido: str, session: AsyncSession = Depends(get_db)) -> TrackingRead:
-    """Devuelve destino, ETA planificada, paradas previas y el CO2 evitado de ese envío."""
+async def track_order(
+    codigo_pedido: str,
+    session: AsyncSession = Depends(get_db),
+    _: Usuario = Depends(require_roles(*DESK_READ, accion="seguimiento_denegado", detail=DENY_ROLE)),
+) -> TrackingRead:
+    """Detalle completo para personal autorizado."""
     order = await session.scalar(select(Pedido).where(Pedido.codigo_pedido == codigo_pedido))
     if order is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No existe el pedido {codigo_pedido}.",
         )
-    solution = await session.scalar(
-        select(SolucionRuta)
-        .where(SolucionRuta.detalles.any(RutaDetalle.pedido_id == order.id))
-        .options(
-            selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.vehiculo),
-            selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.pedido),
-        )
-        .order_by(SolucionRuta.id.desc())
-        .limit(1)
-    )
+    solution = await _latest_solution_for_order(session, order.id)
     return _tracking_read(order, solution)
 
 
@@ -357,6 +574,7 @@ async def track_order(codigo_pedido: str, session: AsyncSession = Depends(get_db
         401: {"description": "No hay sesión."},
         403: {"description": "El rol no puede ejecutar la optimización."},
         404: {"description": "Falta depósito, flota activa o pedidos pendientes."},
+        409: {"description": "No existe plan factible con la flota y restricciones duras."},
     },
 )
 async def optimize_routes(
@@ -368,17 +586,71 @@ async def optimize_routes(
             detail="Solo el operador de logística puede ejecutar la optimización.",
         )
     ),
+    fecha: date | None = Query(
+        None,
+        description="Jornada operativa (fecha) a optimizar. Por defecto, la más antigua con pedidos pendientes.",
+    ),
 ) -> RouteOptimizationGeoJSON:
     """Corre el GA, guarda la solución y responde con el mapa y los KPIs."""
     depot = await _require_depot(session)
     vehicles = await _require_vehicles(session, depot.id)
-    orders = await _require_pending_orders(session)
+    orders = await _require_pending_orders(session, operation_day=fecha)
+    planning_day = min(_as_lima(order.ventana_inicio) for order in orders).date()
+    await ensure_jornada(session, planning_day)
+    plate_config = await load_config(session)
+    vehicles, plate_exclusions = filter_vehicles_for_planning(vehicles, planning_day, plate_config)
+    if not vehicles:
+        reason = (
+            plate_exclusions[0].motivo
+            if plate_exclusions
+            else "No hay vehículos activos disponibles para la planificación."
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=reason,
+        )
+    fleet_check = precheck_fleet_capacity(orders, vehicles)
+    if not fleet_check.feasible:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=fleet_check.as_detail(),
+        )
     try:
-        solved = solve_vrptw(orders, vehicles, depot)
+        generations, population_size = resolve_ga_parameters(len(orders), len(vehicles))
+        solved = solve_vrptw(
+            orders,
+            vehicles,
+            depot,
+            generations=generations,
+            population_size=population_size,
+            seed=get_settings().optimizer_seed,
+            distance_adjuster=active_distance_adjuster(),
+            time_budget_seconds=optimization_time_budget_seconds(),
+        )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
-    solution = _persist_solution(session, depot, orders, vehicles, solved)
+    publication = validate_for_publication(
+        solved,
+        orders,
+        vehicles,
+        service_minutes=SERVICE_MINUTES,
+    )
+    if not publication.ok:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=publication.as_detail(),
+        )
+
+    solution = _persist_solution(
+        session,
+        depot,
+        orders,
+        vehicles,
+        solved,
+        plate_exclusions=plate_exclusions,
+        plate_rule_active=regla_aplicable(plate_config),
+    )
     await record(
         session,
         correo=actor.correo,
@@ -388,10 +660,62 @@ async def optimize_routes(
     )
     await session.commit()
     geojson = OptimizedRouteResponse.from_solution(solution).geojson
+    unassigned_codes = [
+        order.codigo_pedido
+        for order in orders
+        if order.id in solved.unassigned_order_ids
+    ]
     return RouteOptimizationGeoJSON(
         features=geojson.features,
-        metadata=_metadata(solution, solved, len(orders)),
+        metadata=_metadata(
+            solution,
+            solved,
+            len(orders),
+            unassigned_codes=unassigned_codes,
+            plate_exclusions=plate_exclusions,
+            plate_rule_active=regla_aplicable(plate_config),
+        ),
     )
+
+
+@router.post(
+    "/soluciones/{solution_id}/recalcular-etas",
+    response_model=OptimizedRouteResponse,
+    tags=["optimizacion"],
+    summary="Recalcular ETA sobre la secuencia publicada",
+    responses={
+        401: {"description": "No hay sesión."},
+        403: {"description": "El rol no puede recalcular."},
+        404: {"description": "Solución inexistente."},
+    },
+)
+async def recalculate_route_etas(
+    solution_id: int,
+    session: AsyncSession = Depends(get_db),
+    _: Usuario = Depends(
+        require_roles(
+            RolUsuario.OPERADOR,
+            accion=OPTIMIZAR_DENEGADO,
+            detail="Solo el operador puede recalcular ETAs.",
+        )
+    ),
+) -> OptimizedRouteResponse:
+    """RF-009 feliz: misma secuencia, nuevos tiempos; no altera entregas completadas."""
+    try:
+        solution = await recalculate_solution_etas(session, solution_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    await session.commit()
+    loaded = await session.scalar(
+        select(SolucionRuta)
+        .where(SolucionRuta.id == solution.id)
+        .options(
+            selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.vehiculo),
+            selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.pedido),
+        )
+    )
+    assert loaded is not None
+    return OptimizedRouteResponse.from_solution(loaded)
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -439,7 +763,10 @@ async def _require_depot(session: AsyncSession) -> Deposito:
 async def _require_vehicles(session: AsyncSession, depot_id: int) -> list[Vehiculo]:
     result = await session.scalars(
         select(Vehiculo)
-        .where(Vehiculo.activo.is_(True), Vehiculo.deposito_id == depot_id)
+        .where(
+            Vehiculo.estado_operativo == EstadoOperativoVehiculo.ACTIVO,
+            Vehiculo.deposito_id == depot_id,
+        )
         .order_by(Vehiculo.id)
     )
     vehicles = list(result.all())
@@ -534,17 +861,40 @@ async def retain_other_vehicles(session: AsyncSession, new_solution: SolucionRut
     new_solution.arboles_quinual_eq = max(new_solution.arboles_quinual_eq, previous.arboles_quinual_eq)
 
 
-async def _require_pending_orders(session: AsyncSession) -> list[Pedido]:
+async def _require_pending_orders(
+    session: AsyncSession,
+    *,
+    operation_day: date | None = None,
+) -> list[Pedido]:
+    pending_filters = (
+        Pedido.estado == EstadoPedido.PENDING,
+        Pedido.estado_ubicacion == EstadoUbicacion.GEOCODIFICADO,
+        Pedido.ubicacion.isnot(None),
+    )
+    if operation_day is None:
+        earliest = await session.scalar(select(func.min(Pedido.ventana_inicio)).where(*pending_filters))
+        if earliest is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No hay pedidos pendientes para optimizar.",
+            )
+        operation_day = _as_lima(earliest).date()
+    day_start = datetime.combine(operation_day, time.min, tzinfo=LIMA)
+    day_end = day_start + timedelta(days=1)
     result = await session.scalars(
         select(Pedido)
-        .where(Pedido.estado == EstadoPedido.PENDING)
+        .where(
+            *pending_filters,
+            Pedido.ventana_inicio >= day_start,
+            Pedido.ventana_inicio < day_end,
+        )
         .order_by(Pedido.ventana_inicio, Pedido.id)
     )
     orders = list(result.all())
     if not orders:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No hay pedidos pendientes para optimizar.",
+            detail=f"No hay pedidos pendientes geocodificados para la jornada {operation_day.isoformat()}.",
         )
     return orders
 
@@ -555,6 +905,9 @@ def _persist_solution(
     orders: list[Pedido],
     vehicles: list[Vehiculo],
     solved: RouteSolution,
+    *,
+    plate_exclusions: list[ExclusionPlaca] | None = None,
+    plate_rule_active: bool = False,
 ) -> SolucionRuta:
     avoided_kg = max(0.0, solved.co2_saved_kg)
     factor = get_settings().quinual_kg_co2_per_year
@@ -574,6 +927,17 @@ def _persist_solution(
         metadatos_ga={
             **solved.metadata(),
             "quinual_kg_co2_por_ano": factor,
+            "jornada_max_min": get_settings().max_shift_minutes,
+            "jornada_normativa_validada": get_settings().shift_limit_normative_validated,
+            "restriccion_placa_aplicada": plate_rule_active,
+            "exclusiones_placa": [
+                {
+                    "placa": item.placa,
+                    "ultimo_digito": item.ultimo_digito,
+                    "motivo": item.motivo,
+                }
+                for item in (plate_exclusions or [])
+            ],
         },
     )
     session.add(solution)
@@ -593,7 +957,61 @@ def _persist_solution(
     return solution
 
 
+async def _latest_solution_for_order(session: AsyncSession, order_id: int) -> SolucionRuta | None:
+    return await session.scalar(
+        select(SolucionRuta)
+        .where(SolucionRuta.detalles.any(RutaDetalle.pedido_id == order_id))
+        .options(
+            selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.vehiculo),
+            selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.pedido),
+        )
+        .order_by(SolucionRuta.id.desc())
+        .limit(1)
+    )
+
+
+async def _enforce_vehicle_scope(
+    session: AsyncSession,
+    actor: Usuario,
+    placa: str | None,
+) -> str | None:
+    if actor.rol != RolUsuario.CONDUCTOR:
+        return placa
+    vehicle = await assigned_vehicle(session, actor.id)
+    if vehicle is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes un vehículo asignado para consultar rutas.",
+        )
+    if placa is not None and placa != vehicle.placa:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo puedes consultar la ruta de tu vehículo asignado.",
+        )
+    return vehicle.placa
+
+
+def _public_tracking_read(order: Pedido, solution: SolucionRuta | None) -> PublicTrackingRead:
+    full = _tracking_read(order, solution)
+    return PublicTrackingRead(
+        estado=full.estado,
+        zona_entrega=delivery_zone_hint(order.direccion_referencia),
+        lat_aprox=approximate_coordinate(full.lat),
+        lon_aprox=approximate_coordinate(full.lon),
+        ventana_inicio=full.ventana_inicio,
+        ventana_fin=full.ventana_fin,
+        eta=full.eta,
+        paradas_previas=full.paradas_previas,
+        co2_evitado_kg=full.co2_evitado_kg,
+    )
+
+
 def _tracking_read(order: Pedido, solution: SolucionRuta | None) -> TrackingRead:
+    if order.ubicacion is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"El pedido {order.codigo_pedido} aún no tiene ubicación geográfica.",
+        )
     longitude, latitude = geometry_to_geojson(order.ubicacion)["coordinates"][:2]
     detail = None
     if solution is not None:
@@ -636,6 +1054,7 @@ def _tracking_read(order: Pedido, solution: SolucionRuta | None) -> TrackingRead
             avoided_kg = solution.co2_evitado_kg * (distance_km / delivery_km)
     return TrackingRead(
         codigo_pedido=order.codigo_pedido,
+        token_seguimiento=order.token_seguimiento,
         cliente_nombre=order.cliente_nombre,
         direccion_referencia=order.direccion_referencia,
         estado=order.estado,
@@ -670,6 +1089,11 @@ def _driver_stop(detail: RutaDetalle) -> DriverStopRead:
         lat=float(latitude),
         lon=float(longitude),
         eta=detail.eta,
+        estado_eta=EstadoEta(detail.estado_eta) if detail.estado_eta else None,
+        minutos_espera_ventana=detail.minutos_espera_ventana,
+        minutos_tarde_ventana=detail.minutos_tarde_ventana,
+        secuencia_entrega=detail.secuencia_entrega,
+        modelo_distancia=detail.modelo_distancia,
         co2_tramo_g=detail.co2_tramo_g,
     )
 
@@ -702,6 +1126,11 @@ def _detail_from_stop(
         pendiente_pct=slope,
         tiempo_viaje_min=stop.travel_minutes,
         eta=stop.eta,
+        estado_eta=stop.eta_estado.value,
+        minutos_espera_ventana=stop.wait_minutes,
+        minutos_tarde_ventana=stop.late_minutes,
+        secuencia_entrega=stop.delivery_index,
+        modelo_distancia=stop.distance_model.value,
         co2_tramo_g=stop.co2_grams,
         geometria_tramo=line,
     )
@@ -711,6 +1140,10 @@ def _metadata(
     solution: SolucionRuta,
     solved: RouteSolution,
     order_count: int,
+    *,
+    unassigned_codes: list[str] | None = None,
+    plate_exclusions: list[ExclusionPlaca] | None = None,
+    plate_rule_active: bool = False,
 ) -> RouteOptimizationMetadata:
     used = sum(1 for itinerary in solved.itineraries if itinerary.stops)
     return RouteOptimizationMetadata(
@@ -729,6 +1162,27 @@ def _metadata(
         feasible=solved.feasible,
         pedidos=order_count,
         vehiculos_usados=used,
+        restriccion_placa_aplicada=plate_rule_active,
+        exclusiones_placa=[
+            ExclusionPlacaMetadata(
+                placa=item.placa,
+                ultimo_digito=item.ultimo_digito,
+                motivo=item.motivo,
+            )
+            for item in (plate_exclusions or [])
+        ],
+        linea_base_secuencial_km=solved.sequential_baseline_distance_km,
+        linea_base_secuencial_co2_kg=solved.sequential_baseline_co2_kg,
+        linea_base_fifo_co2_kg=solved.fifo_co2_kg,
+        linea_base_fifo_km=solved.fifo_distance_km,
+        ahorro_distancia_pct_vs_secuencial=solved.savings_distance_pct_vs_sequential,
+        ahorro_co2_pct_vs_secuencial=solved.savings_co2_pct_vs_sequential,
+        rn008_meta_distancia_cumplida=solved.rn008_distance_goal_met,
+        rn008_meta_co2_cumplida=solved.rn008_co2_goal_met,
+        pedidos_sin_asignar=list(unassigned_codes or []),
+        solver_elapsed_seconds=solved.solver_elapsed_seconds,
+        ga_elapsed_seconds=solved.ga_elapsed_seconds,
+        optimizer_stop_reason=solved.stop_reason,
     )
 
 
