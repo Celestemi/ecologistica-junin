@@ -1,5 +1,7 @@
 # Evaluación de Calidad de Código — SonarQube
 
+**Versión documental:** V_1_0_0
+
 **Nombre del Proyecto:** EcoLogística Huancayo  
 **Fecha de Análisis:** 2026-10-26  
 **Versión del Análisis:** V_1_0_0
@@ -40,3 +42,4 @@ El análisis abarca 11,573 líneas de código (ncloc) y reporta 20 minutos de de
 - `npm.cmd audit --omit=dev --json`: 0 vulnerabilidades reportadas en dependencias de producción frontend.
 - `docker compose exec -T backend pip check`: sin requisitos Python rotos.
 - Escaneo final: análisis procesado correctamente por SonarQube local; Quality Gate `OK`/PASSED.
+\n+[← Volver al README principal](../../../README.md)

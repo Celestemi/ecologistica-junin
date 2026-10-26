@@ -1,5 +1,7 @@
 # Revisión del sprint
 
+**Versión documental:** V_1_0_0
+
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.
 
 **Líder del Proyecto:** Nikole Celeste Bastidas Vilca (Project Manager)
@@ -60,3 +62,4 @@ No se encontró acta, grabación, lista de asistentes, aceptación de stakeholde
 - Realizar y registrar la Sprint Review con stakeholders. Los participantes, fecha, resultado y aceptación siguen pendientes de confirmación.
 
 Las exportaciones, reoptimización y procesamiento asíncrono correspondientes a US-016 a US-018 y EN-002 pertenecen al Sprint 4 y no se registran como pendientes del Sprint 3.
+\n+[← Volver al README principal](../../../README.md)

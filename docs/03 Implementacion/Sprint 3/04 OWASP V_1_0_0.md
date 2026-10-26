@@ -1,5 +1,7 @@
 # Reporte de Seguridad OWASP Top 10 (2025)
 
+**Versión documental:** V_1_0_0
+
 **Nombre del proyecto:** EcoLogística Junín  
 **Fecha de evaluación puntual:** 26 de octubre de 2026  
 **Alcance:** backend FastAPI/Python, frontend React/Vite, configuración Docker y servicios locales en `localhost`  
@@ -83,3 +85,4 @@ Mitigaciones pendientes, en orden recomendado:
 - Los findings de SonarQube son análisis estático: necesitan revisión contextual y no cubren por sí solos el OWASP Top 10.
 
 **Resumen de los diez estados:** A01 Bajo revisión; A02 Vulnerable; A03 Vulnerable; A04 Bajo revisión; A05 Bajo revisión; A06 Bajo revisión; A07 Bajo revisión; A08 Bajo revisión; A09 Vulnerable; A10 Bajo revisión. Ninguna categoría queda declarada Limpio por insuficiencia de evidencia integral.
+\n+[← Volver al README principal](../../../README.md)

@@ -1,5 +1,7 @@
 # Retrospectiva del sprint
 
+**Versión documental:** V_1_0_0
+
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.
 
 **Líder del Proyecto:** Nikole Celeste Bastidas Vilca (Project Manager)
@@ -74,3 +76,4 @@ Las siguientes son **propuestas derivadas de la evidencia**, no acuerdos aprobad
 | Incorporar SCA de Python y auditoría completa de dependencias en CI. | Reporte reproducible, política de severidades y tratamiento documentado de hallazgos. | Por confirmar |
 | Obtener peer review y desplegar a staging mediante pipeline real. | PR aprobado por un par y ejecución de staging exitosa enlazada al Sprint 3. | Por confirmar |
 | Realizar Sprint Review y retrospectiva con el equipo. | Acta con fecha, participantes, feedback, decisiones, responsables y aceptación/rechazo de cada historia. | Por confirmar |
+\n+[← Volver al README principal](../../../README.md)

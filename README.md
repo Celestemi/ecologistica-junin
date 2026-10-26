@@ -6,11 +6,11 @@
 [![React](https://img.shields.io/badge/React-18.0-61DAFB.svg)](https://reactjs.org/)
 [![PostGIS](https://img.shields.io/badge/PostgreSQL-15%20%2B%20PostGIS%203-336791.svg)](https://postgis.net/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](#)
-[![Sprint](https://img.shields.io/badge/Sprint-2%20Cierre%20documental-yellow.svg)](#)
+[![Sprint](https://img.shields.io/badge/Sprint-3%20Cierre%20documental-yellow.svg)](#)
 
-Sistema web de optimización de rutas de reparto de última milla para **DistriRápido S.A.C.** en los distritos de **Huancayo, El Tambo y Chilca** (provincia de Huancayo, Junín). Integra algoritmos de ruteo vehicular con ventanas de tiempo (**VRPTW**) y criterios ecológicos (**Green VRP**). La vista de conductor existe en React; PWA offline, IndexedDB y Service Workers forman parte del alcance planificado y no están acreditados como entregados.
+Sistema web de optimización de rutas de reparto de última milla para **DistriRápido S.A.C.** en los distritos de **Huancayo, El Tambo y Chilca** (provincia de Huancayo, Junín). Integra algoritmos de ruteo vehicular con ventanas de tiempo (**VRPTW**) y criterios ecológicos (**Green VRP**). Sprint 3 incorpora mapa y detalle de rutas, alternativa tabular, indicadores operativos/ambientales y una implementación parcial de PWA offline con IndexedDB y Service Worker; las historias aún no se declaran *Done* porque permanecen brechas de aceptación y de Definition of Done.
 
-> **Estado verificable pre-Sprint 3:** los requisitos y la arquitectura histórica se conservan como baseline. Para diferenciar esa planificación de la implementación y evidencia disponibles, consultar [Estado técnico vigente](docs/ESTADO_TECNICO_VIGENTE.md) y las auditorías centralizadas en `Auditorias-EcoLogistica/`.
+> **Estado verificable al cierre documental de Sprint 3:** los requisitos y la arquitectura histórica se conservan como baseline. Los resultados reales, limitaciones y pendientes del Sprint 3 están enlazados en la sección correspondiente de este README. Las auditorías históricas permanecen centralizadas en `Auditorias-EcoLogistica/`.
 
 ---
 
@@ -66,6 +66,13 @@ ecologistica-junin/
 │           ├── 📄 02_registro_de_impedimentos_v_1_0_0.md
 │           ├── 📄 03_revision_del_sprint_v_1_0_0.md
 │           └── 📄 04_retrospectiva_del_sprint_v_1_0_0.md
+│   └── 📁 03 Implementacion/
+│       └── 📁 Sprint 3/
+│           ├── 📄 01 Revisión del Sprint V_1_0_0.md
+│           ├── 📄 02 Retrospectiva del Sprint V_1_0_0.md
+│           ├── 📄 03 Calidad de código V_1_0_0.md
+│           ├── 📄 04 OWASP V_1_0_0.md
+│           └── 📄 05 WCAG V_1_0_0.md
 ├── 📁 app/                         # Backend FastAPI activo
 ├── 📁 src/                         # Frontend React/TypeScript activo
 ├── 📁 backend/                     # Imagen y entrypoint del backend
@@ -129,6 +136,15 @@ ecologistica-junin/
 * [PLAN_IMPLEMENTACION_SPRINT_2.md](Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md) — *Plan de implementación Sprint 2 (34 SP).*
 * [REPORTE_RENDIMIENTO_EN_001.md](Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md) — *Métricas EN-001 / RNF-001 (solver).*
 
+#### Sprint 3 — Visualización, indicadores y soporte offline (`docs/03 Implementacion/Sprint 3/`)
+* [01 Revisión del Sprint V_1_0_0.md](<docs/03 Implementacion/Sprint 3/01 Revisión del Sprint V_1_0_0.md>) — *Estado real de US-010 a US-015 y EN-004, demostración pendiente y brechas DoD.*
+* [02 Retrospectiva del Sprint V_1_0_0.md](<docs/03 Implementacion/Sprint 3/02 Retrospectiva del Sprint V_1_0_0.md>) — *Aprendizajes basados en evidencia y acciones propuestas pendientes de aprobación.*
+* [03 Calidad de código V_1_0_0.md](<docs/03 Implementacion/Sprint 3/03 Calidad de código V_1_0_0.md>) — *Resultados reales de SonarQube, cobertura y deuda técnica.*
+* [04 OWASP V_1_0_0.md](<docs/03 Implementacion/Sprint 3/04 OWASP V_1_0_0.md>) — *Evaluación puntual OWASP Top 10:2025 y riesgos pendientes.*
+* [05 WCAG V_1_0_0.md](<docs/03 Implementacion/Sprint 3/05 WCAG V_1_0_0.md>) — *Evaluación WCAG 2.2 AA de pantallas renderizadas y verificaciones manuales pendientes.*
+
+Los cinco documentos usan la versión documental inicial `V_1_0_0`. Este cierre no declara las historias Sprint 3 como *Done* ni acredita una Sprint Review/Retrospective celebrada; esas confirmaciones siguen pendientes del equipo.
+
 ---
 
 ### 💻 Código fuente activo
@@ -145,7 +161,7 @@ ecologistica-junin/
 | **Motor VRPTW / Green VRP** | Algoritmo genético propio | Implementado en `app/services/genetic_solver.py`; OR-Tools y DEAP no figuran en manifiestos activos. |
 | **Base de Datos Geoespacial** | PostgreSQL 15 + PostGIS 3 | Persistencia activa con SQLAlchemy/GeoAlchemy y geometrías SRID 4326; la decisión `geometry`/`GEOGRAPHY` sigue pendiente de consolidación. |
 | **Frontend Web** | React.js + Tailwind CSS | Interfaz modular e interactiva para operadores logísticos. |
-| **Móvil / Conductor** | React.js | Vista de conductor implementada; PWA offline, IndexedDB y Service Workers no están verificados como entregados. |
+| **Móvil / Conductor** | React.js + PWA parcial | Vista de conductor, IndexedDB, Service Worker y cola de sincronización implementados; faltan pruebas extremo a extremo de desconexión, reconexión y no duplicidad para acreditar EN-004 como *Done*. |
 | **Cartografía y Ruteo** | Leaflet + distancia geodésica; OSRM opcional | OSRM está apagado por defecto y no forma parte de `docker-compose.yml`. |
 | **Tareas asíncronas** | Sin servicio separado implementado | Redis/Celery pertenecen a la arquitectura prevista, no al runtime actual. |
 

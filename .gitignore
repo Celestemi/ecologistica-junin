@@ -18,6 +18,7 @@ env/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.scannerwork/
 .coverage
 en001_benchmark_last.json
 htmlcov/
@@ -46,6 +47,10 @@ pnpm-debug.log*
 dist/
 build/
 out/
+.lighthouseci/
+lighthouse-report*/
+playwright-report/
+test-results/
 
 # ==============================
 # IDE / Editores
@@ -72,3 +77,4 @@ desktop.ini
 *.tmp
 *.temp
 *.swp
+*~
