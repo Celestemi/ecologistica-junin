@@ -10,7 +10,7 @@
 
 Sistema web de optimización de rutas de reparto de última milla para **DistriRápido S.A.C.** en los distritos de **Huancayo, El Tambo y Chilca** (provincia de Huancayo, Junín). Integra algoritmos de ruteo vehicular con ventanas de tiempo (**VRPTW**) y criterios ecológicos (**Green VRP**). Sprint 3 incorpora mapa y detalle de rutas, alternativa tabular, indicadores operativos/ambientales y una implementación parcial de PWA offline con IndexedDB y Service Worker; las historias aún no se declaran *Done* porque permanecen brechas de aceptación y de Definition of Done.
 
-> **Estado verificable al cierre documental de Sprint 3:** los requisitos y la arquitectura histórica se conservan como baseline. Los resultados reales, limitaciones y pendientes del Sprint 3 están enlazados en la sección correspondiente de este README. Las auditorías históricas permanecen centralizadas en `Auditorias-EcoLogistica/`.
+> **Estado verificable al cierre documental de Sprint 3:** los requisitos y la arquitectura histórica se conservan como baseline. Los resultados reales, limitaciones y pendientes del Sprint 3 están enlazados en la sección correspondiente de este README.
 
 ---
 
@@ -28,55 +28,27 @@ Haz clic en cualquiera de los archivos o carpetas para navegar directamente al d
 
 ```text
 ecologistica-junin/
-├── 📄 README.md
-├── 📁 docs/
-│   ├── 📁 01 Inicio/
-│   │   ├── 📄 00. Directrices y Auditoria V_1_0_3.md
-│   │   ├── 📄 01. Selección del enfoque del proyecto V_1_0_0.md
-│   │   ├── 📄 02. Acta de constitución V_1_0_0.md
-│   │   ├── 📄 03. Declaración de la visión V_1_0_0.md
-│   │   ├── 📄 04. Registro_de_Supuestos_y_Restricciones_EcoLogistica_Huancayo_V1.0.0.md
-│   │   ├── 📄 05. Registro de interesados V_1_0_0.md
-│   │   ├── 📄 06. Requisitos funcionales V_1_0_0.md
-│   │   ├── 📄 07. Requisitos no funcionales V_1_0_0.md
-│   │   ├── 📄 08. Usuarios V_1_0_3.md
-│   │   ├── 📄 09. Reglas de negocio V_1_0_4.md
-│   │   ├── 📄 10. Stack tecnológico V_1_0_3.md
-│   │   ├── 📄 11. Base de datos V_1_0_3.md
-│   │   ├── 📄 12. Modelo C4 V_1_0_6.md
-│   │   └── 📄 13. Restricciones V_1_0_4.md
-│   ├── 📁 02 Planificacion/
-│   │   ├── 📁 Capturas en JIRA/
-│   │   │   ├── 🖼️ 01-roadmap.png
-│   │   │   ├── 🖼️ 02-backlog-priorizado.png
-│   │   │   ├── 🖼️ 03-sprint-planning.png
-│   │   │   ├── 🖼️ 04-tablero-scrum.png
-│   │   │   └── 🖼️ 05-versiones-release.png
-│   │   ├── 📄 01_transformando_a_agil_v_1_0_0.md
-│   │   ├── 📄 02 Artefactos Jira V_1_0_0.md
-│   │   ├── 📄 03_registro_de_riesgos_v_1_0_0.md
-│   │   └── 📄 04_presupuesto_del_proyecto_v_1_0_0.md
-│   └── 📁 03 Implementación/
-│       ├── 📄 01_informe_de_estado_del_proyecto_v_1_0_1.md
-│       ├── 📄 02_registro_de_impedimentos_v_1_0_1.md
-│       ├── 📄 03_revision_del_sprint_v_1_0_1.md
-│       ├── 📄 04_retrospectiva_del_sprint_V_1_0_1.md
-│       └── 📁 Sprint 2/
-│           ├── 📄 01_informe_de_estado_del_proyecto_v_1_0_0.md
-│           ├── 📄 02_registro_de_impedimentos_v_1_0_0.md
-│           ├── 📄 03_revision_del_sprint_v_1_0_0.md
-│           └── 📄 04_retrospectiva_del_sprint_v_1_0_0.md
-│   └── 📁 03 Implementacion/
-│       └── 📁 Sprint 3/
-│           ├── 📄 01 Revisión del Sprint V_1_0_0.md
-│           ├── 📄 02 Retrospectiva del Sprint V_1_0_0.md
-│           ├── 📄 03 Calidad de código V_1_0_0.md
-│           ├── 📄 04 OWASP V_1_0_0.md
-│           └── 📄 05 WCAG V_1_0_0.md
-├── 📁 app/                         # Backend FastAPI activo
-├── 📁 src/                         # Frontend React/TypeScript activo
-├── 📁 backend/                     # Imagen y entrypoint del backend
-└── 📁 frontend/                    # Imagen y configuración Nginx
+├── README.md
+├── app/                            # API y lógica de negocio FastAPI
+├── backend/                        # Dockerfile y entrypoint del backend
+├── docs/
+│   ├── 01 Inicio/
+│   ├── 02 Planificacion/
+│   ├── 03 Implementación/
+│   │   ├── Sprint 1/
+│   │   ├── Sprint 2/
+│   │   └── Sprint 3/
+│   └── 03 Implementacion/          # Directorio presente, sin documentos listados
+├── frontend/                       # Dockerfile y configuración Nginx
+├── public/                         # Recursos estáticos y service worker
+├── scripts/                        # Scripts de soporte
+├── src/                            # Aplicación React/TypeScript
+├── tests/                          # Pruebas del backend
+├── docker-compose.yml
+├── package.json                    # Scripts y dependencias del frontend
+├── pyproject.toml                  # Dependencias y configuración Python
+├── vite.config.ts
+└── vitest.config.ts
 ```
 
 ---
@@ -123,25 +95,19 @@ ecologistica-junin/
 * [02_registro_de_impedimentos_v_1_0_1.md](<docs/03 Implementación/Sprint 1/02_registro_de_impedimentos_v_1_0_1.md>) — *Registro de impedimentos (Plantilla 2).*
 * [03_revision_del_sprint_v_1_0_1.md](<docs/03 Implementación/Sprint 1/03_revision_del_sprint_v_1_0_1.md>) — *Revisión del sprint con matriz de historias (Plantilla 3).*
 * [04_retrospectiva_del_sprint_V_1_0_1.md](<docs/03 Implementación/Sprint 1/04_retrospectiva_del_sprint_V_1_0_1.md>) — *Retrospectiva (Plantilla 4).*
-* [REPORTE_VERIFICACION_DOD_SPRINT_1.md](Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md) — *Verificación DoD Sprint 1.*
-* [PLAN_IMPLEMENTACION_SPRINT_1.md](Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_1.md) — *Plan de implementación Sprint 1.*
-* Las versiones Sprint 1 V_1_0_1 sustituyen referencias históricas V_1_0_0 no presentes en el árbol actual; la trazabilidad y la limitación constan en `Auditorias-EcoLogistica/01_Auditorias/AUDITORIA_02_DOCUMENTACION.md`.
 
 #### Sprint 2 — Geocodificación y motor de rutas (`docs/03 Implementación/Sprint 2/`)
 * [01_informe_de_estado_del_proyecto_v_1_0_0.md](<docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md>) — *Informe de estado Sprint 2 (2026-10-26).*
 * [02_registro_de_impedimentos_v_1_0_0.md](<docs/03 Implementación/Sprint 2/02_registro_de_impedimentos_v_1_0_0.md>) — *Impedimentos Sprint 2 (IMP-010…; referencia IMP-001…009 en Sprint 1).*
 * [03_revision_del_sprint_v_1_0_0.md](<docs/03 Implementación/Sprint 2/03_revision_del_sprint_v_1_0_0.md>) — *Revisión del Sprint 2 con matriz US-005…EN-001.*
 * [04_retrospectiva_del_sprint_v_1_0_0.md](<docs/03 Implementación/Sprint 2/04_retrospectiva_del_sprint_v_1_0_0.md>) — *Retrospectiva Sprint 2 (borrador técnico; validación de equipo pendiente).*
-* [VERIFICACION_FINAL_SPRINT_2.md](Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) — *Auditoría QA integral Sprint 2.*
-* [PLAN_IMPLEMENTACION_SPRINT_2.md](Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md) — *Plan de implementación Sprint 2 (34 SP).*
-* [REPORTE_RENDIMIENTO_EN_001.md](Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md) — *Métricas EN-001 / RNF-001 (solver).*
 
-#### Sprint 3 — Visualización, indicadores y soporte offline (`docs/03 Implementacion/Sprint 3/`)
-* [01 Revisión del Sprint V_1_0_0.md](<docs/03 Implementacion/Sprint 3/01 Revisión del Sprint V_1_0_0.md>) — *Estado real de US-010 a US-015 y EN-004, demostración pendiente y brechas DoD.*
-* [02 Retrospectiva del Sprint V_1_0_0.md](<docs/03 Implementacion/Sprint 3/02 Retrospectiva del Sprint V_1_0_0.md>) — *Aprendizajes basados en evidencia y acciones propuestas pendientes de aprobación.*
-* [03 Calidad de código V_1_0_0.md](<docs/03 Implementacion/Sprint 3/03 Calidad de código V_1_0_0.md>) — *Resultados reales de SonarQube, cobertura y deuda técnica.*
-* [04 OWASP V_1_0_0.md](<docs/03 Implementacion/Sprint 3/04 OWASP V_1_0_0.md>) — *Evaluación puntual OWASP Top 10:2025 y riesgos pendientes.*
-* [05 WCAG V_1_0_0.md](<docs/03 Implementacion/Sprint 3/05 WCAG V_1_0_0.md>) — *Evaluación WCAG 2.2 AA de pantallas renderizadas y verificaciones manuales pendientes.*
+#### Sprint 3 — Visualización, indicadores y soporte offline (`docs/03 Implementación/Sprint 3/`)
+* [01 Revisión del Sprint V_1_0_0.md](<docs/03 Implementación/Sprint 3/01 Revisión del Sprint V_1_0_0.md>) — *Estado real de US-010 a US-015 y EN-004, demostración pendiente y brechas DoD.*
+* [02 Retrospectiva del Sprint V_1_0_0.md](<docs/03 Implementación/Sprint 3/02 Retrospectiva del Sprint V_1_0_0.md>) — *Aprendizajes basados en evidencia y acciones propuestas pendientes de aprobación.*
+* [03 Calidad de código V_1_0_0.md](<docs/03 Implementación/Sprint 3/03 Calidad de código V_1_0_0.md>) — *Resultados reales de SonarQube, cobertura y deuda técnica.*
+* [04 OWASP V_1_0_0.md](<docs/03 Implementación/Sprint 3/04 OWASP V_1_0_0.md>) — *Evaluación puntual OWASP Top 10:2025 y riesgos pendientes.*
+* [05 WCAG V_1_0_0.md](<docs/03 Implementación/Sprint 3/05 WCAG V_1_0_0.md>) — *Evaluación WCAG 2.2 AA de pantallas renderizadas y verificaciones manuales pendientes.*
 
 Los cinco documentos usan la versión documental inicial `V_1_0_0`. Este cierre no declara las historias Sprint 3 como *Done* ni acredita una Sprint Review/Retrospective celebrada; esas confirmaciones siguen pendientes del equipo.
 
@@ -174,4 +140,3 @@ Los cinco documentos usan la versión documental inicial `V_1_0_0`. Este cierre 
 * **DevOps & Data Engineer**: Hernan Anibal Osorio Diaz
 * **QA & Backend Developer**: Geraldine Paola Gómez Toribio
 * **Frontend Developer**: BryanY29
-
