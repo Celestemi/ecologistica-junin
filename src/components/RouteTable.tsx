@@ -23,20 +23,21 @@ export function RouteTable({ stops, selectedStop, onSelect, compact = false }: R
           {deliveries.map((stop) => (
             <tr
               key={stop.key}
-              className={`cursor-pointer border-t border-stone-200 ${selectedStop?.key === stop.key ? "bg-emerald-50" : "hover:bg-stone-50"}`}
-              tabIndex={0}
-              aria-selected={selectedStop?.key === stop.key}
-              aria-label={`Seleccionar parada ${stop.deliveryIndex ?? stop.sequence}, ${stop.customer ?? "cliente pendiente"}`}
-              onClick={() => onSelect(stop)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onSelect(stop);
-                }
-              }}
+              className={`border-t border-stone-200 ${selectedStop?.key === stop.key ? "bg-emerald-50" : "hover:bg-stone-50"}`}
             >
               <td className="p-2 font-semibold">{stop.deliveryIndex ?? stop.sequence}</td><td className="p-2">{stop.plate}</td>
-              <td className="p-2"><p className="font-medium">{stop.customer ?? "Pendiente"}</p><p className="text-xs text-stone-500">{stop.address ?? "Dirección pendiente"}</p></td>
+              <td className="p-2">
+                <button
+                  type="button"
+                  className="min-h-11 rounded-lg px-1 text-left font-medium underline-offset-2 hover:underline focus-visible:outline-offset-1"
+                  aria-pressed={selectedStop?.key === stop.key}
+                  onClick={() => onSelect(stop)}
+                >
+                  {stop.customer ?? "Pendiente"}
+                  <span className="block text-xs font-normal text-stone-600">{stop.address ?? "Dirección pendiente"}</span>
+                  <span className="sr-only">, seleccionar parada {stop.deliveryIndex ?? stop.sequence}</span>
+                </button>
+              </td>
               <td className="p-2">{stop.etaStatus === "revision_matriz" ? "En revisión" : stop.eta ? formatTime(stop.eta) : "Pendiente"}</td>
               <td className="p-2">{stop.windowStart && stop.windowEnd ? formatWindow(stop.windowStart, stop.windowEnd) : "Pendiente"}</td>
               <td className="p-2">{stop.weightKg == null ? "Pendiente" : `${stop.weightKg} kg`}</td>

@@ -133,6 +133,18 @@ describe("driver application", () => {
     expect(await screen.findByText(/Entregas pendientes sincronizadas/)).toBeTruthy();
   });
 
+  it("contains focus in the delivery dialog and restores it when cancelled", async () => {
+    render(<DriverApp />);
+    const trigger = await screen.findByRole("button", { name: "Confirmar entrega" });
+    trigger.focus();
+    fireEvent.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "Firma de entrega" });
+    expect(document.activeElement).toBe(dialog);
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it("uses cached fleet and route when the network is unavailable", async () => {
     Object.defineProperty(navigator, "onLine", { configurable: true, value: false });
     api.fetchVehicles.mockRejectedValue(new Error("Sin red"));

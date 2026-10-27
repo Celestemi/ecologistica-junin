@@ -87,8 +87,11 @@ describe("presentational and staff flows", () => {
     const { rerender } = render(<RouteTable stops={[]} selectedStop={null} onSelect={onSelect} />);
     expect(screen.getByText(/no tiene paradas/)).toBeTruthy();
     rerender(<RouteTable stops={[stop]} selectedStop={stop} onSelect={onSelect} compact />);
-    await userEvent.click(screen.getByText("Ana"));
+    const stopButton = screen.getByRole("button", { name: /Ana/ });
+    await userEvent.tab();
+    await userEvent.keyboard("{Enter}");
     expect(onSelect).toHaveBeenCalledWith(stop);
+    expect(stopButton.getAttribute("aria-pressed")).toBe("true");
 
     rerender(<StopDetail stop={stop} />);
     expect(screen.getByText("PED-001")).toBeTruthy();

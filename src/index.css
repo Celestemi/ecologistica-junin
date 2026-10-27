@@ -8,6 +8,7 @@ body,
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background: #f3efe6;
   color: #1c1917;
   font-family: "Segoe UI", "Helvetica Neue", sans-serif;
@@ -38,4 +39,14 @@ body {
 
 .leaflet-popup-content {
   margin: 10px 12px;
+}
+
+@media (max-width: 320px) {
+  .leaflet-control-zoom {
+    margin: 8px !important;
+  }
+
+  .leaflet-container {
+    font-size: 14px;
+  }
 }

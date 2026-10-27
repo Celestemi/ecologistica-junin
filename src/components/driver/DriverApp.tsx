@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent } from "react";
 import { confirmDelivery as sendDelivery, fetchActiveRoute, fetchVehicles } from "../../api";
 import { cachedRoute, cachedValue, cacheRoute, cacheValue, completedDeliveryCodes, enqueueDelivery, markDeliveryCompleted, pendingDeliveries, replacePendingDeliveries, type PendingDelivery } from "../../lib/offline";
 import { StaffHeader } from "../StaffHeader";
@@ -47,6 +47,7 @@ export function DriverApp() {
   const nextRef = useRef<DriverStop | null>(null);
   const vehicleRef = useRef<Vehicle | null>(null);
   const sendPositionRef = useRef<() => void>(() => undefined);
+  const deliveryTriggerRef = useRef<HTMLElement | null>(null);
 
   const vehicle = vehicles.find((item) => item.placa === plate) ?? null;
   const stops = route?.paradas ?? [];
@@ -311,7 +312,7 @@ export function DriverApp() {
           ))}
         </section>
 
-        <div className="flex flex-wrap gap-2 text-xs font-semibold">
+        <div className="flex flex-wrap gap-2 text-xs font-semibold" role="status" aria-live="polite">
           <span className={`rounded-full px-3 py-1 ${link === "conectado" ? "bg-emerald-100 text-emerald-950" : "bg-amber-100 text-amber-950"}`}>
             {link === "conectado" ? "Despacho en línea" : "Conectando con despacho"}
           </span>
@@ -340,7 +341,10 @@ export function DriverApp() {
           <NextStop
             stop={nextDelivery}
             eta={nextDelivery.codigo_pedido ? etas[nextDelivery.codigo_pedido] : null}
-            onDeliver={() => setSigning(nextDelivery)}
+            onDeliver={() => {
+              deliveryTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+              setSigning(nextDelivery);
+            }}
           />
         ) : (
           <section className="rounded-3xl bg-white p-5 ring-1 ring-stone-200">
@@ -385,7 +389,7 @@ export function DriverApp() {
       </main>
 
       {signing ? (
-        <DeliveryModal stop={signing} onClose={() => setSigning(null)} onConfirm={() => confirmDelivery(signing)} />
+        <DeliveryModal stop={signing} onClose={() => setSigning(null)} onConfirm={() => confirmDelivery(signing)} restoreFocus={deliveryTriggerRef.current} />
       ) : null}
     </div>
   );
@@ -460,10 +464,12 @@ function DeliveryModal({
   stop,
   onClose,
   onConfirm,
+  restoreFocus,
 }: {
   stop: DriverStop;
   onClose: () => void;
   onConfirm: () => void;
+  restoreFocus: HTMLElement | null;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -473,7 +479,29 @@ function DeliveryModal({
 
   useEffect(() => {
     dialogRef.current?.focus();
-  }, []);
+    return () => restoreFocus?.focus();
+  }, [restoreFocus]);
+
+  function trapFocus(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      onClose();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    if (!focusable || focusable.length === 0) return;
+    const first = focusable[0]!;
+    const last = focusable[focusable.length - 1]!;
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   function pointer(event: PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
@@ -537,9 +565,7 @@ function DeliveryModal({
         aria-labelledby="firma-titulo"
         aria-describedby="firma-ayuda"
         tabIndex={-1}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") onClose();
-        }}
+        onKeyDown={trapFocus}
       >
         <h2 id="firma-titulo" className="text-2xl font-semibold">Firma de entrega</h2>
         <p className="mt-1 text-stone-600">{stop.cliente_nombre} · {stop.codigo_pedido}</p>
@@ -549,6 +575,8 @@ function DeliveryModal({
           width={640}
           height={280}
           className="mt-4 h-44 w-full touch-none rounded-2xl bg-white ring-1 ring-stone-300"
+          role="img"
+          aria-label="Área opcional para firmar con puntero. Puedes adjuntar una foto del comprobante sin usar esta área."
           onPointerDown={startDraw}
           onPointerMove={draw}
           onPointerUp={() => {

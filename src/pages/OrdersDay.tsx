@@ -263,10 +263,10 @@ export function OrdersDay() {
               Consultas los pedidos de la jornada. La carga la hace el operador.
             </p>
           )}
-          {error ? <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
+          {error ? <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">{error}</p> : null}
           {report ? (
             <>
-              <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-950">{report.resumen}</p>
+              <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-950" role="status" aria-live="polite">{report.resumen}</p>
               <ul className="space-y-2">
               {report.filas.map((row) => (
                 <li key={`${row.linea}-${row.codigo_pedido}`} className="rounded-2xl bg-white px-4 py-3 ring-1 ring-stone-200">

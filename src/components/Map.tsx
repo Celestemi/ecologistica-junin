@@ -114,7 +114,7 @@ export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate,
 
   return (
     <div className="relative h-full min-h-[420px] w-full">
-      <MapContainer center={HUANCAYO_CENTER} zoom={13} className="h-full w-full" scrollWheelZoom>
+      <MapContainer center={HUANCAYO_CENTER} zoom={13} className="h-full w-full" scrollWheelZoom keyboard aria-label="Mapa de rutas y paradas">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -122,7 +122,7 @@ export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate,
         />
         <FitTo boundsKey={boundsKey} positions={positions} />
         {depot ? (
-          <Marker position={toLatLng(depot.ubicacion.coordinates)} icon={pinIcon("#14532d", true)} title={`Depósito ${depot.nombre}`} alt={`Depósito ${depot.nombre}`}>
+          <Marker position={toLatLng(depot.ubicacion.coordinates)} icon={pinIcon("#14532d", true)} title={`Depósito ${depot.nombre}`} alt={`Depósito ${depot.nombre}`} keyboard>
             <Popup>
               <div className="text-sm text-stone-800">
                 <p className="font-semibold">{depot.nombre}</p>
@@ -151,6 +151,7 @@ export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate,
                   eventHandlers={{ click: () => { onSelectPlate(plate); onSelectStop(`${plate}:${feature.properties.sequence ?? 0}:${feature.properties.order_code ?? feature.properties.stop_type ?? "stop"}`); } }}
                   title={`Parada ${feature.properties.sequence ?? ""}: ${feature.properties.customer ?? "Cliente"}`}
                   alt={`Parada ${feature.properties.sequence ?? ""}: ${feature.properties.customer ?? "Cliente"}`}
+                  keyboard
                 >
                   <Popup>
                     <DeliveryPopup
@@ -176,6 +177,7 @@ export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate,
                   icon={pinIcon(windowColor(order.ventana_inicio), false)}
                   title={`Pedido de ${order.cliente_nombre}`}
                   alt={`Pedido de ${order.cliente_nombre}`}
+                  keyboard
                 >
                   <Popup>
                     <DeliveryPopup

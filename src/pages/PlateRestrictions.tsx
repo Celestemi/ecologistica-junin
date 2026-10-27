@@ -81,8 +81,8 @@ export function PlateRestrictions() {
             ← Volver a flota
           </a>
         </p>
-        {error ? <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
-        {success ? <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900">{success}</p> : null}
+        {error ? <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">{error}</p> : null}
+        {success ? <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900" role="status" aria-live="polite">{success}</p> : null}
         {config ? (
           <section className="space-y-3 rounded-2xl bg-white p-4 ring-1 ring-stone-200">
             <h2 className="text-base font-semibold">RN-002 / RF-002</h2>

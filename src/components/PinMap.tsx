@@ -30,10 +30,12 @@ export function PinMap({ pin: position, onPick }: PinMapProps) {
       zoom={13}
       className="h-72 w-full rounded-2xl"
       zoomControl={false}
+      keyboard
+      aria-label="Mapa para elegir la ubicación del pedido"
     >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© OpenStreetMap" />
       <ClickCatcher onPick={onPick} />
-      {position ? <Marker position={position} icon={pin} title="Ubicación seleccionada" alt="Ubicación seleccionada" /> : null}
+      {position ? <Marker position={position} icon={pin} title="Ubicación seleccionada" alt="Ubicación seleccionada" keyboard /> : null}
     </MapContainer>
   );
 }

@@ -25,6 +25,7 @@ export function App() {
   const [selectedPlate, setSelectedPlate] = useState<string | null>(null);
   const [selectedStopKey, setSelectedStopKey] = useState<string | null>(null);
   const [mapAvailable, setMapAvailable] = useState(true);
+  const [routeView, setRouteView] = useState<"map" | "table">("map");
 
   useEffect(() => {
     let active = true;
@@ -135,18 +136,22 @@ export function App() {
                 <span className="text-sm font-medium">Rutas:</span>
                 <button type="button" onClick={() => { setSelectedPlate(null); setSelectedStopKey(null); }} className={`rounded-full px-3 py-1 text-sm ${selectedPlate === null ? "bg-emerald-800 text-white" : "bg-stone-200"}`}>Todas</button>
                 {plates.map((plate) => <button key={plate} type="button" onClick={() => selectPlate(plate)} className={`rounded-full px-3 py-1 text-sm ${selectedPlate === plate ? "bg-emerald-800 text-white" : "bg-stone-200"}`}>{plate}</button>)}
-                <button type="button" onClick={() => setMapAvailable(false)} className="ml-auto rounded-full border border-stone-300 px-3 py-1 text-sm">Vista tabular</button>
+                <button type="button" aria-pressed={routeView === "table"} onClick={() => setRouteView((current) => current === "map" ? "table" : "map")} className="ml-auto min-h-11 rounded-full border border-stone-300 px-3 text-sm font-semibold">
+                  {routeView === "map" ? "Vista tabular" : "Ver mapa"}
+                </button>
               </div>
             </div>
           ) : null}
-          {mapAvailable ? (
+          {mapAvailable && routeView === "map" ? (
             <MapView depot={depot} orders={orders} solution={solution} selectedPlate={selectedPlate} onSelectPlate={selectPlate} onSelectStop={setSelectedStopKey} onMapFailure={() => setMapAvailable(false)} />
           ) : (
             <section className="space-y-3 p-4" aria-live="polite">
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-amber-50 p-3 text-sm text-amber-950">
-                <span>El servicio cartográfico no está disponible. Consulta la secuencia en la vista tabular.</span>
-                <button type="button" className="rounded-xl bg-amber-900 px-3 py-2 font-semibold text-white" onClick={() => setMapAvailable(true)}>Reintentar mapa</button>
-              </div>
+              {!mapAvailable ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-amber-50 p-3 text-sm text-amber-950">
+                  <span>El servicio cartográfico no está disponible. Consulta la secuencia en la vista tabular.</span>
+                  <button type="button" className="min-h-11 rounded-xl bg-amber-900 px-3 font-semibold text-white" onClick={() => setMapAvailable(true)}>Reintentar mapa</button>
+                </div>
+              ) : <p className="rounded-2xl bg-white p-3 text-sm text-stone-700 ring-1 ring-stone-200">La tabla ofrece la misma secuencia y detalle sin depender del mapa.</p>}
               <RouteTable stops={stops} selectedStop={selectedStop} onSelect={selectStop} />
             </section>
           )}

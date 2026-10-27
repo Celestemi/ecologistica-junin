@@ -3,7 +3,7 @@
 **Versión documental:** V_1_0_0
 
 **Nombre del proyecto:** EcoLogística Junín  
-**Fecha de evaluación puntual:** 26 de octubre de 2026  
+**Fecha de evaluación puntual:** 27 de octubre de 2026 (actualización dinámica posterior a las correcciones)
 **Alcance:** backend FastAPI/Python, frontend React/Vite, configuración Docker y servicios locales en `localhost`  
 **Herramienta de escaneo:** SonarQube Community Build 26.10.0.133078 local mediante Docker Desktop  
 **Criterio de estado:** `Vulnerable` = debilidad confirmada; `Bajo revisión` = controles parciales, riesgo posible o evidencia insuficiente; `Limpio` solo se usaría con evidencia suficiente. Ninguna categoría se marca como Limpio en esta evaluación puntual.
@@ -11,6 +11,23 @@
 La ficha original empleaba nombres y numeración de OWASP Top 10:2021. Esta versión conserva la sección y la tabla de la consigna, pero usa las diez categorías oficiales vigentes de [OWASP Top 10:2025](https://top10.owasp.org/2025/). Los cambios principales son: Security Misconfiguration pasa a A02; Software Supply Chain Failures amplía la antigua categoría de componentes vulnerables y pasa a A03; Cryptographic Failures pasa a A04; Injection a A05; Insecure Design a A06; Authentication Failures simplifica el nombre de A07; A09 enfatiza alertas; SSRF deja de ser A10 y se integra en A01; A10 ahora es Mishandling of Exceptional Conditions.
 
 ## 1. Matriz de Cumplimiento OWASP Top 10 2025
+
+### Matriz vigente — evaluación aislada del 27 de octubre de 2026
+
+| Categoría OWASP 2025 | Estado | Evidencia actual y límite |
+|---|---|---|
+| A01:2025 — Broken Access Control | **Bajo revisión.** | La suite aislada aprobó 143 pruebas, incluidas 15 de seguridad; el conductor queda ligado a su vehículo y se rechaza el pedido fuera de ruta. No hubo matriz exhaustiva IDOR/SSRF para todos los recursos. |
+| A02:2025 — Security Misconfiguration | **Vulnerable.** | La instancia aislada fue deliberadamente demo y HTTP. Se verificaron perfiles sin cuentas demo/documentación pública fuera de demo y cabeceras, pero no un despliegue productivo con TLS, secretos y red restringida. |
+| A03:2025 — Software Supply Chain Failures | **Bajo revisión.** | `npm audit`, `npm audit --omit=dev` y `pip-audit --strict` devolvieron 0 vulnerabilidades conocidas. Persisten imágenes sin digest, ausencia de SBOM y verificación de procedencia. |
+| A04:2025 — Cryptographic Failures | **Bajo revisión.** | JWT firmado y bcrypt siguen cubiertos por pruebas de autenticación; faltan `iss`/`aud`, revocación, rotación y verificación TLS real. Los avisos S2245 del optimizador siguen siendo contextuales, no secretos. |
+| A05:2025 — Injection | **Bajo revisión.** | Las 143 pruebas de backend pasaron en la base aislada; no se ejecutaron DAST ni fuzzing completo de importadores, parámetros y WebSockets. |
+| A06:2025 — Insecure Design | **Bajo revisión.** | Se comprobaron RBAC, bloqueo y límites de dominio; faltan modelado formal de amenazas, abuso y límites globales de tasa. |
+| A07:2025 — Authentication Failures | **Bajo revisión.** | La autenticación, expiración/invalidez de JWT y bloqueo fueron cubiertos por pruebas; persisten JWT de hasta 12 horas, sin MFA/rotación/revocación y token WebSocket en query string. |
+| A08:2025 — Software or Data Integrity Failures | **Bajo revisión.** | Lockfiles y auditorías SCA sin CVE conocidas son evidencia favorable parcial; no hay SBOM, firma ni procedencia verificada de imágenes/artefactos. |
+| A09:2025 — Security Logging and Alerting Failures | **Vulnerable.** | Se emiten eventos de rechazo, bloqueo y autorización sin secretos; no hay SIEM, alerta, correlación, retención ni respuesta operativa verificadas. |
+| A10:2025 — Mishandling of Exceptional Conditions | **Bajo revisión.** | La suite aislada pasó y los errores controlados no expusieron trazas en los flujos probados; faltan fallos de servicios externos, agotamiento, transacciones parciales y pruebas fail-open. |
+
+### Matriz histórica — evaluación del 26 de octubre de 2026
 
 | Categoría OWASP 2025 | Estado en Proyecto (Limpio / Vulnerable / Bajo Revisión) | Hallazgos de SonarQube y revisión complementaria |
 |---|---|---|
@@ -28,6 +45,8 @@ La ficha original empleaba nombres y numeración de OWASP Top 10:2021. Esta vers
 ## 2. Detalles del análisis de SonarQube
 
 ### Evidencia de SonarQube local
+
+- **Comprobación posterior (27 de octubre de 2026):** SonarQube respondió `200` en `/api/server/version`, pero `/api/projects/search` exigió autenticación y no se dispuso de una credencial válida ni de `sonar-scanner`. No se ejecutó análisis nuevo, no se consultaron métricas protegidas y no se atribuyen métricas nuevas a SonarQube.
 
 - El análisis más reciente observado para `ecologistica-huancayo` terminó correctamente el 27 de octubre de 2026; procesó 125 archivos e importó los reportes de cobertura Python y LCOV. La API web exige autenticación; para no exponer credenciales, los resultados se contrastaron con las métricas e incidencias persistidas por la propia instancia local.
 - **Quality Gate:** PASSED (`OK`), con 82.0% de cobertura en código nuevo, 0.0% de duplicación y 0 violaciones nuevas. El gate evalúa código nuevo; no equivale a ausencia de vulnerabilidades en el proyecto.
@@ -47,6 +66,19 @@ Los 9 avisos `S2245` no se consideran vulnerabilidades confirmadas tras revisar 
 
 ### Pruebas y comprobaciones ejecutadas
 
+#### Evaluación posterior aislada — 27 de octubre de 2026
+
+| Comprobación | Resultado real |
+|---|---|
+| Stack Docker temporal (PostGIS, backend y frontend) | Respondió `200` en frontend y `/health`; se eliminó al terminar. La base se creó desde cero y no fue la base local existente. |
+| `npm audit` | 0 vulnerabilidades conocidas. |
+| `npm audit --omit=dev` | 0 vulnerabilidades conocidas. |
+| `pip-audit --strict -r /tmp/requirements.txt` en el backend aislado | 0 vulnerabilidades conocidas. |
+| `pytest` backend aislado | 143 aprobadas, 1 advertencia de deprecación, cobertura total 76 %. |
+| Vitest frontend | 68 aprobadas. |
+| Build frontend | Aprobado con la advertencia de chunk ya conocida para `offline.ts`. |
+| SonarQube | Accesible, pero análisis bloqueado por autenticación; sin métricas inventadas. |
+
 | Comprobación no destructiva | Resultado |
 |---|---|
 | `npm audit` | 5 paquetes afectados en desarrollo: 2 críticos, 1 alto y 2 moderados. |
@@ -63,7 +95,7 @@ Las pruebas usaron datos de demostración incluidos en el entorno local y solici
 
 ### Correcciones y mitigaciones
 
-Esta actualización modifica únicamente esta ficha; no cambia código, configuración ni dependencias. La revisión documental mantiene la matriz OWASP 2025, diferencia los hallazgos del análisis estático de las verificaciones complementarias y no incluye credenciales.
+Esta actualización documental incorpora la evidencia dinámica posterior; no afirma que el escaneo histórico de SonarQube se haya repetido ni incluye credenciales.
 
 Mitigaciones pendientes, en orden recomendado:
 
@@ -81,16 +113,16 @@ Mitigaciones pendientes, en orden recomendado:
 - **A01 / autorización por objeto:** el canal WebSocket del conductor fija el vehículo asignado al autenticarlo; los mensajes de posición, alta y cancelación ya no pueden cambiarlo mediante `vehicle_id` ni actuar sobre pedidos que no pertenezcan a su ruta. La prueba cubre el intento de cancelar `PED-001` desde una ruta ajena.
 - **A02 / perfiles:** las cuentas de demostración se siguen creando únicamente cuando `APP_ENVIRONMENT=demo` y la validación de arranque rechaza su activación fuera de demo. La documentación OpenAPI queda habilitada por defecto sólo en demo y el arranque rechaza `EXPOSE_API_DOCS=true` fuera de ese perfil. No se fuerza HTTPS en localhost; HSTS se emite exclusivamente cuando la solicitud ya llega mediante HTTPS.
 - **A03 / npm:** se actualizaron de forma controlada Vite a 7.3.7 y Vitest con su cobertura a 5.0.5. Después de la actualización, `npm audit` y `npm audit --omit=dev` no reportaron vulnerabilidades.
-- **A03 / Python:** CI incorpora `pip-audit --strict -r backend/requirements.txt` para impedir que futuras vulnerabilidades Python pasen inadvertidas. La auditoría local de Python no pudo ejecutarse en esta estación porque no hay intérprete Python utilizable ni daemon Docker activo; queda explícitamente pendiente de ejecución en CI/contenedor.
+- **A03 / Python:** CI incorpora `pip-audit --strict -r backend/requirements.txt`. En la evaluación posterior se ejecutó `pip-audit --strict -r /tmp/requirements.txt` dentro del backend aislado y no encontró vulnerabilidades conocidas.
 - **A09 / logging:** los rechazos de autenticación, los inicios fallidos/bloqueados y las denegaciones de rol ahora emiten eventos de seguridad sin credenciales, tokens ni correos. La bitácora persistida conserva los eventos funcionales. El envío, correlación, retención y alerta por umbrales requieren un colector/SIEM externo; no se simulan como si fueran alertas operativas.
 
 ### Riesgos pendientes y límites
 
-- Vulnerabilidades de dependencias Python: **no evaluadas** por falta de `pip-audit`/SCA.
+- Dependencias Python: `pip-audit` no encontró vulnerabilidades conocidas en los requisitos auditados; el resultado no cubre CVE futuras, imágenes base ni procedencia.
 - Autorización por objeto, SSRF, inyección y condiciones excepcionales: evidencia parcial, no evaluación exhaustiva.
 - TLS, secretos, red Docker, logs, alertas y endurecimiento: evaluados solo en la composición local, no en staging/producción.
 - No hubo DAST completo, fuzzing, pentest autenticado exhaustivo, revisión de infraestructura externa ni validación de procedencia de imágenes.
 - Los findings de SonarQube son análisis estático: necesitan revisión contextual y no cubren por sí solos el OWASP Top 10.
 
-**Resumen de los diez estados:** A01 Bajo revisión; A02 Vulnerable; A03 Vulnerable; A04 Bajo revisión; A05 Bajo revisión; A06 Bajo revisión; A07 Bajo revisión; A08 Bajo revisión; A09 Vulnerable; A10 Bajo revisión. Ninguna categoría queda declarada Limpio por insuficiencia de evidencia integral.
+**Resumen vigente de los diez estados:** A01 Bajo revisión; A02 Vulnerable; A03 Bajo revisión; A04 Bajo revisión; A05 Bajo revisión; A06 Bajo revisión; A07 Bajo revisión; A08 Bajo revisión; A09 Vulnerable; A10 Bajo revisión. Ninguna categoría queda declarada Limpio por insuficiencia de evidencia integral.
 \n+[← Volver al README principal](../../../README.md)
