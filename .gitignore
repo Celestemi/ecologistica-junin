@@ -78,3 +78,6 @@ desktop.ini
 *.temp
 *.swp
 *~
+
+# Exportaciones locales temporales de la API de SonarQube
+.sonarqube-temp/
