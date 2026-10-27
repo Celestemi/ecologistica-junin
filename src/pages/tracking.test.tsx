@@ -92,7 +92,8 @@ describe("public tracking", () => {
     expect(screen.getByText("En 4 minutos")).toBeTruthy();
     expect(screen.getByText(/siguiente entrega/)).toBeTruthy();
     expect(screen.getAllByRole("status")).toHaveLength(2);
-    expect(screen.getByTestId("route")).toBeTruthy();
+    expect(screen.queryByTestId("route")).toBeNull();
+    expect(screen.getByText(/no representa un recorrido vial/i)).toBeTruthy();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Cerrar" })[0]!);
     expect(screen.queryByRole("status")).toBeNull();

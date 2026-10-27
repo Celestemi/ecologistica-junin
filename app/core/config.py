@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     secret_key: str = "cambia-esta-clave-en-produccion-local"
     app_environment: str = "demo"
     allow_demo_accounts: bool | None = None
+    expose_api_docs: bool | None = None
     force_https: bool = False
     auth_bcrypt_rounds: int = 12
     auth_token_hours: int = 12
@@ -50,6 +51,8 @@ class Settings(BaseSettings):
             )
         if self.allow_demo_accounts is None:
             self.allow_demo_accounts = self.app_environment == "demo"
+        if self.expose_api_docs is None:
+            self.expose_api_docs = self.app_environment == "demo"
         return self
 
     def token_lifetime_seconds(self) -> int:

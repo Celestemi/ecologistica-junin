@@ -57,6 +57,7 @@ from app.schemas.logistics import (
     OperationalIndicatorsRead,
     VehiculoRead,
     _feature_collection,
+    _road_coordinate_chains,
 )
 from app.services.driver_assignment import assigned_vehicle
 from app.services.rbac import DENY_ROLE, DESK_READ, MAP_READ, ORDER_WRITE
@@ -1248,14 +1249,7 @@ def _metadata(
 
 
 def _details_have_road_geometry(details: list[RutaDetalle]) -> bool:
-    for detail in details:
-        if detail.geometria_tramo is None:
-            continue
-        segment = geometry_to_geojson(detail.geometria_tramo)
-        coords = segment.get("coordinates") or ()
-        if len(coords) >= 2:
-            return True
-    return False
+    return bool(_road_coordinate_chains(sorted(details, key=lambda item: item.secuencia)))
 
 
 def _solution_has_road_geometry(solution: SolucionRuta) -> bool:

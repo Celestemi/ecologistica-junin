@@ -62,6 +62,7 @@ export type FeatureProperties = {
   distance_note?: string;
   kind?: string;
   geometry_kind?: string;
+  road_part?: number;
 };
 
 export type RouteFeature = {

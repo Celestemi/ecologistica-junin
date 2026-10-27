@@ -66,8 +66,13 @@ const solution = {
     },
     {
       type: "Feature",
-      geometry: { type: "LineString", coordinates: [[-75.2, -12.05], [-75.22, -12.07]] },
+      geometry: { type: "LineString", coordinates: [[-75.2, -12.05], [-75.205, -12.055], [-75.22, -12.07]] },
       properties: { plate: "ABC-123", geometry_kind: "road" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "LineString", coordinates: [[-75.2, -12.05], [-75.22, -12.07]] },
+      properties: { plate: "ABC-123", kind: "route_sequence" },
     },
     {
       type: "Feature",
@@ -106,7 +111,8 @@ describe("map components", () => {
 
     expect(screen.getByText("Cliente ruta")).toBeTruthy();
     expect(screen.getByText("Vehículo ABC-123")).toBeTruthy();
-    expect(screen.getByTestId("polyline").getAttribute("data-points")).toBe("2");
+    expect(screen.getByTestId("polyline").getAttribute("data-points")).toBe("3");
+    expect(screen.getAllByTestId("polyline")).toHaveLength(1);
     fireEvent.click(screen.getByText("Cliente ruta").closest("[data-testid^='marker-']")!);
     expect(onSelectPlate).toHaveBeenCalledWith("ABC-123");
     expect(onSelectStop).toHaveBeenCalledWith("ABC-123:1:PED-1");

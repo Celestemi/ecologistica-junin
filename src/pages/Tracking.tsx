@@ -1,6 +1,6 @@
 import L from "leaflet";
 import { useEffect, useMemo, useState } from "react";
-import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
 import { fetchPublicTracking } from "../api";
 import { Brand } from "../components/Brand";
 import { homeFor } from "../lib/access";
@@ -177,7 +177,7 @@ export function Tracking() {
             </div>
           </form>
 
-          {error ? <p className="rounded-2xl bg-amber-100 px-4 py-3 text-sm">{error}</p> : null}
+          {error ? <p className="rounded-2xl bg-amber-100 px-4 py-3 text-sm" role="alert">{error}</p> : null}
 
           {order ? (
             <>
@@ -279,7 +279,6 @@ function CustomerMap({ destination, driver }: { destination: [number, number]; d
       <FitTo positions={positions} />
       <Marker position={destination} icon={destinationIcon} />
       {driver ? <Marker position={driver} icon={driverIcon} /> : null}
-      {driver ? <Polyline positions={[driver, destination]} pathOptions={{ color: "#14532d", weight: 4 }} /> : null}
     </MapContainer>
     <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-2xl bg-white/95 px-3 py-2 text-xs text-stone-700 shadow ring-1 ring-stone-200">
       <p className="flex items-center gap-2">
@@ -290,6 +289,7 @@ function CustomerMap({ destination, driver }: { destination: [number, number]; d
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#0f766e]" /> Repartidor
         </p>
       ) : null}
+      {driver ? <p className="mt-1 text-stone-500">La posición del repartidor no representa un recorrido vial.</p> : null}
     </div>
     </div>
   );

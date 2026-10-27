@@ -66,7 +66,7 @@ export function Sidebar({
         {!loading && canOptimize && orderCount === 0 && !optimizing ? (
           <p className="mt-2 text-xs text-stone-500">No hay pedidos pendientes.</p>
         ) : null}
-        {error ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
+        {error ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">{error}</p> : null}
         {solution?.metadata.exclusiones_placa && solution.metadata.exclusiones_placa.length > 0 ? (
           <ul className="mt-3 space-y-1 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-950">
             {solution.metadata.exclusiones_placa.map((item) => (

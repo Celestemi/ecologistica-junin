@@ -1,5 +1,6 @@
 """Ingreso, bloqueo por intentos y registro en la bitácora."""
 
+import logging
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -12,6 +13,7 @@ from app.models.identity import Bitacora, Usuario
 from app.services.passwords import verify_password
 
 LIMA = ZoneInfo("America/Lima")
+logger = logging.getLogger("ecologistica.security")
 
 INGRESO_CORRECTO = "ingreso_correcto"
 INGRESO_FALLIDO = "ingreso_fallido"
@@ -67,6 +69,7 @@ async def authenticate(session: AsyncSession, correo: str, clave: str) -> Usuari
             usuario=user,
         )
         await session.commit()
+        logger.warning("security_event=login_failed reason=unknown_or_inactive_account")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=WRONG_CREDENTIALS)
 
     if user.bloqueado_hasta is not None and user.bloqueado_hasta > now:
@@ -78,6 +81,7 @@ async def authenticate(session: AsyncSession, correo: str, clave: str) -> Usuari
             usuario=user,
         )
         await session.commit()
+        logger.warning("security_event=login_blocked user_id=%s", user.id)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"La cuenta está bloqueada hasta las {_clock(user.bloqueado_hasta)}.",
@@ -100,6 +104,7 @@ async def authenticate(session: AsyncSession, correo: str, clave: str) -> Usuari
                 usuario=user,
             )
             await session.commit()
+            logger.warning("security_event=login_locked user_id=%s", user.id)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Demasiados intentos. La cuenta queda bloqueada 15 minutos.",
@@ -113,6 +118,7 @@ async def authenticate(session: AsyncSession, correo: str, clave: str) -> Usuari
             usuario=user,
         )
         await session.commit()
+        logger.warning("security_event=login_failed user_id=%s", user.id)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=WRONG_CREDENTIALS)
 
     user.intentos_fallidos = 0

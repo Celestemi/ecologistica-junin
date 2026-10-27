@@ -48,7 +48,7 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f3efe6] px-4 py-10 text-stone-900">
+    <main className="min-h-screen bg-[#f3efe6] px-4 py-10 text-stone-900">
       <div className="mx-auto w-full max-w-md">
         <Brand title="EcoLogística Huancayo" />
         <form onSubmit={(event) => void onSubmit(event)} className="mt-8 rounded-3xl bg-white p-6 ring-1 ring-stone-200">
@@ -81,7 +81,7 @@ export function Login() {
             onChange={(event) => setClave(event.target.value)}
             className="mt-1 w-full rounded-xl border border-stone-300 px-3 py-3 text-base"
           />
-          {error ? <p className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
+          {error ? <p className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">{error}</p> : null}
           <button
             type="submit"
             disabled={submitting}
@@ -115,6 +115,6 @@ export function Login() {
           </ul>
         </section>
       </div>
-    </div>
+    </main>
   );
 }

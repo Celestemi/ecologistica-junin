@@ -22,7 +22,7 @@ export function Brand({ light = false, title }: BrandProps) {
         </svg>
       </span>
       <div>
-        <p className={`text-[11px] font-semibold tracking-[0.16em] ${light ? "text-emerald-100" : "text-emerald-900/70"}`}>
+        <p className={`text-[11px] font-semibold tracking-[0.16em] ${light ? "text-emerald-50" : "text-emerald-900"}`}>
           VALLE DEL MANTARO
         </p>
         <h1 className="text-lg font-semibold leading-tight">{title}</h1>

@@ -17,6 +17,8 @@ INSECURE_SECRET_KEYS = frozenset(
 def validate_security_settings(settings: Settings) -> None:
     if settings.app_environment == "demo":
         return
+    if settings.expose_api_docs:
+        raise RuntimeError("EXPOSE_API_DOCS=true is not allowed outside the demo environment.")
     if settings.secret_key.strip().lower() in INSECURE_SECRET_KEYS:
         raise RuntimeError(
             "SECRET_KEY predeterminada no permitida fuera del entorno demo. "

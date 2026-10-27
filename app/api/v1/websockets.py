@@ -23,7 +23,7 @@ from app.core.database import async_session_factory
 from app.models.domain import Deposito, Pedido, RutaDetalle, SolucionRuta, Vehiculo
 from app.models.enums import EstadoPedido, RolUsuario
 from app.models.identity import Usuario
-from app.services.driver_assignment import conductor_may_drive
+from app.services.driver_assignment import assigned_vehicle, conductor_may_drive
 from app.services.vehicle_state import is_available_for_routing
 from app.services.tokens import read_access_token
 from app.services.tracking_tokens import is_tracking_token
@@ -85,15 +85,20 @@ async def _staff_socket(websocket: WebSocket, roles: set[RolUsuario]) -> Usuario
 async def driver_socket(websocket: WebSocket, driver_id: str) -> None:
     """Recibe coordenadas e imprevistos y empuja la ETA recalculada."""
     actor = await _staff_socket(websocket, FIELD_ROLES)
+    bound_vehicle_id: int | None = None
     if not _valid_driver_id(driver_id) or actor is None:
         await _reject_socket(websocket)
         return
     if actor.rol == RolUsuario.CONDUCTOR:
         async with async_session_factory() as session:
             allowed = await conductor_may_drive(session, actor.id, driver_id)
+            vehicle = await assigned_vehicle(session, actor.id)
         if not allowed:
             await _reject_socket(websocket)
             return
+        # El id se fija al conectar: un mensaje WebSocket nunca puede cambiar
+        # el vehiculo sobre el que actua un conductor.
+        bound_vehicle_id = vehicle.id if vehicle is not None else None
     await manager.connect_driver(driver_id, websocket)
     try:
         while True:
@@ -104,7 +109,7 @@ async def driver_socket(websocket: WebSocket, driver_id: str) -> None:
                     driver_id=driver_id,
                 )
                 continue
-            await _on_driver_message(driver_id, raw)
+            await _on_driver_message(driver_id, raw, bound_vehicle_id)
     except WebSocketDisconnect:
         logger.info("El conductor %s cerró el canal.", driver_id)
     finally:
@@ -144,7 +149,7 @@ async def tracking_socket(websocket: WebSocket, order_code: str) -> None:
         await manager.disconnect_tracker(order_code, websocket)
 
 
-async def _on_driver_message(driver_id: str, raw: str) -> None:
+async def _on_driver_message(driver_id: str, raw: str, bound_vehicle_id: int | None = None) -> None:
     try:
         message = json.loads(raw)
     except json.JSONDecodeError:
@@ -160,13 +165,13 @@ async def _on_driver_message(driver_id: str, raw: str) -> None:
     kind = message["type"]
     try:
         if kind == "position":
-            await _on_position(driver_id, message)
+            await _on_position(driver_id, message, bound_vehicle_id)
         elif kind == "incident":
             await _on_incident(driver_id, message)
         elif kind == "cancel_order":
-            await _on_cancel(driver_id, message)
+            await _on_cancel(driver_id, message, bound_vehicle_id)
         elif kind == "add_order":
-            await _on_add(driver_id, message)
+            await _on_add(driver_id, message, bound_vehicle_id)
         else:
             await manager.publish(
                 {"type": "error", "detail": f"Tipo de mensaje no reconocido: {kind}."},
@@ -182,14 +187,16 @@ async def _on_driver_message(driver_id: str, raw: str) -> None:
         )
 
 
-async def _on_position(driver_id: str, message: dict[str, Any]) -> None:
+async def _on_position(driver_id: str, message: dict[str, Any], bound_vehicle_id: int | None = None) -> None:
     fix = _fix_from_message(message)
-    vehicle_id = _optional_int(message.get("vehicle_id"))
+    vehicle_id = bound_vehicle_id if bound_vehicle_id is not None else _optional_int(message.get("vehicle_id"))
     order_code = _optional_code(message.get("order_code"))
     live = await fleet_state.remember_position(driver_id, fix, vehicle_id, order_code)
     now = fix.recorded_at
     async with async_session_factory() as session:
         order = await _order_by_code(session, order_code) if order_code else None
+        if bound_vehicle_id is not None and order is not None:
+            await _require_order_on_vehicle_route(session, order, bound_vehicle_id)
         if order is not None and order.estado in {EstadoPedido.ASSIGNED, EstadoPedido.PENDING}:
             order.estado = EstadoPedido.IN_TRANSIT
             await session.commit()
@@ -230,20 +237,24 @@ async def _on_incident(driver_id: str, message: dict[str, Any]) -> None:
     await _reroute(driver_id, reason=incident.kind.value)
 
 
-async def _on_cancel(driver_id: str, message: dict[str, Any]) -> None:
+async def _on_cancel(driver_id: str, message: dict[str, Any], bound_vehicle_id: int | None = None) -> None:
     code = _required_code(message.get("order_code"))
     async with async_session_factory() as session:
         order = await _require_order(session, code)
+        if bound_vehicle_id is not None:
+            await _require_order_on_vehicle_route(session, order, bound_vehicle_id)
         order.estado = EstadoPedido.CANCELLED
         await session.commit()
     await _publish_status(code, EstadoPedido.CANCELLED.value, driver_id)
     await _reroute(driver_id, reason="cancel", cancel_codes=(code,))
 
 
-async def _on_add(driver_id: str, message: dict[str, Any]) -> None:
+async def _on_add(driver_id: str, message: dict[str, Any], bound_vehicle_id: int | None = None) -> None:
     code = _required_code(message.get("order_code"))
     async with async_session_factory() as session:
         order = await _require_order(session, code)
+        if bound_vehicle_id is not None:
+            await _require_order_on_vehicle_route(session, order, bound_vehicle_id)
         if order.estado not in {EstadoPedido.PENDING, EstadoPedido.ASSIGNED}:
             raise ValueError(f"El pedido {code} no se puede insertar en la ruta.")
     await _reroute(driver_id, reason="priority", add_codes=(code,))
@@ -399,6 +410,17 @@ async def _require_order(session: AsyncSession, code: str) -> Pedido:
     if order is None:
         raise ValueError(f"No existe el pedido {code}.")
     return order
+
+
+async def _require_order_on_vehicle_route(session: AsyncSession, order: Pedido, vehicle_id: int) -> None:
+    """Impide que un conductor cambie pedidos de otra unidad (BOLA/IDOR)."""
+    route_detail_id = await session.scalar(
+        select(RutaDetalle.id)
+        .where(RutaDetalle.pedido_id == order.id, RutaDetalle.vehiculo_id == vehicle_id)
+        .limit(1)
+    )
+    if route_detail_id is None:
+        raise ValueError("El pedido no pertenece a la ruta asignada.")
 
 
 async def _eta_for_code(driver_id: str, origin: GpsFix, code: str, incidents: tuple[RoadIncident, ...]) -> Any:

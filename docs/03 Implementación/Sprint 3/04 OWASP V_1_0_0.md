@@ -76,6 +76,14 @@ Mitigaciones pendientes, en orden recomendado:
 7. Completar pruebas backend por endpoint, rol y objeto (incluidos IDOR, importación, WebSockets, seguimiento público y SSRF), además de expiración/revocación de sesión y límites de tasa.
 8. Incorporar `iss`, `aud`, rotación/revocación de JWT y evitar tokens en query strings cuando la arquitectura permita un canal autenticado más seguro.
 
+### Correcciones implementadas (27 de octubre de 2026)
+
+- **A01 / autorización por objeto:** el canal WebSocket del conductor fija el vehículo asignado al autenticarlo; los mensajes de posición, alta y cancelación ya no pueden cambiarlo mediante `vehicle_id` ni actuar sobre pedidos que no pertenezcan a su ruta. La prueba cubre el intento de cancelar `PED-001` desde una ruta ajena.
+- **A02 / perfiles:** las cuentas de demostración se siguen creando únicamente cuando `APP_ENVIRONMENT=demo` y la validación de arranque rechaza su activación fuera de demo. La documentación OpenAPI queda habilitada por defecto sólo en demo y el arranque rechaza `EXPOSE_API_DOCS=true` fuera de ese perfil. No se fuerza HTTPS en localhost; HSTS se emite exclusivamente cuando la solicitud ya llega mediante HTTPS.
+- **A03 / npm:** se actualizaron de forma controlada Vite a 7.3.7 y Vitest con su cobertura a 5.0.5. Después de la actualización, `npm audit` y `npm audit --omit=dev` no reportaron vulnerabilidades.
+- **A03 / Python:** CI incorpora `pip-audit --strict -r backend/requirements.txt` para impedir que futuras vulnerabilidades Python pasen inadvertidas. La auditoría local de Python no pudo ejecutarse en esta estación porque no hay intérprete Python utilizable ni daemon Docker activo; queda explícitamente pendiente de ejecución en CI/contenedor.
+- **A09 / logging:** los rechazos de autenticación, los inicios fallidos/bloqueados y las denegaciones de rol ahora emiten eventos de seguridad sin credenciales, tokens ni correos. La bitácora persistida conserva los eventos funcionales. El envío, correlación, retención y alerta por umbrales requieren un colector/SIEM externo; no se simulan como si fueran alertas operativas.
+
 ### Riesgos pendientes y límites
 
 - Vulnerabilidades de dependencias Python: **no evaluadas** por falta de `pip-audit`/SCA.

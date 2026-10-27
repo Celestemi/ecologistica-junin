@@ -62,7 +62,7 @@ describe("fleet management page", () => {
   it("loads fleet, validates maintenance and saves edits", async () => {
     render(<Fleet />);
     expect(await screen.findByText(/ABC-123 · Activo/)).toBeTruthy();
-    expect(mocks.fetchVehicleHistory).toHaveBeenCalledWith(1);
+    await waitFor(() => expect(mocks.fetchVehicleHistory).toHaveBeenCalledWith(1));
 
     await userEvent.click(screen.getByRole("button", { name: "Pasar a Mantenimiento" }));
     expect(await screen.findByText(/Indica un motivo/)).toBeTruthy();

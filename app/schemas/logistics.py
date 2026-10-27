@@ -15,6 +15,7 @@ from app.models.enums import (
     EstadoPedido,
     EstadoSolucion,
     EstadoUbicacion,
+    ModeloDistancia,
     TipoCombustible,
     TipoParada,
 )
@@ -429,40 +430,54 @@ def _feature_collection(details: list[RutaDetalle]) -> GeoJSONFeatureCollection:
 
     for vehicle_stops in by_vehicle.values():
         ordered = sorted(vehicle_stops, key=lambda item: item.secuencia)
-        line_coordinates = _merge_road_segments(ordered)
-        if len(line_coordinates) < 2:
-            continue
-        features.append(
-            GeoJSONFeature(
-                geometry=GeoJSONLineString.model_validate(
-                    linestring_geojson(line_coordinates)
-                ),
-                properties={
-                    "plate": ordered[0].vehiculo.placa,
-                    "kind": "route",
-                    "geometry_kind": "road",
-                    "distance_note": "Recorrido sobre red vial (OSRM / OpenStreetMap).",
-                },
+        # A missing leg deliberately breaks the line. Joining road fragments
+        # would make Leaflet draw an unverified straight chord.
+        for part, line_coordinates in enumerate(_road_coordinate_chains(ordered), start=1):
+            features.append(
+                GeoJSONFeature(
+                    geometry=GeoJSONLineString.model_validate(linestring_geojson(line_coordinates)),
+                    properties={
+                        "plate": ordered[0].vehiculo.placa,
+                        "kind": "route",
+                        "geometry_kind": "road",
+                        "road_part": part,
+                        "distance_note": "Recorrido sobre red vial (OSRM / OpenStreetMap).",
+                    },
+                )
             )
-        )
     return GeoJSONFeatureCollection(features=features)
 
 
 def _merge_road_segments(ordered: list[RutaDetalle]) -> list[list[float]]:
+    chains = _road_coordinate_chains(ordered)
+    return chains[0] if chains else []
+
+
+def _road_coordinate_chains(ordered: list[RutaDetalle]) -> list[list[list[float]]]:
     """Concatena geometrías viales persistidas; no dibuja cuerdas entre paradas."""
+    chains: list[list[list[float]]] = []
     road: list[list[float]] = []
     for stop in ordered:
-        if stop.geometria_tramo is None:
+        model = getattr(stop, "modelo_distancia", None)
+        if getattr(model, "value", model) != ModeloDistancia.OSRM.value or stop.geometria_tramo is None:
+            if len(road) >= 2:
+                chains.append(road)
+            road = []
             continue
         segment = geometry_to_geojson(stop.geometria_tramo)
         if segment.get("type") != "LineString":
+            if len(road) >= 2:
+                chains.append(road)
+            road = []
             continue
         for coordinate in segment["coordinates"]:
             pair = [float(coordinate[0]), float(coordinate[1])]
             if road and road[-1] == pair:
                 continue
             road.append(pair)
-    return road
+    if len(road) >= 2:
+        chains.append(road)
+    return chains
 
 
 def avoided_co2_to_quinual(co2_avoided_kg: float) -> float:

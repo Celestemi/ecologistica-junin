@@ -15,6 +15,9 @@ from app.core.config import Settings, get_settings
 from app.core.database import async_session_factory
 from app.core.security_boot import validate_security_settings
 from app.main import app
+from app.api.v1.websockets import _require_order_on_vehicle_route
+from app.models.domain import Pedido, Vehiculo
+from app.models.enums import EstadoPedido
 from app.models.identity import Usuario
 from tests.helpers import login_headers
 
@@ -89,10 +92,28 @@ async def test_conductor_may_open_assigned_plate(client: AsyncClient) -> None:
                     "lat": -12.06513,
                     "lon": -75.20486,
                     "altitud_msnm": 3270,
+                    # El conductor no puede reasignar su canal a otra unidad.
+                    "vehicle_id": 2,
                 }
             )
             body = socket.receive_json()
     assert body["type"] in {"position", "eta", "error"}
+    if body["type"] == "position":
+        assert body["vehicle_id"] != 2
+
+
+@pytest.mark.asyncio
+async def test_conductor_cannot_cancel_an_order_outside_his_route(client: AsyncClient) -> None:
+    """La comprobación usada por el WebSocket rechaza un pedido fuera de ruta."""
+    async with async_session_factory() as session:
+        order = await session.scalar(select(Pedido).where(Pedido.codigo_pedido == "PED-001"))
+        vehicle = await session.scalar(select(Vehiculo).where(Vehiculo.placa == "W4U-158"))
+    assert order is not None
+    assert vehicle is not None
+    async with async_session_factory() as session:
+        with pytest.raises(ValueError, match="no pertenece"):
+            await _require_order_on_vehicle_route(session, order, vehicle.id)
+    assert order.estado == EstadoPedido.PENDING
 
 
 @pytest.mark.asyncio
@@ -127,3 +148,60 @@ def test_demo_accounts_disabled_outside_demo() -> None:
     )
     with pytest.raises(RuntimeError, match="ALLOW_DEMO_ACCOUNTS"):
         validate_security_settings(settings)
+
+
+def test_non_demo_disables_api_documentation_by_default() -> None:
+    settings = Settings(
+        app_environment="production",
+        secret_key="x" * 40,
+        allow_demo_accounts=False,
+    )
+    assert settings.expose_api_docs is False
+    validate_security_settings(settings)
+
+
+def test_non_demo_rejects_public_api_documentation() -> None:
+    settings = Settings(
+        app_environment="production",
+        secret_key="x" * 40,
+        allow_demo_accounts=False,
+        expose_api_docs=True,
+    )
+    with pytest.raises(RuntimeError, match="EXPOSE_API_DOCS"):
+        validate_security_settings(settings)
+
+
+@pytest.mark.asyncio
+async def test_api_sets_defensive_security_headers(client: AsyncClient) -> None:
+    response = await client.get("/health")
+    assert response.status_code == 200
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["referrer-policy"] == "no-referrer"
+    assert "camera=()" in response.headers["permissions-policy"]
+    assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
+    assert response.headers["cache-control"] == "no-store"
+
+
+@pytest.mark.asyncio
+async def test_hsts_is_only_sent_for_https(client: AsyncClient) -> None:
+    plain = await client.get("/health")
+    assert "strict-transport-security" not in plain.headers
+    forwarded = await client.get("/health", headers={"X-Forwarded-Proto": "https"})
+    assert forwarded.headers["strict-transport-security"].startswith("max-age=31536000")
+
+
+@pytest.mark.asyncio
+async def test_cors_preflight_restricts_methods_and_headers(client: AsyncClient) -> None:
+    response = await client.options(
+        "/api/v1/pedidos",
+        headers={
+            "Origin": "http://localhost:8080",
+            "Access-Control-Request-Method": "PATCH",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:8080"
+    assert "PATCH" in response.headers["access-control-allow-methods"]
+    assert "authorization" in response.headers["access-control-allow-headers"].lower()

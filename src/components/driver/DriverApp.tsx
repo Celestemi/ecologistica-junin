@@ -333,8 +333,8 @@ export function DriverApp() {
             />
           </div>
         ) : null}
-        {notice ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-950">{notice}</p> : null}
-        {loadError ? <p className="rounded-2xl bg-amber-100 px-4 py-3 text-sm">{loadError}</p> : null}
+        {notice ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-950" role="status" aria-live="polite">{notice}</p> : null}
+        {loadError ? <p className="rounded-2xl bg-amber-100 px-4 py-3 text-sm" role="alert">{loadError}</p> : null}
 
         {nextDelivery ? (
           <NextStop
@@ -466,9 +466,14 @@ function DeliveryModal({
   onConfirm: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const drawing = useRef(false);
   const [ink, setInk] = useState(false);
   const [photoName, setPhotoName] = useState<string | null>(null);
+
+  useEffect(() => {
+    dialogRef.current?.focus();
+  }, []);
 
   function pointer(event: PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
@@ -524,10 +529,21 @@ function DeliveryModal({
 
   return (
     <div className="fixed inset-0 z-20 flex items-end justify-center bg-stone-950/70 sm:items-center">
-      <div className="max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[#f6f3ec] p-4 sm:rounded-3xl" role="dialog" aria-modal="true" aria-labelledby="firma-titulo">
+      <div
+        ref={dialogRef}
+        className="max-h-[100dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[#f6f3ec] p-4 sm:rounded-3xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="firma-titulo"
+        aria-describedby="firma-ayuda"
+        tabIndex={-1}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") onClose();
+        }}
+      >
         <h2 id="firma-titulo" className="text-2xl font-semibold">Firma de entrega</h2>
         <p className="mt-1 text-stone-600">{stop.cliente_nombre} · {stop.codigo_pedido}</p>
-        <p className="mt-1 text-sm text-stone-500">Firma con el dedo o adjunta una foto. Con una de las dos basta.</p>
+        <p id="firma-ayuda" className="mt-1 text-sm text-stone-600">Firma con el dedo o adjunta una foto. Con una de las dos basta.</p>
         <canvas
           ref={canvasRef}
           width={640}

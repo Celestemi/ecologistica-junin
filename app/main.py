@@ -20,6 +20,7 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.security_boot import validate_security_settings
 from app.middleware.https_redirect import HttpsRedirectMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
 
 logger = logging.getLogger("ecologistica.boot")
 
@@ -41,14 +42,18 @@ app = FastAPI(
     description=API_DESCRIPTION,
     openapi_tags=OPENAPI_TAGS,
     swagger_ui_parameters={"docExpansion": "list", "displayRequestDuration": True},
+    docs_url="/docs" if settings.expose_api_docs else None,
+    redoc_url="/redoc" if settings.expose_api_docs else None,
+    openapi_url="/openapi.json" if settings.expose_api_docs else None,
     lifespan=lifespan,
 )
 app.add_middleware(HttpsRedirectMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins(),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 register_exception_handlers(app)
 app.include_router(router)

@@ -21,7 +21,20 @@ export function RouteTable({ stops, selectedStop, onSelect, compact = false }: R
         </thead>
         <tbody>
           {deliveries.map((stop) => (
-            <tr key={stop.key} className={`cursor-pointer border-t border-stone-200 ${selectedStop?.key === stop.key ? "bg-emerald-50" : "hover:bg-stone-50"}`} onClick={() => onSelect(stop)}>
+            <tr
+              key={stop.key}
+              className={`cursor-pointer border-t border-stone-200 ${selectedStop?.key === stop.key ? "bg-emerald-50" : "hover:bg-stone-50"}`}
+              tabIndex={0}
+              aria-selected={selectedStop?.key === stop.key}
+              aria-label={`Seleccionar parada ${stop.deliveryIndex ?? stop.sequence}, ${stop.customer ?? "cliente pendiente"}`}
+              onClick={() => onSelect(stop)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelect(stop);
+                }
+              }}
+            >
               <td className="p-2 font-semibold">{stop.deliveryIndex ?? stop.sequence}</td><td className="p-2">{stop.plate}</td>
               <td className="p-2"><p className="font-medium">{stop.customer ?? "Pendiente"}</p><p className="text-xs text-stone-500">{stop.address ?? "Dirección pendiente"}</p></td>
               <td className="p-2">{stop.etaStatus === "revision_matriz" ? "En revisión" : stop.eta ? formatTime(stop.eta) : "Pendiente"}</td>

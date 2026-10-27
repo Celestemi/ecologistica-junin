@@ -1,5 +1,6 @@
 """Dependencias de sesión y de rol."""
 
+import logging
 from collections.abc import Callable
 
 from fastapi import Depends, HTTPException, status
@@ -15,6 +16,7 @@ from app.services.rbac import DENY_ANON
 from app.services.tokens import read_access_token
 
 bearer_scheme = HTTPBearer(auto_error=False)
+logger = logging.getLogger("ecologistica.security")
 
 
 async def get_current_user(
@@ -22,12 +24,14 @@ async def get_current_user(
     session: AsyncSession = Depends(get_db),
 ) -> Usuario:
     if credentials is None or credentials.scheme.lower() != "bearer":
+        logger.warning("security_event=authentication_rejected reason=missing_or_wrong_scheme")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=DENY_ANON,
         )
     payload = read_access_token(credentials.credentials)
     if payload is None:
+        logger.warning("security_event=authentication_rejected reason=invalid_token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="La sesión no es válida. Vuelve a ingresar.",
@@ -35,12 +39,14 @@ async def get_current_user(
     try:
         user_id = int(str(payload["sub"]))
     except (TypeError, ValueError):
+        logger.warning("security_event=authentication_rejected reason=invalid_subject")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="La sesión no es válida. Vuelve a ingresar.",
         ) from None
     user = await session.scalar(select(Usuario).where(Usuario.id == user_id))
     if user is None or not user.activo:
+        logger.warning("security_event=authentication_rejected reason=inactive_or_unknown_user")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="La sesión no es válida. Vuelve a ingresar.",
@@ -57,6 +63,7 @@ def require_roles(*roles: RolUsuario, accion: str, detail: str) -> Callable[...,
     ) -> Usuario:
         if user.rol in roles:
             return user
+        logger.warning("security_event=authorization_denied action=%s user_id=%s", accion, user.id)
         await record(
             session,
             correo=user.correo,

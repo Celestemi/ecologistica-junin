@@ -40,6 +40,10 @@ jobs:
           python-version: "3.11"
       - name: Install backend dependencies
         run: pip install -r backend/requirements.txt
+      - name: Python dependency audit
+        run: |
+          pip install pip-audit
+          pip-audit --strict -r backend/requirements.txt
       - name: Pytest with coverage
         run: pytest --cov=app --cov-report=xml:coverage.xml --cov-report=term-missing
       - uses: actions/upload-artifact@v4
