@@ -128,7 +128,7 @@ Los cinco documentos usan la versión documental inicial `V_1_0_0`. Este cierre 
 | **Frontend Web** | React.js + Tailwind CSS | Interfaz modular e interactiva para operadores logísticos. |
 | **Móvil / Conductor** | React.js + PWA parcial | Vista de conductor, IndexedDB, Service Worker y cola de sincronización implementados; faltan pruebas extremo a extremo de desconexión, reconexión y no duplicidad para acreditar EN-004 como *Done*. |
 | **Cartografía y Ruteo** | Leaflet + distancia geodésica; OSRM opcional | OSRM está apagado por defecto y no forma parte de `docker-compose.yml`. |
-| **Tareas asíncronas** | Sin servicio separado implementado | Redis/Celery pertenecen a la arquitectura prevista, no al runtime actual. |
+| **Tareas asíncronas** | Sin servicio separado implementado | Redis/Celery pertenecen a la arquitectura prevista, no al runtime actual |
 
 ---
 
