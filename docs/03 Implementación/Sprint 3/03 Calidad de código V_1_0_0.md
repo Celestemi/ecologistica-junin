@@ -1,18 +1,33 @@
 # Evaluación de Calidad de Código — SonarQube
 
-**Versión documental:** V_1_0_0
+**Versión documental:** V_1_1_0
 
 **Nombre del Proyecto:** EcoLogística Huancayo  
-**Fecha de Análisis:** 2026-10-26  
-**Versión del Análisis:** V_1_0_0
+**Fecha de Análisis:** 2026-10-27  
+**Versión del Análisis:** V_1_1_0
 
 ## 1. Resumen Ejecutivo de Quality Gate
 
-- **Estado del Quality Gate:** PASSED.
-- **Porcentaje de Cobertura de Pruebas (Coverage):** 61.2%.
+- **Estado del Quality Gate:** PASSED (`OK`).
+- **Porcentaje de Cobertura Global (Coverage):** 82.1%.
+- **Cobertura de Líneas:** 85.4%.
+- **Cobertura de Ramas:** 69.7%.
+- **Cobertura de Código Nuevo:** 82.0%.
 - **Duplicación de Código:** 0.0%.
 
-Se ejecutó SonarQube Community Build 26.10.0.133078 localmente mediante Docker Desktop y SonarScanner CLI 8.1.0.6389. El análisis usó `coverage.xml` de pytest-cov y `coverage/frontend/lcov.info` de Vitest. El Quality Gate predeterminado evaluó el código nuevo respecto de la versión anterior y registró 0 violaciones nuevas; no implica que las incidencias históricas del proyecto estén resueltas.
+Se ejecutó SonarQube Community Build 26.10.0.133078 localmente mediante Docker Desktop y SonarScanner CLI 8.1.0.6389. El análisis procesó 125 archivos e importó correctamente `coverage.xml` de pytest-cov y `coverage/frontend/lcov.info` de Vitest desde `/usr/src`. El Quality Gate evaluó el código nuevo con 82.0% de cobertura, 0.0% de duplicación y 0 violaciones nuevas. Su aprobación no implica que las 30 incidencias históricas estén resueltas.
+
+### Comparación con el análisis anterior
+
+| Métrica | Análisis anterior | Análisis actual | Variación |
+|---|---:|---:|---:|
+| Cobertura global | 62.0% | **82.1%** | +20.1 pp |
+| Cobertura de líneas | 61.7% | **85.4%** | +23.7 pp |
+| Cobertura de ramas | 63.2% | **69.7%** | +6.5 pp |
+| Cobertura de código nuevo | 65.3% | **82.0%** | +16.7 pp |
+| Duplicación | 0.0% | **0.0%** | Sin cambio |
+
+La mejora proviene de pruebas reales del frontend para páginas operativas, seguimiento público, despacho, barra lateral, modo conductor y mapas. La cobertura frontend medida por Vitest alcanzó 90.91%; SonarQube combina esta medición con la cobertura del backend y obtiene 82.1% global.
 
 ## 2. Métricas Principales
 
@@ -23,23 +38,40 @@ Se ejecutó SonarQube Community Build 26.10.0.133078 localmente mediante Docker 
 | Code Smells | 4 | 4 medias (mayores) |
 | Security Hotspots | 0 | No aplica |
 
-El análisis abarca 11,573 líneas de código (ncloc) y reporta 20 minutos de deuda técnica estimada. Se mantiene la advertencia de SonarQube sobre información de autoría SCM ausente para 17 archivos modificados; no invalida las métricas anteriores, pero limita características dependientes de blame. El análisis de dependencias (SCA) fue omitido por la edición/configuración local, por lo que estas métricas no sustituyen una auditoría de CVE de dependencias.
+El análisis abarca 11,791 líneas de código (ncloc), 7,674 líneas cubribles y 2,065 condiciones. Permanecen sin cubrir 1,121 líneas y 626 condiciones. SonarQube reporta 20 minutos de deuda de mantenibilidad, 100 minutos de esfuerzo de remediación de confiabilidad y 120 minutos de remediación de seguridad.
+
+Calificaciones actuales:
+
+- **Confiabilidad:** E (`reliability_rating = 5.0`).
+- **Seguridad:** C (`security_rating = 3.0`).
+- **Mantenibilidad:** A (`sqale_rating = 1.0`).
+
+Se mantiene la advertencia sobre información de autoría SCM ausente en los archivos nuevos o todavía no versionados. No invalida cobertura ni incidencias, pero limita las funciones dependientes de `git blame`. El análisis de dependencias SCA fue omitido por la edición/configuración local, por lo que estas métricas no sustituyen una auditoría de CVE.
 
 ## 3. Plan de Remediación y Deuda Técnica
 
 - **Deuda Técnica Estimada:** 20 minutos, según SonarQube.
 - **Principales hallazgos y acciones correctivas:**
   1. **Tres bugs críticos de ordenamiento (`typescript:S2871`).** Se encuentran en `src/components/Map.tsx:83`, `src/pages/PlateRestrictions.tsx:120` y `src/components/Sidebar.tsx:178`; usan `sort()` sin comparador explícito. Acción pendiente: sustituirlos por un comparador basado en `localeCompare` y cubrir la ordenación. No se aplicó la modificación para no alterar módulos funcionales fuera del alcance de esta evaluación.
-  2. **Bug bloqueante señalado por el analizador (`python:S930`) en `app/main.py:68`.** SonarQube marca `summary=app.summary` al invocar `get_openapi`. La aplicación construye y las 118 pruebas backend pasan; FastAPI admite ese argumento en la versión instalada. Se clasifica como posible falso positivo de inferencia de tipo y requiere validación/ajuste de regla antes de modificar código válido.
+  2. **Bug bloqueante señalado por el analizador (`python:S930`) en `app/main.py:68`.** SonarQube marca `summary=app.summary` al invocar `get_openapi`. La aplicación construye y las 136 pruebas backend pasan; FastAPI admite ese argumento en la versión instalada. Se clasifica como posible falso positivo de inferencia de tipo y requiere validación/ajuste de regla antes de modificar código válido.
   3. **Diez vulnerabilidades reportadas.** Nueve (`python:S2245`) corresponden a `random.Random` en `app/services/optimizer_benchmark.py` y `app/services/genetic_solver.py`; las semillas son deliberadamente reproducibles para benchmarks y el algoritmo genético, no para secretos. Acción pendiente: revisión de seguridad y, si se confirma ese contexto, marcar como seguro en SonarQube; usar `secrets` únicamente donde se generen credenciales o tokens. La restante (`python:S5332`, baja) identifica orígenes HTTP locales en `app/core/config.py:35`; debe mantenerse solo en desarrollo y verificarse TLS en staging/producción.
   4. **Cuatro code smells (`typescript:S6671`) en `src/lib/offline.ts` (líneas 23, 33, 43 y 66).** La cola de EN-004 rechaza promesas con valores que no siempre son instancias de `Error`. Acción pendiente: normalizar los motivos de rechazo a `Error` y añadir pruebas de IndexedDB y reconexión; no se cambió el flujo offline durante esta medición.
 
 ### Evidencia ejecutada
 
-- `docker compose exec -T backend pytest -q`: 118 pruebas aprobadas; se generó la cobertura Python importada por SonarQube.
-- `npm.cmd run test:coverage`: 6 pruebas aprobadas; se generó `coverage/frontend/lcov.info` importado por SonarQube.
+- Backend completo: 136 pruebas aprobadas; `coverage.xml` fue importado por SonarQube.
+- `npm.cmd run test:coverage`: 67 pruebas frontend aprobadas; se generó `coverage/frontend/lcov.info` con 90.91% de cobertura de líneas.
 - `npm.cmd run build`: compilación de producción aprobada.
 - `npm.cmd audit --omit=dev --json`: 0 vulnerabilidades reportadas en dependencias de producción frontend.
 - `docker compose exec -T backend pip check`: sin requisitos Python rotos.
-- Escaneo final: análisis procesado correctamente por SonarQube local; Quality Gate `OK`/PASSED.
-\n+[← Volver al README principal](../../../README.md)
+- Escaneo final del 27 de octubre de 2026: tarea `SUCCESS`, reportes Python y LCOV importados y Quality Gate `OK`/PASSED.
+
+### Cobertura verificada de módulos frontend prioritarios
+
+| Módulo | Cobertura SonarQube | Líneas | Ramas |
+|---|---:|---:|---:|
+| `src/components/driver/DriverApp.tsx` | 84.2% | 85.3% | 80.1% |
+| `src/components/Map.tsx` | 95.7% | 98.3% | 87.7% |
+| `src/components/PinMap.tsx` | 100.0% | 100.0% | 100.0% |
+
+[← Volver al README principal](../../../README.md)

@@ -44,6 +44,7 @@ addopts = "--cov=app --cov-report=term-missing:skip-covered --cov-report=xml:cov
 [tool.coverage.run]
 source = ["app"]
 branch = true
+relative_files = true
 omit = [
     "app/db/init_db.py",
 ]
