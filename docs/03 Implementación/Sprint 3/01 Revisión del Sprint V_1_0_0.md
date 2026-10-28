@@ -14,7 +14,7 @@ La evaluación posterior se ejecutó en una pila Docker aislada, con datos de pr
 
 La validación dinámica de la ruta aislada verificó tabla, selección por teclado y detalle: había cinco paradas disponibles como botones nativos y `Enter` mostró el detalle de la parada seleccionada. La recuperación automática tras un fallo de tiles, el flujo marcador Leaflet–detalle y el ciclo offline/reconexión de EN-004 siguen sin evidencia extremo a extremo. Las pruebas de accesibilidad también confirmaron foco contenido y restaurado en el diálogo de firma; quedan dos objetivos con contraste insuficiente y una región desplazable sin foco en operador.
 
-Lighthouse 13.5.0 informó 100/100 de accesibilidad en ingreso, seguimiento, operador y conductor bajo los recorridos aislados; axe-core encontró 0 violaciones en ingreso, seguimiento y conductor, y 2 tipos de violación en operador (3 nodos). Estos resultados automáticos son evidencia de esos recorridos, no una declaración de conformidad WCAG. SonarQube respondió en su endpoint público, pero no fue posible autenticar una nueva ejecución ni obtener métricas actuales; las cifras SonarQube que siguen en este documento son históricas y no se usan para cerrar la DoD.
+Lighthouse 13.5.0 informó 100/100 de accesibilidad en ingreso, seguimiento, operador y conductor bajo los recorridos aislados; axe-core encontró 0 violaciones en ingreso, seguimiento y conductor, y 2 tipos de violación en operador (3 nodos). Estos resultados automáticos son evidencia de esos recorridos, no una declaración de conformidad WCAG. Además, el escaneo final de SonarQube Community Build 26.10.0.133078 del 27 de octubre terminó en `SUCCESS` con Quality Gate `OK`/PASSED: procesó 125 archivos, importó cobertura Python y LCOV, y reportó 82.1% de cobertura global, 82.0% en código nuevo y 0.0% de duplicación. El gate no cierra las incidencias históricas: permanecen 16 bugs, 10 vulnerabilidades y 4 code smells; tampoco sustituye el SCA de dependencias.
 
 ### Evidencia histórica de la revisión inicial
 
@@ -47,7 +47,7 @@ Estado de los cinco criterios DoD globales aplicables a todas las historias:
 | Criterio DoD | Evidencia posterior | Resultado |
 |---|---|---|
 | Cobertura automática backend y frontend ≥80% | Backend: 143 pruebas aprobadas y 76% de cobertura total. Frontend: 68 pruebas aprobadas, sin una medición consolidada de cobertura ≥80% presentada en esta evaluación. | **No cumple** |
-| Análisis estático y dependencias | Los tres auditorías de dependencias no encontraron vulnerabilidades conocidas. No hay un análisis SonarQube nuevo autenticado; los hallazgos históricos no se pueden considerar resueltos solo con esta evaluación. | **Parcial; no acreditado para SonarQube** |
+| Análisis estático y dependencias | `npm audit`, `npm audit --omit=dev` y `pip-audit --strict` no informaron vulnerabilidades conocidas. El escaneo SonarQube final del 27 de octubre obtuvo Quality Gate `OK`, pero mantiene 16 bugs (incluido 1 bloqueante), 10 vulnerabilidades y 4 code smells; el análisis SCA de SonarQube no estuvo disponible. | **No cumple** |
 | Peer review aprobado | No se aportó nueva evidencia de aprobación de un par técnico. | **No acreditado** |
 | Pipeline y despliegue automatizado exitoso en staging | La pila de evaluación fue local y aislada; no se ejecutó ni acreditó despliegue a staging. | **No cumple** |
 | OpenAPI/docstrings actualizados | No se modificó ni auditó de nuevo de forma exhaustiva en esta evaluación. | **Parcial** |
@@ -89,6 +89,6 @@ Las exportaciones, reoptimización y procesamiento asíncrono correspondientes a
 - Corregir en operador los dos objetivos de contraste insuficiente y hacer focalizable la región desplazable; completar validaciones manuales con lector de pantalla, reflow a 320 CSS px y zoom 200%/400% en todos los flujos.
 - Ejecutar pruebas extremo a extremo de EN-004: IndexedDB, desconexión, reconexión, Background Sync e idempotencia.
 - Elevar la cobertura backend y frontend al 80% exigido por la DoD o aprobar formalmente el cambio de dicho umbral.
-- Repetir SonarQube con autenticación válida, sin exponer credenciales, y resolver o clasificar los hallazgos que sigan vigentes.
+- Resolver o clasificar en SonarQube los 16 bugs, 10 vulnerabilidades y 4 code smells del escaneo final; conservar el escaneo reproducible y no tratar el Quality Gate de código nuevo como cierre de la DoD.
 - Acreditar peer review, pipeline y despliegue real en staging; realizar y registrar la Sprint Review con stakeholders.
 \n+[← Volver al README principal](../../../README.md)

@@ -12,7 +12,7 @@ La evaluación posterior usó una pila Docker aislada y datos de prueba desechab
 
 En accesibilidad, Lighthouse 13.5.0 obtuvo 100/100 en ingreso, seguimiento, operador y conductor bajo los recorridos aislados. axe-core no halló violaciones en ingreso, seguimiento ni conductor; en operador permanecen dos tipos de violación, sobre tres nodos: contraste insuficiente en dos objetivos y una región desplazable sin foco. Playwright verificó la tabla de ruta aislada (cinco botones y selección con `Enter`) y el diálogo de firma (foco inicial, contención y restauración). Aún faltan comprobaciones manuales con lector de pantalla, reflow a 320 CSS px y zoom 200%/400% para todos los flujos.
 
-No se obtuvo un análisis SonarQube nuevo: el servicio era alcanzable, pero no había autenticación válida disponible para consultar o publicar resultados. Por tanto, las cifras SonarQube citadas más abajo son históricas y no deben interpretarse como estado actual ni como evidencia de cierre.
+El escaneo final de SonarQube Community Build 26.10.0.133078 del 27 de octubre concluyó en `SUCCESS`, importó los reportes Python y LCOV de 125 archivos y obtuvo Quality Gate `OK`/PASSED. Registró 82.1% de cobertura global, 85.4% de líneas, 69.7% de ramas, 82.0% en código nuevo y 0.0% de duplicación. No es evidencia de cierre: persisten 16 bugs (1 bloqueante, 3 críticos y 12 mayores), 10 vulnerabilidades (9 mayores y 1 menor) y 4 code smells; el SCA de dependencias no estuvo disponible en esa edición/configuración.
 
 ## ¿Qué aprendimos?
 
@@ -60,7 +60,7 @@ No se obtuvo un análisis SonarQube nuevo: el servicio era alcanzable, pero no h
 
 - **Codex:** se utilizó en esta sesión para inspección del repositorio, ejecución local de verificaciones y elaboración de los dos documentos. Su salida debe conservar revisión humana; no constituye peer review ni aprobación del equipo.
 - **Git:** aporta historial y control de cambios, pero no reemplaza evidencia de PR aprobado. Conviene vincular commits, historias y revisiones sin incluir cambios ajenos o no consolidados.
-- **SonarQube:** produjo resultados históricos y cobertura, pero no fue posible ejecutar ni consultar un análisis nuevo sin autenticación válida. Cuando se recupere el acceso, se requiere un gate alineado con la DoD y clasificación formal de falsos positivos.
+- **SonarQube:** el escaneo final del 27 de octubre fue `SUCCESS` y el Quality Gate de código nuevo fue `OK`, con 82.1% de cobertura global. No obstante, el proyecto conserva 16 bugs, 10 vulnerabilidades y 4 code smells; se requiere un gate alineado con la DoD y clasificación formal, contextual y trazable de los posibles falsos positivos.
 - **Docker Compose/PostGIS:** permitió ejecutar la suite integrada del backend de forma reproducible. Deben añadirse entornos efímeros para pruebas de demo, offline y staging sin afectar datos persistentes.
 - **Pytest/pytest-cov:** la evaluación posterior obtuvo 143 pruebas verdes y 76% total. La mejora no alcanza el umbral DoD; WebSockets/API aún requieren cobertura dirigida.
 - **Vitest/V8:** la evaluación posterior obtuvo 68 pruebas verdes, incluidas pruebas de flujos y componentes. Persisten huecos end-to-end para recuperación de tiles e IndexedDB/Background Sync.
@@ -80,7 +80,7 @@ Las siguientes son **propuestas derivadas de la evidencia**, no acuerdos aprobad
 | Cubrir EN-004 extremo a extremo: IndexedDB, corte de red, reconexión, Background Sync e idempotencia. | Una entrega encolada offline se sincroniza una sola vez tras reintentos; pruebas repetibles en navegador. | Por confirmar |
 | Corregir los hallazgos WCAG aún confirmados en operador y completar la evaluación manual. | axe-core sin los dos fallos de contraste ni la región desplazable sin foco, más checklist manual de teclado, foco, lector de pantalla, reflow y zoom. | Por confirmar |
 | Elevar la cobertura backend/frontend al 80% o someter a aprobación una modificación de la DoD. | Reportes de cobertura archivados y pipeline bloqueando valores inferiores al umbral vigente. | Por confirmar |
-| Resolver/clasificar incidencias SonarQube y endurecer el Quality Gate. | Sin deuda bloqueante bajo el criterio DoD; decisiones de falso positivo justificadas en la herramienta. | Por confirmar |
+| Resolver/clasificar incidencias SonarQube y endurecer el Quality Gate. | Revisión de los 16 bugs, 10 vulnerabilidades y 4 code smells del escaneo `SUCCESS` del 27 de octubre; sin deuda bloqueante bajo el criterio DoD y decisiones de falso positivo justificadas en la herramienta. | Por confirmar |
 | Mantener SCA de Python y auditoría completa de dependencias en CI. | Reporte reproducible de `npm audit`, `npm audit --omit=dev` y `pip-audit`, política de severidades y tratamiento documentado de hallazgos. | Por confirmar |
 | Obtener peer review y desplegar a staging mediante pipeline real. | PR aprobado por un par y ejecución de staging exitosa enlazada al Sprint 3. | Por confirmar |
 | Realizar Sprint Review y retrospectiva con el equipo. | Acta con fecha, participantes, feedback, decisiones, responsables y aceptación/rechazo de cada historia. | Por confirmar |
