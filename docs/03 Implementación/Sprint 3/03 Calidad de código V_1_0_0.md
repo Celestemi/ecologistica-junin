@@ -3,7 +3,7 @@
 **Versión documental:** V_1_1_0
 
 **Nombre del Proyecto:** EcoLogística Huancayo  
-**Fecha de Análisis:** 2026-10-27  
+**Fecha de Análisis:** revisión general  
 **Versión del Análisis:** V_1_1_0
 
 ## 1. Resumen Ejecutivo de Quality Gate
@@ -64,7 +64,7 @@ Se mantiene la advertencia sobre información de autoría SCM ausente en los arc
 - `npm.cmd run build`: compilación de producción aprobada.
 - `npm.cmd audit --omit=dev --json`: 0 vulnerabilidades reportadas en dependencias de producción frontend.
 - `docker compose exec -T backend pip check`: sin requisitos Python rotos.
-- Escaneo final del 27 de octubre de 2026: tarea `SUCCESS`, reportes Python y LCOV importados y Quality Gate `OK`/PASSED.
+- Escaneo final del sprint: tarea `SUCCESS`, reportes Python y LCOV importados y Quality Gate `OK`/PASSED.
 
 ### Cobertura verificada de módulos frontend prioritarios
 

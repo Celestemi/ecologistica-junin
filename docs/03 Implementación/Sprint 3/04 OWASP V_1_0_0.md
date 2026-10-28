@@ -3,7 +3,7 @@
 **Versión documental:** V_1_0_0
 
 **Nombre del proyecto:** EcoLogística Junín  
-**Fecha de evaluación puntual:** 27 de octubre de 2026 (actualización dinámica posterior a las correcciones)
+**Fecha de evaluación puntual:** revisión del sprint
 **Alcance:** backend FastAPI/Python, frontend React/Vite, configuración Docker y servicios locales en `localhost`  
 **Herramienta de escaneo:** SonarQube Community Build 26.10.0.133078 local mediante Docker Desktop  
 **Criterio de estado:** `Vulnerable` = debilidad confirmada; `Bajo revisión` = controles parciales, riesgo posible o evidencia insuficiente; `Limpio` solo se usaría con evidencia suficiente. Ninguna categoría se marca como Limpio en esta evaluación puntual.
@@ -12,7 +12,7 @@ La ficha original empleaba nombres y numeración de OWASP Top 10:2021. Esta vers
 
 ## 1. Matriz de Cumplimiento OWASP Top 10 2025
 
-### Matriz vigente — evaluación aislada del 27 de octubre de 2026
+### Matriz vigente — evaluación aislada del sprint
 
 | Categoría OWASP 2025 | Estado | Evidencia actual y límite |
 |---|---|---|
@@ -27,12 +27,12 @@ La ficha original empleaba nombres y numeración de OWASP Top 10:2021. Esta vers
 | A09:2025 — Security Logging and Alerting Failures | **Vulnerable.** | Se emiten eventos de rechazo, bloqueo y autorización sin secretos; no hay SIEM, alerta, correlación, retención ni respuesta operativa verificadas. |
 | A10:2025 — Mishandling of Exceptional Conditions | **Bajo revisión.** | La suite aislada pasó y los errores controlados no expusieron trazas en los flujos probados; faltan fallos de servicios externos, agotamiento, transacciones parciales y pruebas fail-open. |
 
-### Matriz histórica — evaluación del 26 de octubre de 2026
+### Matriz histórica — evaluación de la revisión previa
 
 | Categoría OWASP 2025 | Estado en Proyecto (Limpio / Vulnerable / Bajo Revisión) | Hallazgos de SonarQube y revisión complementaria |
 |---|---|---|
 | A01:2025 — Broken Access Control | **Bajo revisión.** Los permisos sí se aplican en backend mediante `get_current_user` y `require_roles`. Las pruebas confirmaron 401 anónimo, 403 por rol, restricción del canal de conductor a su vehículo y minimización del seguimiento público. Falta una matriz integral por endpoint/objeto y pruebas IDOR/SSRF para todas las rutas. | SonarQube no reportó una regla específica. Evidencia dinámica: 12 pruebas de seguridad/autenticación aprobadas; solicitudes sin JWT o con JWT inválido a recursos protegidos devolvieron 401. El frontend también oculta funciones por rol, pero no es el control decisivo. |
-| A02:2025 — Security Misconfiguration | **Vulnerable.** La instancia evaluada es deliberadamente de demostración: HTTP, clave y cuenta de base de datos predeterminadas, cuentas demo habilitadas, API y base de datos publicadas en el host, documentación OpenAPI pública y ausencia de cabeceras defensivas en Nginx (por ejemplo CSP, HSTS, `X-Content-Type-Options` y `Referrer-Policy`). El arranque bloquea la clave y cuentas demo fuera del entorno demo, pero no convierte esta instancia en apta para producción. | El análisis del 27 de octubre mantiene 1 vulnerabilidad menor abierta `python:S5332` en `app/core/config.py:35` por orígenes HTTP. La prueba CORS con origen no autorizado fue rechazada (400), resultado favorable pero parcial. |
+| A02:2025 — Security Misconfiguration | **Vulnerable.** La instancia evaluada es deliberadamente de demostración: HTTP, clave y cuenta de base de datos predeterminadas, cuentas demo habilitadas, API y base de datos publicadas en el host, documentación OpenAPI pública y ausencia de cabeceras defensivas en Nginx (por ejemplo CSP, HSTS, `X-Content-Type-Options` y `Referrer-Policy`). El arranque bloquea la clave y cuentas demo fuera del entorno demo, pero no convierte esta instancia en apta para producción. | El análisis del sprint mantiene 1 vulnerabilidad menor abierta `python:S5332` en `app/core/config.py:35` por orígenes HTTP. La prueba CORS con origen no autorizado fue rechazada (400), resultado favorable pero parcial. |
 | A03:2025 — Software Supply Chain Failures | **Vulnerable.** `npm audit` completo confirmó 5 paquetes afectados en herramientas de desarrollo: 2 críticos, 1 alto y 2 moderados, asociados a Vitest/Tinypool/Vite. `npm audit --omit=dev` reportó 0 vulnerabilidades en 48 dependencias de producción. Las imágenes Docker usan etiquetas móviles/no fijadas por digest y CI no ejecuta auditoría SCA. | El procesamiento de SonarQube indicó expresamente que Software Composition Analysis no estaba disponible. `pip check` no halló requisitos rotos, pero `pip-audit` no está instalado y por tanto las vulnerabilidades Python quedaron **no evaluadas**. |
 | A04:2025 — Cryptographic Failures | **Bajo revisión.** JWT usa HS256, expiración y validación de firma/algoritmo; las contraseñas usan bcrypt y los tokens públicos son opacos. La instancia opera por HTTP y el JWT carece de `iss`, `aud` y mecanismo de revocación; TLS y gestión/rotación de secretos no se comprobaron en un despliegue real. | SonarQube reportó 9 vulnerabilidades mayores `python:S2245` en `app/services/optimizer_benchmark.py` y `app/services/genetic_solver.py`. La revisión confirma que el PRNG se usa para benchmark y optimización reproducible, no para secretos; son **avisos contextuales**, no una falla criptográfica explotable confirmada. |
 | A05:2025 — Injection | **Bajo revisión.** Se observaron consultas SQLAlchemy parametrizadas, esquemas Pydantic y validación de tokens/entradas. No se identificó inyección confirmada, pero no se ejecutó un DAST exhaustivo ni fuzzing de todos los importadores, WebSockets y parámetros. | Sin vulnerabilidad SonarQube específica. Los avisos npm de Vite/Vitest afectan herramientas de desarrollo y se clasifican principalmente en A03; no se demostró explotación en la aplicación servida por Nginx. |
@@ -46,9 +46,9 @@ La ficha original empleaba nombres y numeración de OWASP Top 10:2021. Esta vers
 
 ### Evidencia de SonarQube local
 
-- **Comprobación posterior (27 de octubre de 2026):** SonarQube respondió `200` en `/api/server/version`, pero `/api/projects/search` exigió autenticación y no se dispuso de una credencial válida ni de `sonar-scanner`. No se ejecutó análisis nuevo, no se consultaron métricas protegidas y no se atribuyen métricas nuevas a SonarQube.
+- **Comprobación posterior (revisión del sprint):** SonarQube respondió `200` en `/api/server/version`, pero `/api/projects/search` exigió autenticación y no se dispuso de una credencial válida ni de `sonar-scanner`. No se ejecutó análisis nuevo, no se consultaron métricas protegidas y no se atribuyen métricas nuevas a SonarQube.
 
-- El análisis más reciente observado para `ecologistica-huancayo` terminó correctamente el 27 de octubre de 2026; procesó 125 archivos e importó los reportes de cobertura Python y LCOV. La API web exige autenticación; para no exponer credenciales, los resultados se contrastaron con las métricas e incidencias persistidas por la propia instancia local.
+- El análisis más reciente observado para `ecologistica-huancayo` terminó correctamente el revisión del sprint; procesó 125 archivos e importó los reportes de cobertura Python y LCOV. La API web exige autenticación; para no exponer credenciales, los resultados se contrastaron con las métricas e incidencias persistidas por la propia instancia local.
 - **Quality Gate:** PASSED (`OK`), con 82.0% de cobertura en código nuevo, 0.0% de duplicación y 0 violaciones nuevas. El gate evalúa código nuevo; no equivale a ausencia de vulnerabilidades en el proyecto.
 - **Vulnerabilidades abiertas:** 10; calificación de seguridad C. Son 9 mayores `python:S2245` y 1 menor `python:S5332`.
 - **Security Hotspots:** 0; calificación de revisión A. Cero hotspots significa que el perfil no generó hotspots, no que todas las categorías OWASP estén limpias.
@@ -66,7 +66,7 @@ Los 9 avisos `S2245` no se consideran vulnerabilidades confirmadas tras revisar 
 
 ### Pruebas y comprobaciones ejecutadas
 
-#### Evaluación posterior aislada — 27 de octubre de 2026
+#### Evaluación posterior aislada — revisión del sprint
 
 | Comprobación | Resultado real |
 |---|---|
@@ -108,7 +108,7 @@ Mitigaciones pendientes, en orden recomendado:
 7. Completar pruebas backend por endpoint, rol y objeto (incluidos IDOR, importación, WebSockets, seguimiento público y SSRF), además de expiración/revocación de sesión y límites de tasa.
 8. Incorporar `iss`, `aud`, rotación/revocación de JWT y evitar tokens en query strings cuando la arquitectura permita un canal autenticado más seguro.
 
-### Correcciones implementadas (27 de octubre de 2026)
+### Correcciones implementadas (revisión del sprint)
 
 - **A01 / autorización por objeto:** el canal WebSocket del conductor fija el vehículo asignado al autenticarlo; los mensajes de posición, alta y cancelación ya no pueden cambiarlo mediante `vehicle_id` ni actuar sobre pedidos que no pertenezcan a su ruta. La prueba cubre el intento de cancelar `PED-001` desde una ruta ajena.
 - **A02 / perfiles:** las cuentas de demostración se siguen creando únicamente cuando `APP_ENVIRONMENT=demo` y la validación de arranque rechaza su activación fuera de demo. La documentación OpenAPI queda habilitada por defecto sólo en demo y el arranque rechaza `EXPOSE_API_DOCS=true` fuera de ese perfil. No se fuerza HTTPS en localhost; HSTS se emite exclusivamente cuando la solicitud ya llega mediante HTTPS.
