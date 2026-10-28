@@ -16,9 +16,9 @@ La validación dinámica de la ruta aislada verificó tabla, selección por tecl
 
 Lighthouse 13.5.0 informó 100/100 de accesibilidad en ingreso, seguimiento, operador y conductor bajo los recorridos aislados; axe-core encontró 0 violaciones en ingreso, seguimiento y conductor, y 2 tipos de violación en operador (3 nodos). Estos resultados automáticos son evidencia de esos recorridos, no una declaración de conformidad WCAG. Además, el escaneo final de SonarQube Community Build 26.10.0.133078 del 27 de octubre terminó en `SUCCESS` con Quality Gate `OK`/PASSED: procesó 125 archivos, importó cobertura Python y LCOV, y reportó 82.1% de cobertura global, 82.0% en código nuevo y 0.0% de duplicación. El gate no cierra las incidencias históricas: permanecen 16 bugs, 10 vulnerabilidades y 4 code smells; tampoco sustituye el SCA de dependencias.
 
-### Evidencia histórica de la revisión inicial
+### Consolidación de la revisión
 
-La revisión se basa en el backlog oficial, el código vigente y una ejecución local del 26 de octubre de 2026: **118 pruebas backend aprobadas**, **6 pruebas frontend aprobadas** y **build de producción aprobado**. La cobertura backend obtenida fue **75%**, inferior al 80% exigido por la Definition of Done (DoD). SonarQube registra Quality Gate `PASSED` para código nuevo, pero conserva una incidencia bloqueante de fiabilidad, tres críticas, diez vulnerabilidades de severidad media/baja y cobertura global importada de 61.2%. Tampoco existe evidencia de peer review aprobado ni de despliegue automatizado exitoso en staging.
+La revisión se basa en el backlog oficial, el código vigente y las ejecuciones locales verificadas del 27 de octubre de 2026. La evaluación aislada más reciente aprobó **143 pruebas backend** y **68 frontend**; el escaneo SonarQube que generó los reportes de cobertura aprobó **136 pruebas backend** y **67 frontend**, importó ambos reportes y obtuvo **82.1% de cobertura global**. La diferencia entre conteos corresponde a ejecuciones distintas; no se deben mezclar para inferir una cobertura individual de backend. La ejecución aislada de `pytest-cov` registró 76% para backend, inferior al 80% exigido por la Definition of Done (DoD). Aunque el Quality Gate de código nuevo pasó, persisten 1 bug bloqueante, 3 bugs críticos, 12 bugs mayores, 10 vulnerabilidades y 4 code smells. Tampoco existe evidencia de peer review aprobado ni de despliegue automatizado exitoso en staging.
 
 En consecuencia, **ninguna historia US-010 a US-015 ni EN-004 se declara completada en sentido Done**. La tabla detalla la implementación realmente disponible y las brechas que impiden cerrar cada elemento.
 
@@ -36,8 +36,8 @@ Estado de los cinco criterios DoD globales aplicables a todas las historias:
 
 | Criterio DoD | Evidencia actual | Resultado |
 |---|---|---|
-| Cobertura automática backend y frontend ≥80% | Backend 75% en la ejecución actual; SonarQube importó 61.2% global. Las seis pruebas frontend no cubren todos los componentes Sprint 3. | **No cumple** |
-| Análisis estático sin vulnerabilidades críticas/altas ni deuda bloqueante | SonarQube ejecutado; 0 hotspots y sin vulnerabilidad crítica/alta, pero conserva un hallazgo bloqueante de fiabilidad y tres críticos, además de diez vulnerabilidades medias/bajas. | **No cumple** |
+| Cobertura automática backend y frontend ≥80% | SonarQube importó 82.1% global, 85.4% de líneas, 69.7% de ramas y 82.0% en código nuevo; Vitest aportó 90.91% de líneas frontend. La ejecución aislada de backend obtuvo 76%, por debajo del umbral, y no hay evidencia homogénea que acredite ≥80% en ambas capas. | **No cumple** |
+| Análisis estático sin vulnerabilidades críticas/altas ni deuda bloqueante | SonarQube finalizó `SUCCESS` con Quality Gate `OK` para código nuevo, pero conserva 1 bug bloqueante, 3 críticos, 12 mayores, 10 vulnerabilidades (9 mayores y 1 menor) y 4 code smells. | **No cumple** |
 | Peer review aprobado | No se encontró PR o aprobación de un par técnico asociada al Sprint 3. | **No acreditado** |
 | Pipeline y despliegue automatizado exitoso en staging | Existe workflow; el job de staging es un placeholder manual y no hay ejecución de despliegue acreditada. | **No cumple** |
 | OpenAPI/docstrings actualizados | `/openapi.json` está operativo y el endpoint de indicadores está documentado; hay docstrings en servicios, aunque no se auditó su cobertura total. | **Parcial** |
@@ -46,7 +46,7 @@ Estado de los cinco criterios DoD globales aplicables a todas las historias:
 
 | Criterio DoD | Evidencia posterior | Resultado |
 |---|---|---|
-| Cobertura automática backend y frontend ≥80% | Backend: 143 pruebas aprobadas y 76% de cobertura total. Frontend: 68 pruebas aprobadas, sin una medición consolidada de cobertura ≥80% presentada en esta evaluación. | **No cumple** |
+| Cobertura automática backend y frontend ≥80% | La ejecución aislada registró 143 pruebas backend y 76% de cobertura backend, además de 68 pruebas frontend. El escaneo SonarQube importó una medición distinta con 82.1% global y 90.91% de líneas frontend. El backend aislado sigue bajo el 80%, por lo que no se acredita el umbral por capa. | **No cumple** |
 | Análisis estático y dependencias | `npm audit`, `npm audit --omit=dev` y `pip-audit --strict` no informaron vulnerabilidades conocidas. El escaneo SonarQube final del 27 de octubre obtuvo Quality Gate `OK`, pero mantiene 16 bugs (incluido 1 bloqueante), 10 vulnerabilidades y 4 code smells; el análisis SCA de SonarQube no estuvo disponible. | **No cumple** |
 | Peer review aprobado | No se aportó nueva evidencia de aprobación de un par técnico. | **No acreditado** |
 | Pipeline y despliegue automatizado exitoso en staging | La pila de evaluación fue local y aislada; no se ejecutó ni acreditó despliegue a staging. | **No cumple** |
