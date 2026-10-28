@@ -8,6 +8,16 @@
 
 ## Historias de Usuario completadas en este Sprint
 
+### Actualización de evidencia — 27 de octubre de 2026
+
+La evaluación posterior se ejecutó en una pila Docker aislada, con datos de prueba desechables y sin modificar datos reales. Se obtuvieron **143 pruebas backend aprobadas** (cobertura total informada por `pytest-cov`: **76%**), **68 pruebas frontend aprobadas** y build de producción aprobado. `npm audit`, `npm audit --omit=dev` y `pip-audit --strict` no informaron vulnerabilidades conocidas en los manifiestos evaluados.
+
+La validación dinámica de la ruta aislada verificó tabla, selección por teclado y detalle: había cinco paradas disponibles como botones nativos y `Enter` mostró el detalle de la parada seleccionada. La recuperación automática tras un fallo de tiles, el flujo marcador Leaflet–detalle y el ciclo offline/reconexión de EN-004 siguen sin evidencia extremo a extremo. Las pruebas de accesibilidad también confirmaron foco contenido y restaurado en el diálogo de firma; quedan dos objetivos con contraste insuficiente y una región desplazable sin foco en operador.
+
+Lighthouse 13.5.0 informó 100/100 de accesibilidad en ingreso, seguimiento, operador y conductor bajo los recorridos aislados; axe-core encontró 0 violaciones en ingreso, seguimiento y conductor, y 2 tipos de violación en operador (3 nodos). Estos resultados automáticos son evidencia de esos recorridos, no una declaración de conformidad WCAG. SonarQube respondió en su endpoint público, pero no fue posible autenticar una nueva ejecución ni obtener métricas actuales; las cifras SonarQube que siguen en este documento son históricas y no se usan para cerrar la DoD.
+
+### Evidencia histórica de la revisión inicial
+
 La revisión se basa en el backlog oficial, el código vigente y una ejecución local del 26 de octubre de 2026: **118 pruebas backend aprobadas**, **6 pruebas frontend aprobadas** y **build de producción aprobado**. La cobertura backend obtenida fue **75%**, inferior al 80% exigido por la Definition of Done (DoD). SonarQube registra Quality Gate `PASSED` para código nuevo, pero conserva una incidencia bloqueante de fiabilidad, tres críticas, diez vulnerabilidades de severidad media/baja y cobertura global importada de 61.2%. Tampoco existe evidencia de peer review aprobado ni de despliegue automatizado exitoso en staging.
 
 En consecuencia, **ninguna historia US-010 a US-015 ni EN-004 se declara completada en sentido Done**. La tabla detalla la implementación realmente disponible y las brechas que impiden cerrar cada elemento.
@@ -16,7 +26,7 @@ En consecuencia, **ninguna historia US-010 a US-015 ni EN-004 se declara complet
 |---|---|---|---|
 | **US-010 — Visualización de rutas en mapa interactivo** | Mostrar trazas y paradas por vehículo con colores diferenciados; al seleccionar un vehículo, destacar su ruta y atenuar las demás. | `Map.tsx` renderiza GeoJSON con Leaflet, polilíneas, marcadores y colores por matrícula; `App.tsx` ofrece filtros por vehículo. La API protegida `/api/v1/rutas/mapa` se prueba en `test_api.py`. La aplicación renderizada fue inspeccionada en `localhost:8080`. El filtro actual oculta las rutas no seleccionadas en vez de atenuarlas, y no hay prueba de componente que verifique la interacción completa. | **Parcial; no completada.** Implementación principal presente, pero un criterio visual no coincide literalmente y falta validación UI automatizada; DoD global incumplida. |
 | **US-011 — Consulta de detalle por parada** | Al seleccionar una parada, mostrar cliente, dirección, ventana, ETA y carga; actualizar el detalle al cambiar de parada sin recargar el mapa. | El GeoJSON incluye cliente, dirección, peso, secuencia y ETA; `Map.tsx` actualiza la selección y `StopDetail` presenta los campos requeridos. `test_api.py` verifica los datos reales publicados y `routePresentation.test.ts` verifica orden y detalle. Durante la revisión de accesibilidad no había una solución publicada, por lo que no se reprodujo el flujo completo marcador-detalle en pantalla. | **Parcial; no completada.** Contrato y componentes implementados, pero falta evidencia dinámica integral y la DoD global no se cumple. |
-| **US-012 — Vista resiliente tabular** | Activar automáticamente una tabla ordenada ante fallo cartográfico y permitir reintentar el mapa conservando el estado. | `App.tsx` cambia a `RouteTable` por `tileerror`, ofrece “Vista tabular” y “Reintentar mapa”; la tabla incluye orden, vehículo, cliente, dirección, ETA, ventana y carga. `routePresentation.test.ts` demuestra que los puntos se ordenan y que la tabla puede existir sin geometría de línea. No se ejecutó una prueba automatizada de fallo/restablecimiento de tiles; además, las filas seleccionables no son operables por teclado, según la revisión WCAG. | **Parcial; no completada.** Fallback implementado, con pruebas unitarias de presentación, pero faltan prueba end-to-end y corrección de accesibilidad; DoD global incumplida. |
+| **US-012 — Vista resiliente tabular** | Activar automáticamente una tabla ordenada ante fallo cartográfico y permitir reintentar el mapa conservando el estado. | `App.tsx` cambia a `RouteTable` por `tileerror`, ofrece “Vista tabular” y “Reintentar mapa”; la tabla incluye orden, vehículo, cliente, dirección, ETA, ventana y carga. La evaluación aislada del 27 de octubre verificó cinco paradas como botones nativos y la apertura del detalle mediante `Enter`. No se ejecutó una prueba automatizada de fallo/restablecimiento de tiles. | **Parcial; no completada.** Se corrigió y verificó la operación por teclado; aún falta la evidencia end-to-end de recuperación de tiles y la DoD global. |
 | **US-013 — Consolidado de KPIs operativos y ambientales** | Mostrar distancia, consumo en litros y emisiones de CO₂; informar correctamente cuando no hay datos. | `operational_indicators.py`, `/api/v1/indicadores` y `Dashboard.tsx` consolidan distancia, duración, consumo, CO₂ emitido/evitado y periodo sin registros. `test_operational_indicators.py` y `test_api.py` validan cálculos e integración. El consumo se calcula y muestra en **galones**, mientras el criterio oficial pide **litros**. | **Parcial; no completada.** Cálculo y dashboard presentes, pero existe discrepancia de unidad y faltan pruebas UI; DoD global incumplida. |
 | **US-014 — Comparación contra línea base** | Calcular ahorro porcentual en distancia y CO₂ frente a línea base secuencial; resaltar si alcanza ≥15% y ≥10%; no inventar porcentajes sin base comparable. | El solver persiste las líneas base y metas; el servicio calcula porcentajes y el dashboard muestra comparación o mensaje de falta de base. Las pruebas verifican los porcentajes y el caso no comparable. El dashboard no presenta un resaltado explícito de cumplimiento de las dos metas, aunque el backend calcula los indicadores booleanos. | **Parcial; no completada.** Cálculo y manejo de ausencia acreditados; falta la señalización visual exigida y la DoD global. |
 | **US-015 — Árboles equivalentes** | Convertir CO₂ evitado a árboles equivalentes mediante un factor configurable y recalcular al cambiar el factor. | El backend usa `quinual_kg_co2_per_year`, persiste el resultado y la API/dashboard muestran una equivalencia referencial en Quinuales, aclarando que no representa árboles plantados. Las pruebas validan CO₂ evitado dividido entre el factor de 12 kg/año. No hay una prueba específica que cambie el factor y demuestre el recálculo dinámico completo. | **Parcial; no completada.** Camino principal probado; falta prueba del cambio de factor y cumplimiento DoD global. |
@@ -32,6 +42,16 @@ Estado de los cinco criterios DoD globales aplicables a todas las historias:
 | Pipeline y despliegue automatizado exitoso en staging | Existe workflow; el job de staging es un placeholder manual y no hay ejecución de despliegue acreditada. | **No cumple** |
 | OpenAPI/docstrings actualizados | `/openapi.json` está operativo y el endpoint de indicadores está documentado; hay docstrings en servicios, aunque no se auditó su cobertura total. | **Parcial** |
 
+### Estado vigente de la DoD — evidencia del 27 de octubre de 2026
+
+| Criterio DoD | Evidencia posterior | Resultado |
+|---|---|---|
+| Cobertura automática backend y frontend ≥80% | Backend: 143 pruebas aprobadas y 76% de cobertura total. Frontend: 68 pruebas aprobadas, sin una medición consolidada de cobertura ≥80% presentada en esta evaluación. | **No cumple** |
+| Análisis estático y dependencias | Los tres auditorías de dependencias no encontraron vulnerabilidades conocidas. No hay un análisis SonarQube nuevo autenticado; los hallazgos históricos no se pueden considerar resueltos solo con esta evaluación. | **Parcial; no acreditado para SonarQube** |
+| Peer review aprobado | No se aportó nueva evidencia de aprobación de un par técnico. | **No acreditado** |
+| Pipeline y despliegue automatizado exitoso en staging | La pila de evaluación fue local y aislada; no se ejecutó ni acreditó despliegue a staging. | **No cumple** |
+| OpenAPI/docstrings actualizados | No se modificó ni auditó de nuevo de forma exhaustiva en esta evaluación. | **Parcial** |
+
 ## Demostración del trabajo completado
 
 No se encontró acta, grabación, lista de asistentes, aceptación de stakeholders ni otra evidencia de una demostración de Sprint 3 ya realizada. Por ello, lo siguiente es un **guion de demostración pendiente**, no el registro de una sesión efectuada:
@@ -46,7 +66,7 @@ No se encontró acta, grabación, lista de asistentes, aceptación de stakeholde
 8. **Offline y sincronización:** en un perfil de navegador desechable, cargar la ruta del conductor, cortar red, registrar una entrega, verificar IndexedDB y la cola visible, recuperar conectividad y comprobar una sola confirmación en backend pese a reintentos.
 9. **Cierre:** presentar resultados de pruebas, SonarQube, OWASP y WCAG, junto con las brechas que impiden declarar Done; solicitar aceptación o decisiones explícitas y documentarlas.
 
-## Pendientes
+## Pendientes identificados en la revisión inicial
 
 - Corregir US-010 para atenuar rutas no seleccionadas o acordar formalmente que filtrarlas satisface el criterio; añadir prueba de interacción del mapa.
 - Ejecutar y archivar una validación dinámica marcador-detalle para US-011 con una ruta de prueba publicada.
@@ -62,4 +82,13 @@ No se encontró acta, grabación, lista de asistentes, aceptación de stakeholde
 - Realizar y registrar la Sprint Review con stakeholders. Los participantes, fecha, resultado y aceptación siguen pendientes de confirmación.
 
 Las exportaciones, reoptimización y procesamiento asíncrono correspondientes a US-016 a US-018 y EN-002 pertenecen al Sprint 4 y no se registran como pendientes del Sprint 3.
+
+## Pendientes vigentes tras la evaluación del 27 de octubre de 2026
+
+- Validar extremo a extremo la recuperación de tiles y el flujo marcador Leaflet–detalle con una ruta de prueba publicada.
+- Corregir en operador los dos objetivos de contraste insuficiente y hacer focalizable la región desplazable; completar validaciones manuales con lector de pantalla, reflow a 320 CSS px y zoom 200%/400% en todos los flujos.
+- Ejecutar pruebas extremo a extremo de EN-004: IndexedDB, desconexión, reconexión, Background Sync e idempotencia.
+- Elevar la cobertura backend y frontend al 80% exigido por la DoD o aprobar formalmente el cambio de dicho umbral.
+- Repetir SonarQube con autenticación válida, sin exponer credenciales, y resolver o clasificar los hallazgos que sigan vigentes.
+- Acreditar peer review, pipeline y despliegue real en staging; realizar y registrar la Sprint Review con stakeholders.
 \n+[← Volver al README principal](../../../README.md)

@@ -6,6 +6,14 @@
 
 **Líder del Proyecto:** Nikole Celeste Bastidas Vilca (Project Manager)
 
+## Actualización con evidencia posterior — 27 de octubre de 2026
+
+La evaluación posterior usó una pila Docker aislada y datos de prueba desechables. Se verificaron 143 pruebas backend aprobadas (76% de cobertura total reportada), 68 pruebas frontend aprobadas y build de producción aprobado. `npm audit`, `npm audit --omit=dev` y `pip-audit --strict` no hallaron vulnerabilidades conocidas en las dependencias evaluadas.
+
+En accesibilidad, Lighthouse 13.5.0 obtuvo 100/100 en ingreso, seguimiento, operador y conductor bajo los recorridos aislados. axe-core no halló violaciones en ingreso, seguimiento ni conductor; en operador permanecen dos tipos de violación, sobre tres nodos: contraste insuficiente en dos objetivos y una región desplazable sin foco. Playwright verificó la tabla de ruta aislada (cinco botones y selección con `Enter`) y el diálogo de firma (foco inicial, contención y restauración). Aún faltan comprobaciones manuales con lector de pantalla, reflow a 320 CSS px y zoom 200%/400% para todos los flujos.
+
+No se obtuvo un análisis SonarQube nuevo: el servicio era alcanzable, pero no había autenticación válida disponible para consultar o publicar resultados. Por tanto, las cifras SonarQube citadas más abajo son históricas y no deben interpretarse como estado actual ni como evidencia de cierre.
+
 ## ¿Qué aprendimos?
 
 - Tener funcionalidad ejecutable no equivale a tener una historia terminada: la DoD global exige cobertura, análisis estático sin deuda bloqueante, peer review, staging y documentación, y varias de esas condiciones siguen abiertas.
@@ -17,7 +25,7 @@
 
 ## ¿Qué estamos haciendo bien?
 
-- La suite vigente es reproducible en Docker: 118 pruebas backend aprobaron y el build de producción terminó correctamente; Vitest aprobó 6 pruebas frontend.
+- La suite es reproducible en Docker aislado: la evaluación posterior aprobó 143 pruebas backend y 68 frontend, además del build de producción. La cobertura backend vigente (76%) continúa por debajo del 80% exigido por la DoD.
 - Hay trazabilidad técnica para Sprint 3: GeoJSON autorizado para mapa/detalle, presentación común de paradas, endpoint de indicadores, línea base persistida, factor de Quinual y cola offline por usuario.
 - Se evita inventar porcentajes cuando no hay línea base comparable y se muestra un mensaje explícito para periodos sin rutas.
 - La confirmación de entregas incorpora una clave de idempotencia y el frontend mantiene una cola pendiente, decisiones coherentes con la sincronización sin duplicados.
@@ -52,12 +60,12 @@
 
 - **Codex:** se utilizó en esta sesión para inspección del repositorio, ejecución local de verificaciones y elaboración de los dos documentos. Su salida debe conservar revisión humana; no constituye peer review ni aprobación del equipo.
 - **Git:** aporta historial y control de cambios, pero no reemplaza evidencia de PR aprobado. Conviene vincular commits, historias y revisiones sin incluir cambios ajenos o no consolidados.
-- **SonarQube:** ya produce resultados reales y cobertura, pero el Quality Gate observado se centra en código nuevo y puede pasar mientras existen incidencias históricas bloqueantes. Se requiere un gate alineado con la DoD y clasificación formal de falsos positivos.
+- **SonarQube:** produjo resultados históricos y cobertura, pero no fue posible ejecutar ni consultar un análisis nuevo sin autenticación válida. Cuando se recupere el acceso, se requiere un gate alineado con la DoD y clasificación formal de falsos positivos.
 - **Docker Compose/PostGIS:** permitió ejecutar la suite integrada del backend de forma reproducible. Deben añadirse entornos efímeros para pruebas de demo, offline y staging sin afectar datos persistentes.
-- **Pytest/pytest-cov:** ofrecen buena cobertura del dominio y 118 pruebas verdes, pero el total backend es 75% y WebSockets/API conservan zonas con cobertura baja.
-- **Vitest/V8:** está operativo, aunque las 6 pruebas se concentran en utilidades; faltan componentes React, mapa, tabla, dashboard, IndexedDB y Service Worker.
+- **Pytest/pytest-cov:** la evaluación posterior obtuvo 143 pruebas verdes y 76% total. La mejora no alcanza el umbral DoD; WebSockets/API aún requieren cobertura dirigida.
+- **Vitest/V8:** la evaluación posterior obtuvo 68 pruebas verdes, incluidas pruebas de flujos y componentes. Persisten huecos end-to-end para recuperación de tiles e IndexedDB/Background Sync.
 - **Lighthouse, axe-core y Playwright:** permitieron evaluar pantallas renderizadas y encontraron fallos reales. Deben integrarse como regresión después de corregir accesibilidad, manteniendo pruebas manuales para criterios no automatizables.
-- **npm audit y pip check:** aportaron evidencia de dependencias; npm encontró avisos en herramientas de desarrollo y `pip check` no encontró requisitos rotos. Falta una SCA Python capaz de consultar vulnerabilidades.
+- **npm audit y pip-audit:** la evaluación posterior ejecutó `npm audit`, `npm audit --omit=dev` y `pip-audit --strict`, sin vulnerabilidades conocidas. Deben mantenerse en CI y complementarse con revisión de imágenes/SBOM según la infraestructura disponible.
 - **GitHub Actions:** existe configuración de CI, pero no se verificó una ejecución remota verde ni un despliegue staging real para este cierre.
 - **Jira:** existen artefactos y capturas históricas de planificación, pero no se encontró evidencia actualizada de estados, acuerdos o aceptación del Sprint 3; su vigencia debe confirmarse con el equipo.
 
@@ -68,12 +76,12 @@ Las siguientes son **propuestas derivadas de la evidencia**, no acuerdos aprobad
 | Acción propuesta | Evidencia verificable de cierre | Responsable / aprobación |
 |---|---|---|
 | Alinear US-010, US-013 y US-014 con sus criterios: atenuación de rutas, litros y resaltado de metas. | Pruebas de componente/E2E verdes y criterio actualizado solo si el equipo aprueba un cambio. | Por confirmar |
-| Completar pruebas de mapa, detalle y tabla ante falla/restablecimiento de cartografía. | Ejecución automatizada con datos aislados y evidencia de teclado/accesibilidad. | Por confirmar |
+| Completar pruebas de mapa y detalle ante falla/restablecimiento de cartografía. | Ejecución automatizada con datos aislados que cubra recuperación de tiles y marcador Leaflet–detalle; la selección de tabla con teclado ya fue verificada. | Por confirmar |
 | Cubrir EN-004 extremo a extremo: IndexedDB, corte de red, reconexión, Background Sync e idempotencia. | Una entrega encolada offline se sincroniza una sola vez tras reintentos; pruebas repetibles en navegador. | Por confirmar |
-| Corregir hallazgos WCAG confirmados y repetir la evaluación. | Lighthouse/axe sin los fallos corregidos y checklist manual de teclado, foco y lector de pantalla. | Por confirmar |
+| Corregir los hallazgos WCAG aún confirmados en operador y completar la evaluación manual. | axe-core sin los dos fallos de contraste ni la región desplazable sin foco, más checklist manual de teclado, foco, lector de pantalla, reflow y zoom. | Por confirmar |
 | Elevar la cobertura backend/frontend al 80% o someter a aprobación una modificación de la DoD. | Reportes de cobertura archivados y pipeline bloqueando valores inferiores al umbral vigente. | Por confirmar |
 | Resolver/clasificar incidencias SonarQube y endurecer el Quality Gate. | Sin deuda bloqueante bajo el criterio DoD; decisiones de falso positivo justificadas en la herramienta. | Por confirmar |
-| Incorporar SCA de Python y auditoría completa de dependencias en CI. | Reporte reproducible, política de severidades y tratamiento documentado de hallazgos. | Por confirmar |
+| Mantener SCA de Python y auditoría completa de dependencias en CI. | Reporte reproducible de `npm audit`, `npm audit --omit=dev` y `pip-audit`, política de severidades y tratamiento documentado de hallazgos. | Por confirmar |
 | Obtener peer review y desplegar a staging mediante pipeline real. | PR aprobado por un par y ejecución de staging exitosa enlazada al Sprint 3. | Por confirmar |
 | Realizar Sprint Review y retrospectiva con el equipo. | Acta con fecha, participantes, feedback, decisiones, responsables y aceptación/rechazo de cada historia. | Por confirmar |
 \n+[← Volver al README principal](../../../README.md)
