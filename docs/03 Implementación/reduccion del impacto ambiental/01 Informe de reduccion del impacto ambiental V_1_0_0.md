@@ -1,86 +1,162 @@
-﻿# Informe de reducción del impacto ambiental y estándares de ingeniería de software
+# Informe de reducción del impacto ambiental y optimización Green IT
 
-**Proyecto:** EcoLogística Huancayo  
-**Versión del informe:** 1.0.0  
-**Fecha:** 10 de noviembre de 2026  
-**Estado:** primera versión de optimización implementada; validación funcional integral y medición de consumo digital pendientes.
+**Proyecto:** EcoLogística Huancayo
+**Versión:** 1.0.0
+**Fecha:** 10 de noviembre de 2026
+**Estado:** primera versión técnica implementada; validación funcional integral y medición ambiental digital pendientes.
 
-## 1. Alcance y criterios
+## 1. Introducción y propósito
 
-Este informe adapta las ocho áreas del documento de referencia al proyecto real: React 18, TypeScript, Vite 7, FastAPI, SQLAlchemy asíncrono y PostgreSQL/PostGIS. Los ejemplos MERN/MongoDB del documento no corresponden a este repositorio y sus cifras no se trasladan como resultados.
+Este documento registra la auditoría Green IT del proyecto y las optimizaciones efectuadas en esta primera versión. Adapta las ocho áreas del HTML de referencia a la arquitectura real de EcoLogística: React 18, TypeScript, Vite 7, FastAPI, SQLAlchemy asíncrono y PostgreSQL/PostGIS. Las muestras MERN/MongoDB del HTML sirven como referencia de formato y alcance, no como descripción del código ni como evidencia de este proyecto.
 
-La entrega conserva las pantallas, reglas de permisos, importación CSV/XLSX, planificación, mapa, seguimiento, modo conductor y esquema de persistencia. No se modificaron modelos, tablas, índices ni migraciones. El endpoint de jornada ahora devuelve una envoltura con los pedidos y los metadatos de paginación; el frontend del repositorio consume el nuevo formato. Un cliente externo que esperase el array anterior deberá adaptar su lectura. La pantalla de pedidos mantiene acceso progresivo a todos los registros. Las imágenes raster propias no están presentes; el mapa usa teselas externas.
+El objetivo es reducir trabajo, datos transferidos y recursos cargados cuando no se necesitan, preservando los flujos del producto. El informe separa datos medidos de expectativas: no estima consumo eléctrico ni emisiones digitales porque no hay una medición del servicio en operación.
 
-## 2. Diagnóstico e implementación de las ocho áreas
+## 2. Diagnóstico inicial
 
-| Optimización | Estado actual | Problema identificado | Archivos involucrados | Solución aplicada | Prioridad | Riesgo |
-|---|---|---|---|---|---|---|
-| Consultas y acceso a datos | Mejorado, pendiente medir en BD | La importación comparaba potencialmente contra códigos ajenos al archivo; algunas lecturas devolvían columnas que no se usaban. | `app/services/order_import.py`, `app/api/v1/routes.py` | Acotar la comprobación de duplicados a los códigos importados y proyectar las columnas necesarias en indicadores. Sin índices ni cambios de esquema. | Alta | Bajo; verificar planes y cardinalidades reales en despliegue. |
-| Paginación | Implementada en listados de crecimiento | Jornadas e historiales podían cargar registros sin límite o requerir descargar todo el historial. | `app/api/v1/desk.py`, `app/api/v1/auth.py`, `app/api/v1/plate_restrictions.py`, `app/schemas/restrictions.py`, `src/api.ts`, `src/pages/OrdersDay.tsx`, `src/pages/AuditLog.tsx`, `src/pages/Fleet.tsx`, `src/pages/PlateRestrictions.tsx` | Jornada por páginas de 100 (máximo API 250) con total y orden estable; historiales con cursor por ID y controles “cargar más”. | Alta | Medio; requiere validar usuarios con historiales extensos y clientes API externos. |
-| Imágenes WebP/AVIF | No aplicable a assets propios actuales | No se encontraron fotografías raster propias que justifiquen conversión. Convertir teselas del proveedor externo no está bajo control del proyecto. | `public/`, `src/components/PinMap.tsx` | Sin conversión artificial. Mantener SVG de marca/iconos y documentar que la cartografía se sirve externamente. Aplicar formatos modernos cuando se agreguen imágenes propias. | Baja | Bajo. |
-| Lazy loading y división de código | Implementada | El paquete de entrada incluía pantallas que no se necesitaban en todas las rutas. | `src/main.tsx`, `vite.config.ts` | Ocho pantallas se cargan bajo demanda; el build crea chunks separados. El SW solo precarga recursos del flujo offline principal. | Alta | Bajo; revisar navegación por rol en navegador real. |
-| Dependencias y tree shaking | Mejorado | Recharts no tenía imports de producción y dependencias de test estaban en el manifiesto runtime. | `package.json`, `package-lock.json`, `pyproject.toml`, `backend/requirements.txt`, `backend/Dockerfile`, `.github/workflows/ci.yml`, `README.md` | Eliminado Recharts y sus dependencias transitivas; separadas dependencias Python dev/runtime. `openpyxl` permanece en runtime porque soporta la importación XLSX existente. CI instala extras dev; imagen backend no incluye tests. | Media | Bajo; revisar instalaciones limpias en CI. |
-| Solicitudes y cómputo | Mejorado | Las lecturas obsoletas de indicadores seguían activas; la matriz de rutas podía requerir muchas consultas individuales; cómputo/red síncronos podían bloquear el loop asíncrono. | `src/components/Dashboard.tsx`, `src/api.ts`, `app/services/osrm_client.py`, `app/services/routing_matrix.py`, `app/services/genetic_solver.py`, `app/services/optimizer_runtime.py`, `app/services/sequence_eta.py`, `app/api/v1/routes.py`, `app/api/v1/websockets.py`, `app/core/config.py` | Cancelación de lecturas anteriores; matriz OSRM Table por bloques configurables de hasta 50 orígenes y 50 destinos (hasta 100 ubicaciones por solicitud); deadline de matriz dentro del presupuesto del solver; ejecución fuera del loop y un espacio de cómputo por worker. Saturación responde 503 recuperable. | Alta | Medio; medir calidad de rutas, límites/configuración del servidor OSRM y rendimiento con carga real. |
-| Caché y entrega offline | Implementada con límites explícitos | El frontend Docker no copiaba `public/`; caché del SW no estaba vinculada a versión reproducible de build y las cabeceras requerían verificación. | `frontend/Dockerfile`, `public/sw.js`, `vite.config.ts`, `frontend/nginx.conf`, `frontend/nginx-ssl.conf.example` | Build copia recursos públicos; versión de caché deriva de build; limpieza limitada a cachés `eco-shell-*`; API privada no se almacena; navegación cae al shell si falta conexión. Assets versionados tienen caché inmutable y HTML/SW revalidan. | Alta | Medio; el modo offline requiere haber cargado datos/sesión, y validación de sincronización en navegador queda pendiente. |
-| Compresión | Configurada y comprobada en contenedor | Sin configuración de compresión/cache HTTP en la entrega Nginx. | `frontend/nginx.conf`, `frontend/nginx-ssl.conf.example` | Gzip para tipos de texto/JSON/GeoJSON/JS/CSS/SVG/manifest, ETag, `Vary: Accept-Encoding`, caché por tipo; APIs `private, no-store`. | Media | Bajo; proxy directo a Uvicorn no usa esta compresión. |
+### 2.1 Hallazgos técnicos
 
-### Límites funcionales preservados
+- La entrada frontend reunía el código de varias pantallas; el proyecto no distribuía todas las vistas mediante carga diferida.
+- Las pantallas de jornada e historiales no ofrecían paginación progresiva en todos los casos.
+- Las consultas de indicadores podían seleccionar relaciones/campos que no eran necesarios para el cálculo; la detección de duplicados de importación podía revisar códigos fuera del archivo actual.
+- El optimizador podía hacer consultas de tramos OSRM de forma individual y el cálculo síncrono podía ocupar el event loop de FastAPI.
+- La caché del navegador y la configuración de Nginx no expresaban políticas de almacenamiento y compresión completas.
+- No se identificaron imágenes raster propias que ameriten conversión a WebP/AVIF. La cartografía procede de un servicio externo.
 
-- La ruta `/api/v1/pedidos` sigue entregando el conjunto requerido para mapa/planificación. No se truncó la carga de trabajo del optimizador. La jornada operativa sí tiene paginación porque la pantalla puede avanzar por páginas.
-- La importación admite hasta 150 filas por archivo, según la regla existente; no se cambió ese límite.
-- La tabla de rutas usa el endpoint OSRM Table en bloques. Si un bloque falla o un par no tiene ruta, el optimizador conserva su manejo de distancia no confiable/modelo alternativo.
-- No se añadieron métricas de carbono digital. Las emisiones de las rutas son una estimación de transporte y no equivalen a consumo eléctrico de software.
+### 2.2 Línea base disponible
 
-## 3. Cambios de frontend y entrega
+La comparación usa el commit `2716fd5` como base de artefactos frontend. No es una medición de tráfico de producción, ejecución en navegador ni consumo de hardware.
 
-`src/main.tsx` divide las pantallas con `React.lazy` y `Suspense`, conserva controles de acceso y activa el Service Worker solo en producción. `Dashboard` cancela solicitudes de indicadores cuando cambia el filtro, se actualiza o desmonta.
-
-El plugin local de `vite.config.ts` crea una versión del cache shell a partir del SW, manifest y artefactos. Precarga únicamente recursos estáticos del shell, acceso y conductor; no precarga datos de usuario, APIs ni teselas. Las mutaciones y respuestas autenticadas no se guardan. La sincronización offline continúa dependiendo del almacenamiento local y de la reconexión.
-
-Nginx define políticas por recurso: `/assets/` con caché inmutable para nombres versionados, HTML/SW/manifest revalidables y `/api/` sin caché compartida. Gzip se aplicó en el proxy; el backend accesible directamente por Uvicorn no hereda esa configuración.
-
-## 4. Evidencia de tamaño local
-
-Se comparó un build del commit `2716fd5` con el build modificado, mediante `scripts/measure-green-baseline.mjs`; el inventario actual se genera con `scripts/audit-green-build.mjs`. Los tamaños son bytes locales sin compresión HTTP. El Gzip informado por Vite es una estimación local del artefacto.
-
-| Medida | Base `2716fd5` | Versión actual | Interpretación |
+| Indicador verificable | Base del commit | Build actual | Lectura correcta |
 |---|---:|---:|---|
-| JavaScript de entrada | 390 838 B | 148 870 B | 61,91 % menos en el chunk inicial; las pantallas se distribuyen entre chunks. |
-| Total JavaScript generado | 390 838 B | 396 497 B | 1,45 % más en el total, por división de módulos y cambios del build; no se afirma ahorro total de JavaScript. |
-| CSS generado | 38 375 B | 38 375 B | Sin variación relevante. |
-| Recursos estáticos del precache selectivo | No había manifiesto selectivo equivalente | 217 457 B | Incluye shell, acceso, conductor y CSS; no incluye respuestas API, HTML ni overhead HTTP. |
+| JavaScript de entrada | 390 838 B | 148 870 B | El chunk inicial bajó 61,91 %; las vistas restantes se distribuyen en otros chunks. |
+| JavaScript total emitido | 390 838 B | 396 497 B | Aumentó 1,45 %. No se afirma reducción del JavaScript total. |
+| CSS emitido | 38 375 B | 38 375 B | Sin cambio en la comparación local. |
+| Precarga offline selectiva | Sin inventario equivalente | 217 457 B | Shell, acceso, conductor y CSS; no incluye HTML, API, mapas ni overhead HTTP. |
+| Lighthouse, LCP, INP, CLS, TBT, solicitudes/visita | No medidos | No medidos | Requiere perfil de navegador y condiciones de red documentadas. |
+| kWh, intensidad de carbono, CO₂e digital | No medidos | No medidos | No se derivan del tamaño del bundle ni de las emisiones estimadas de transporte. |
 
-La división reduce el chunk de entrada, no garantiza una reducción equivalente de la primera transferencia: depende de la pantalla abierta. La instalación del SW puede descargar recursos adicionales para el uso offline. No se midieron visitas reales, caché del navegador ni uso de teselas.
+Los bytes son tamaños locales sin compresión HTTP. El tamaño Gzip calculado por Vite no sustituye la medición del cuerpo transferido en una navegación real.
 
-## 5. Verificaciones realizadas
+### 2.3 Resumen de auditoría y riesgo
 
-| Verificación | Resultado |
-|---|---|
-| `npm.cmd run build` | Correcto: TypeScript y build Vite de producción. Entrada de 148 870 B; CSS de 38 375 B. |
-| `node scripts/audit-green-build.mjs` | Correcto: archivos, grafo y precache selectivo identificados. |
-| `node scripts/measure-green-baseline.mjs 2716fd5` | Correcto: build comparativo reproducible. |
-| `docker build -f frontend/Dockerfile -t ecologistica-green-frontend:check .` | Correcto; la imagen incluye `public/`, manifest y SW. npm reportó cero vulnerabilidades en su auditoría de dependencias instaladas. |
-| `nginx -t` en la imagen | Correcto, con hostname `backend` declarado para validar el upstream sin iniciar la base de datos. |
-| Solicitudes HTTP al contenedor | HTML y SW 200; chunk versionado 200 con `Content-Encoding: gzip`, `Vary: Accept-Encoding` y caché inmutable; asset inexistente 404. El manifest se sirvió 200. |
-| `python -m compileall -q app` | Correcto usando el intérprete del entorno virtual. |
-| Pruebas automatizadas y validación con PostgreSQL | No ejecutadas en esta revisión. Se requiere una pasada de CI con PostgreSQL/PostGIS para confirmar integración de consultas y contratos. |
+| Área | Estado | Prioridad | Riesgo residual |
+|---|---|---|---|
+| Consultas y acceso a datos | Mejorado; falta perfil con datos reales | Alta | Bajo/medio: planes e índices aún no se evaluaron con volumen de producción. |
+| Paginación | Implementada en jornadas e historiales | Alta | Medio: cambio del formato de jornada requiere coordinación con clientes externos. |
+| Imágenes | No aplicable a assets propios encontrados | Baja | Bajo: revisar si se agregan imágenes raster propias. |
+| Lazy loading | Implementado y compilado | Alta | Bajo/medio: no hay recorrido E2E por rol y dispositivo. |
+| Dependencias | Mejorado; build productivo compila | Media | Bajo: mantener auditoría de licencias y avisos en CI. |
+| Solicitudes y cómputo | Mejorado; falta carga real | Alta | Medio: medir OSRM, calidad de rutas, saturación y cancelación de trabajo. |
+| Caché | Configurada; estáticos verificados | Alta | Medio: flujo SW/offline requiere pruebas en navegador real. |
+| Compresión/API | Gzip y Nginx verificados en contenedor | Media | Bajo/medio: tráfico directo a Uvicorn queda fuera y la API requiere prueba tras proxy. |
 
-No se ejecutó navegador E2E ni se modificó/inició ninguna base de datos. Las verificaciones HTTP confirman la entrega de estáticos, no login, APIs, permisos o sincronización offline completa.
+## 3. Detalle técnico de las ocho optimizaciones
 
-## 6. Medidas y estándares de ingeniería
+### 3.1 Consultas y acceso a datos
 
-La entrega aplica prácticas asociadas a eficiencia de desempeño, uso de red, mantenibilidad y medición responsable. La referencia a ISO/IEC 25010, Green Software Foundation y Web Sustainability Guidelines expresa una relación de objetivos; no representa certificación ni auditoría formal.
+**Diagnóstico:** La consulta de indicadores cargaba datos de solución, detalles y vehículos para calcular agregados; la importación debía limitar la comparación de códigos al conjunto del archivo.
 
-No se midieron Lighthouse, LCP/INP/CLS, latencias p95, carga de PostgreSQL, throughput, energía ni CO₂ digital. Para estimar impacto digital en una siguiente versión se debe declarar método, unidades, factores de emisión, procedencia, fecha, límites y supuestos, separando medición de estimación.
+**Implementación:** Se proyectan columnas necesarias con `load_only` en indicadores. La comprobación de duplicados consulta únicamente los códigos incluidos en la importación. No se añadieron índices ni se modificó el esquema de PostgreSQL.
 
-## 7. Plan de cierre por fases
+**Evidencia:** `app/api/v1/routes.py`, `app/services/order_import.py`.
 
-1. **Primera versión técnica (implementada):** carga diferida, cache shell versionado, gzip/cache HTTP, optimización de consultas/importación, páginas de listados, dependencias runtime/dev y matriz OSRM por bloques con cálculo aislado.
-2. **Validación funcional (siguiente):** ejecutar CI backend con PostgreSQL/PostGIS; recorrer roles y pantallas; validar importación CSV/XLSX, paginación en jornadas e historiales, cálculo de rutas y manejo de saturación del optimizador.
-3. **Validación PWA (siguiente):** probar instalación desde build anterior, actualización del SW, ruta offline previamente descargada, reconexión y cola sin duplicados en navegador real.
-4. **Medición de desempeño/impacto (siguiente):** registrar tamaños transferidos y solicitudes por flujo, métricas web, latencia API/SQL y carga del solver; fijar umbrales a partir de baseline medido. Solo después seleccionar una metodología de energía/carbono digital.
+**Pendiente:** revisar `EXPLAIN (ANALYZE, BUFFERS)` y volumen real con una base representativa antes de proponer índices.
 
-## 8. Reversión
+### 3.2 Paginación de datos
 
-Los cambios son reversibles por control de versiones y reconstrucción de las imágenes frontend/backend. No hay migraciones ni datos que revertir. Al retirar el SW se debe publicar una versión de transición que permita al navegador recuperar conexión, activar el código correspondiente y limpiar solo los caches identificados por el proyecto.
+**Diagnóstico:** Jornadas e historiales podían crecer sin una forma de avanzar por bloques.
 
+**Implementación:** La jornada devuelve páginas de 100 pedidos (API: 1–250), total, offset y señal de más resultados, con orden estable por hora e ID. Auditoría, historial de vehículos e historial de restricciones usan cursores por ID y controles de carga progresiva.
+
+**Evidencia:** `app/api/v1/desk.py`, `app/api/v1/auth.py`, `app/api/v1/plate_restrictions.py`, `src/api.ts`, `src/pages/OrdersDay.tsx`, `src/pages/AuditLog.tsx`, `src/pages/Fleet.tsx`, `src/pages/PlateRestrictions.tsx`.
+
+**Compatibilidad:** La respuesta de jornada cambió de array a objeto paginado. El frontend del repositorio ya consume el objeto; un consumidor externo del endpoint deberá actualizarse. El listado completo requerido por el mapa/planificador no se truncó.
+
+### 3.3 Imágenes y medios
+
+**Diagnóstico:** La conversión a WebP/AVIF solo es pertinente si hay imágenes raster propias de tamaño significativo. La cartografía usa teselas externas.
+
+**Implementación:** No se convirtieron assets. Se mantienen SVG de marca e iconos; el equipo puede evaluar formatos responsivos cuando incorpore fotografías o ilustraciones raster propias.
+
+**Estado:** No aplicable a los assets propios identificados en esta auditoría. No se controla el formato ni el peso de teselas de terceros.
+
+### 3.4 Carga diferida y división de código
+
+**Diagnóstico:** Una visita podía descargar lógica de pantallas que no iba a abrir.
+
+**Implementación:** Ocho pantallas usan `React.lazy` y `Suspense`. El build genera chunks separados; se conserva el control de sesión/rol. El Service Worker se registra solo en producción.
+
+**Evidencia:** `src/main.tsx`, `vite.config.ts`.
+
+**Resultado medido:** El archivo de entrada pasó de 390 838 B a 148 870 B. El total JavaScript actual es 396 497 B, por lo que el resultado reduce el chunk inicial, pero no el total.
+
+### 3.5 Dependencias y tree shaking
+
+**Diagnóstico:** Recharts no tenía importaciones de producción. Dependencias de pruebas estaban incluidas junto a dependencias de runtime de backend.
+
+**Implementación:** Se retiró Recharts y sus dependencias transitivas. Python separa extras de desarrollo de requisitos de despliegue. `openpyxl` permanece en runtime porque la importación XLSX es una funcionalidad activa. El frontend mantiene Vite/TypeScript para build y tree shaking.
+
+**Evidencia:** `package.json`, `package-lock.json`, `pyproject.toml`, `backend/requirements.txt`, `backend/Dockerfile`, `.github/workflows/ci.yml`.
+
+### 3.6 Reducción de solicitudes y cómputo
+
+**Diagnóstico:** Al cambiar filtros, una lectura de indicadores podía quedar obsoleta; el solver podía hacer solicitudes OSRM por tramo y ejecutar trabajo síncrono en el event loop.
+
+**Implementación:** `Dashboard` cancela la lectura anterior con `AbortController`. OSRM Table carga la matriz por bloques con hasta 50 orígenes y 50 destinos (máximo 100 ubicaciones por bloque), dentro del presupuesto de tiempo del solver. El trabajo pesado se ejecuta en un worker acotado; si el único espacio del worker está ocupado, la API responde 503 recuperable.
+
+**Evidencia:** `src/components/Dashboard.tsx`, `src/api.ts`, `app/services/osrm_client.py`, `app/services/routing_matrix.py`, `app/services/genetic_solver.py`, `app/services/optimizer_runtime.py`, `app/api/v1/routes.py`, `app/api/v1/websockets.py`.
+
+**Pendiente:** medir el tiempo y la calidad de rutas con el OSRM y la carga reales. Las cancelaciones HTTP no prueban por sí solas que una consulta ya iniciada en PostgreSQL se interrumpa.
+
+### 3.7 Caché de recursos
+
+**Diagnóstico:** Sin versión derivada del build y políticas HTTP explícitas, el navegador podía volver a descargar estáticos o conservar recursos incorrectos.
+
+**Implementación:** Vite genera una versión de cache shell a partir de los artefactos. El SW limpia solo cachés `eco-shell-*`, precarga shell/acceso/conductor y no almacena API, mutaciones, teselas ni respuestas autenticadas. Nginx aplica `immutable` a `/assets/`, `no-cache` a HTML/SW/manifest y `private, no-store` a `/api/`.
+
+**Límite offline:** El shell disponible no reemplaza descargar una ruta ni establece una sesión válida sin conexión. La sincronización requiere reconexión y sigue pendiente de validación E2E.
+
+**Evidencia:** `public/sw.js`, `vite.config.ts`, `frontend/Dockerfile`, `frontend/nginx.conf`, `frontend/nginx-ssl.conf.example`.
+
+### 3.8 Optimización de API y compresión
+
+**Diagnóstico:** La compresión para respuestas elegibles debe aplicarse en el punto de entrada HTTP y evitar almacenar datos privados compartidamente.
+
+**Implementación:** Nginx habilita Gzip para tipos de texto, JavaScript, CSS, JSON, GeoJSON, SVG y manifest; añade ETag y `Vary: Accept-Encoding`. Las API reciben `private, no-store`. No se añade Brotli porque la imagen no incluye ese módulo. El tráfico que evita Nginx y llega directo a Uvicorn no usa esta compresión.
+
+**Evidencia en contenedor:** Nginx respondió con 200 a estáticos; el chunk versionado incluyó `Content-Encoding: gzip`, `Vary: Accept-Encoding` y caché inmutable. Un asset inexistente devolvió 404.
+
+## 4. Comparativa antes/después y evidencia
+
+| Comprobación | Antes / referencia | Después / evidencia | Estado |
+|---|---|---|---|
+| Chunk JavaScript inicial | 390 838 B en `2716fd5` | 148 870 B | Build comparativo local. |
+| JavaScript agregado | Un chunk de 390 838 B | 396 497 B en todos los chunks | No hay ahorro total. |
+| Entrega de estáticos | No había validación documentada de Nginx | 200, Gzip negociado y política cache observados | Verificado con la imagen Docker frontend. |
+| Nginx | Configuración sin validación reportada | `nginx -t` correcto | Verificado con hostname upstream declarado. |
+| Service Worker, API, login, roles y offline E2E | No medidos en navegador | Sin medición integral | Pendiente navegador y backend real. |
+| Lighthouse y consumo ambiental digital | No medidos | No medidos | No se imputan resultados. |
+
+Comandos de build/diagnóstico ejecutados en esta versión: `npm.cmd run build`, `node scripts/audit-green-build.mjs`, `node scripts/measure-green-baseline.mjs 2716fd5`, build Docker frontend, `nginx -t` dentro de la imagen y `python -m compileall -q app`. No se ejecutaron suites automatizadas ni se inició PostgreSQL durante esta revisión.
+
+## 5. Análisis de impacto ambiental
+
+Las optimizaciones reducen ciertos trabajos o transferencias evitables: código inicial, lecturas obsoletas, repetición de solicitudes de ruta y descarga de historiales completos. Es razonable tratarlas como mecanismos de eficiencia; sin medición de energía y uso no se puede traducirlas a kWh o CO₂e.
+
+Los valores ambientales de rutas representan emisiones estimadas del transporte de reparto. No son emisiones del servicio digital. Para una estimación posterior se deberá documentar límites del sistema, unidad funcional (por ejemplo, una optimización o una sesión), uso y carga, energía atribuible, factor de carbono, procedencia/fecha y supuestos; deben separarse mediciones directas de estimaciones.
+
+## 6. Evidencias visuales de auditoría
+
+No se adjuntan capturas ni score de Lighthouse porque no se ejecutó una auditoría en navegador con perfil y dispositivo definidos. La evidencia reproducible disponible está en el inventario de `scripts/audit-green-build.mjs` y en las verificaciones de Nginx/contenedor descritas arriba. La fase de validación debe guardar los reportes Lighthouse (móvil y escritorio) junto a URL, fecha, versión, perfil de CPU/red y estado de caché.
+
+## 7. Plan de cierre
+
+1. Ejecutar CI backend con PostgreSQL/PostGIS y las pruebas ya presentes en el repositorio.
+2. Validar flujos y permisos por rol: importación CSV/XLSX, páginas de jornada, historiales, indicadores, optimización y saturación del worker.
+3. Validar Service Worker: actualización entre versiones, descarga previa de ruta, modo desconectado, reconexión y ausencia de duplicados.
+4. Medir Lighthouse y transferencia en escenarios repetibles; registrar requests, bytes transferidos, LCP/INP/CLS y API p50/p95.
+5. Definir presupuestos de regresión a partir de esas mediciones; luego seleccionar una metodología de energía/carbono digital.
+
+## 8. Fuentes y límites de afirmación
+
+La arquitectura y resultados técnicos se basan en el código y las verificaciones locales indicadas. La estructura de ocho optimizaciones toma como guía el HTML proporcionado, pero sus ejemplos y cifras de MERN no se atribuyen a este proyecto. El documento compañero, [Estándares de ingeniería de software y guía de desarrollo verde](02%20Estandares%20Ingenieria%20de%20software%20V_1_0_0.md), describe el marco de calidad y las prácticas de sostenibilidad relacionadas; no acredita certificación ni conformidad integral.

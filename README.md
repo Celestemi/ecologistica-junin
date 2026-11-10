@@ -119,6 +119,7 @@ Los cinco documentos usan la versión documental inicial `V_1_0_0`. Este cierre 
 ### 🌱 Optimización Green IT
 
 * [Informe de reducción del impacto ambiental y estándares de ingeniería de software](docs/03%20Implementaci%C3%B3n/reduccion%20del%20impacto%20ambiental/01%20Informe%20de%20reduccion%20del%20impacto%20ambiental%20V_1_0_0.md) — Primera versión: optimizaciones frontend/backend, paginación, matriz OSRM por bloques, caché offline y entrega comprimida, con evidencias y límites de validación.
+* [Estándares de ingeniería de software y guía de desarrollo verde](docs/03%20Implementaci%C3%B3n/reduccion%20del%20impacto%20ambiental/02%20Estandares%20Ingenieria%20de%20software%20V_1_0_0.md) — Prácticas de backend/frontend, CI/CD y matriz de relación con ISO/IEC 25010, GSF y WSG, adaptadas al stack del proyecto.
 
 ---
 
