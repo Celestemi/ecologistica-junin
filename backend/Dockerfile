@@ -21,7 +21,6 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY pyproject.toml README.md ./
 COPY app ./app
-COPY tests ./tests
 COPY backend/entrypoint.py /app/entrypoint.py
 COPY backend/entrypoint.sh /app/entrypoint.sh
 

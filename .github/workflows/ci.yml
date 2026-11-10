@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install backend dependencies
-        run: pip install -r backend/requirements.txt
+        run: pip install -e ".[dev]"
       - name: Python dependency audit
         run: |
           pip install pip-audit
@@ -62,6 +62,10 @@ jobs:
       - run: npm ci
       - run: npm run test:coverage
       - run: npm run build
+      - name: Validate offline cache and production artifacts
+        run: |
+          node --test scripts/test-service-worker.mjs
+          node scripts/audit-green-build.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage

@@ -43,6 +43,9 @@ def prepare_osrm_routing() -> tuple[DistanceAdjuster | None, OsrmLegCache | None
         haversine_km: float,
     ) -> float | None:
         del haversine_km
+        if cache.matrix_prepared:
+            matrix_leg = cache.get_matrix_leg(origin_lat, origin_lon, dest_lat, dest_lon)
+            return matrix_leg[0] if matrix_leg is not None else None
         leg = cache.get_leg(origin_lat, origin_lon, dest_lat, dest_lon)
         if leg is None:
             return None

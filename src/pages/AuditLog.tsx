@@ -5,14 +5,17 @@ import { actionLabel, formatDateTime } from "../lib/format";
 
 export function AuditLog() {
   const [rows, setRows] = useState<AuditEvent[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    fetchAuditLog()
+    fetchAuditLog(51)
       .then((events) => {
         if (active) {
-          setRows(events);
+          setRows(events.slice(0, 50));
+          setHasMore(events.length > 50);
         }
       })
       .catch((reason: unknown) => {
@@ -24,6 +27,21 @@ export function AuditLog() {
       active = false;
     };
   }, []);
+
+  async function loadMore() {
+    const beforeId = rows.at(-1)?.id;
+    if (!hasMore || beforeId === undefined || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const events = await fetchAuditLog(51, beforeId);
+      setRows((current) => [...current, ...events.slice(0, 50)]);
+      setHasMore(events.length > 50);
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : "No se pudo leer más de la bitácora.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#f3efe6] text-stone-900">
@@ -45,6 +63,16 @@ export function AuditLog() {
             </li>
           ))}
         </ul>
+        {hasMore ? (
+          <button
+            type="button"
+            className="mt-3 min-h-11 rounded-full bg-stone-200 px-4 text-sm font-semibold text-stone-900 disabled:opacity-50"
+            disabled={loadingMore}
+            onClick={() => void loadMore()}
+          >
+            {loadingMore ? "Cargando…" : "Cargar eventos anteriores"}
+          </button>
+        ) : null}
         {rows.length === 0 && !error ? <p className="mt-4 text-sm text-stone-500">Todavía no hay eventos.</p> : null}
       </main>
     </div>

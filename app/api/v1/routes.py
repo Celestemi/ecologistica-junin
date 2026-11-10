@@ -21,7 +21,7 @@ from geoalchemy2.elements import WKTElement
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import load_only, selectinload
 from starlette.requests import Request
 
 from app.api.deps import require_roles
@@ -87,7 +87,12 @@ from app.services.route_constraints import (
     precheck_fleet_capacity,
     validate_for_publication,
 )
-from app.services.optimizer_runtime import optimization_time_budget_seconds, resolve_ga_parameters
+from app.services.optimizer_runtime import (
+    OptimizerBusyError,
+    optimization_time_budget_seconds,
+    resolve_ga_parameters,
+    run_optimizer_in_worker,
+)
 from app.services.routing_matrix import prepare_osrm_routing
 from app.services.sequence_eta import recalculate_solution_etas
 from app.services.plate_restriction import (
@@ -571,7 +576,22 @@ async def operational_indicators(
     result = await session.scalars(
         select(SolucionRuta)
         .where(SolucionRuta.fecha_operacion.between(fecha_inicio, fecha_fin))
-        .options(selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.vehiculo))
+        .options(
+            load_only(
+                SolucionRuta.id,
+                SolucionRuta.fecha_operacion,
+                SolucionRuta.distancia_total_km,
+                SolucionRuta.duracion_total_min,
+                SolucionRuta.co2_estimado_kg,
+                SolucionRuta.co2_evitado_kg,
+                SolucionRuta.metadatos_ga,
+            ),
+            selectinload(SolucionRuta.detalles)
+            .load_only(RutaDetalle.id, RutaDetalle.solucion_id, RutaDetalle.vehiculo_id,
+                       RutaDetalle.tipo_parada, RutaDetalle.distancia_tramo_km)
+            .selectinload(RutaDetalle.vehiculo)
+            .load_only(Vehiculo.id, Vehiculo.rendimiento_km_gal),
+        )
         .order_by(SolucionRuta.fecha_operacion, SolucionRuta.id)
     )
     return OperationalIndicatorsRead.model_validate(summarize_indicators(result.all(), fecha_inicio, fecha_fin).__dict__)
@@ -677,7 +697,8 @@ async def optimize_routes(
     try:
         generations, population_size = resolve_ga_parameters(len(orders), len(vehicles))
         distance_adjuster, routing_cache = prepare_osrm_routing()
-        solved = solve_vrptw(
+        solved = await run_optimizer_in_worker(
+            solve_vrptw,
             orders,
             vehicles,
             depot,
@@ -688,6 +709,18 @@ async def optimize_routes(
             routing_cache=routing_cache,
             time_budget_seconds=optimization_time_budget_seconds(),
         )
+    except OptimizerBusyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+            headers={"Retry-After": "2"},
+        ) from exc
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Se agotó el presupuesto configurado al preparar las distancias. Intenta nuevamente.",
+            headers={"Retry-After": "2"},
+        ) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
@@ -764,6 +797,18 @@ async def recalculate_route_etas(
     """RF-009 feliz: misma secuencia, nuevos tiempos; no altera entregas completadas."""
     try:
         solution = await recalculate_solution_etas(session, solution_id)
+    except OptimizerBusyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+            headers={"Retry-After": "2"},
+        ) from exc
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Se agotó el presupuesto al preparar las distancias de ruta. Intenta nuevamente.",
+            headers={"Retry-After": "2"},
+        ) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     await session.commit()

@@ -10,6 +10,7 @@ from app.models.domain import Deposito, Pedido, RutaDetalle, SolucionRuta, Vehic
 from app.models.enums import EstadoPedido, TipoParada
 from app.services.genetic_solver import SERVICE_MINUTES, StopItinerary, _build_problem, _schedule_vehicle
 from app.services.routing_matrix import prepare_osrm_routing
+from app.services.optimizer_runtime import run_optimizer_in_worker
 
 
 async def recalculate_solution_etas(session: AsyncSession, solution_id: int) -> SolucionRuta:
@@ -44,7 +45,8 @@ async def recalculate_solution_etas(session: AsyncSession, solution_id: int) -> 
     vehicles = list(await session.scalars(select(Vehiculo).where(Vehiculo.id.in_(vehicle_ids))))
 
     distance_adjuster, routing_cache = prepare_osrm_routing()
-    problem = _build_problem(
+    problem = await run_optimizer_in_worker(
+        _build_problem,
         orders,
         vehicles,
         depot,

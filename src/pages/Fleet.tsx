@@ -15,6 +15,7 @@ import { loadSession } from "../lib/session";
 import type { Depot, Vehicle } from "../types";
 
 type OperationalState = Vehicle["estado_operativo"];
+const VEHICLE_HISTORY_PAGE = 20;
 
 const STATE_LABEL: Record<OperationalState, string> = {
   activo: "Activo",
@@ -48,6 +49,8 @@ export function Fleet() {
   const [depots, setDepots] = useState<Depot[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [history, setHistory] = useState<VehicleHistory[]>([]);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -87,6 +90,7 @@ export function Fleet() {
   useEffect(() => {
     if (current === null) {
       setHistory([]);
+      setHistoryHasMore(false);
       setEdit({});
       return;
     }
@@ -101,15 +105,17 @@ export function Fleet() {
       factor_penalizacion_pendiente: String(current.factor_penalizacion_pendiente),
     });
     let active = true;
-    fetchVehicleHistory(current.id)
+    fetchVehicleHistory(current.id, VEHICLE_HISTORY_PAGE + 1)
       .then((rows) => {
         if (active) {
-          setHistory(rows);
+          setHistory(rows.slice(0, VEHICLE_HISTORY_PAGE));
+          setHistoryHasMore(rows.length > VEHICLE_HISTORY_PAGE);
         }
       })
       .catch(() => {
         if (active) {
           setHistory([]);
+          setHistoryHasMore(false);
         }
       });
     return () => {
@@ -157,8 +163,9 @@ export function Fleet() {
     try {
       const updated = await updateVehicle(vehicle.id, body);
       await reload();
-      const rows = await fetchVehicleHistory(vehicle.id);
-      setHistory(rows);
+      const rows = await fetchVehicleHistory(vehicle.id, VEHICLE_HISTORY_PAGE + 1);
+      setHistory(rows.slice(0, VEHICLE_HISTORY_PAGE));
+      setHistoryHasMore(rows.length > VEHICLE_HISTORY_PAGE);
       setSuccess(`Cambios guardados para ${updated.placa}.`);
     } catch (reason: unknown) {
       setError(reason instanceof ApiError ? reason.message : "No se pudo actualizar el vehículo.");
@@ -196,6 +203,22 @@ export function Fleet() {
       emision_base_co2_g_km: Number(edit.emision_base_co2_g_km),
       factor_penalizacion_pendiente: Number(edit.factor_penalizacion_pendiente),
     });
+  }
+
+  async function loadMoreHistory() {
+    if (!current || !historyHasMore || historyLoadingMore) return;
+    setHistoryLoadingMore(true);
+    try {
+      const rows = await fetchVehicleHistory(
+        current.id,
+        VEHICLE_HISTORY_PAGE + 1,
+        history.at(-1)?.id,
+      );
+      setHistory((items) => [...items, ...rows.slice(0, VEHICLE_HISTORY_PAGE)]);
+      setHistoryHasMore(rows.length > VEHICLE_HISTORY_PAGE);
+    } finally {
+      setHistoryLoadingMore(false);
+    }
   }
 
   return (
@@ -412,6 +435,16 @@ export function Fleet() {
                   </li>
                 ))}
               </ul>
+              {historyHasMore ? (
+                <button
+                  type="button"
+                  className="mt-3 min-h-10 rounded-full bg-stone-200 px-3 text-xs font-semibold disabled:opacity-50"
+                  disabled={historyLoadingMore}
+                  onClick={() => void loadMoreHistory()}
+                >
+                  {historyLoadingMore ? "Cargando…" : "Cargar cambios anteriores"}
+                </button>
+              ) : null}
             </>
           ) : (
             <p className="text-sm text-stone-600">Elige un vehículo.</p>

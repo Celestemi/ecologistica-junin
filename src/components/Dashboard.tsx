@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchOperationalIndicators } from "../api";
 import { formatKg, formatKm } from "../lib/format";
 import type { OperationalIndicators, RouteMetadata } from "../types";
@@ -8,8 +8,29 @@ export function Dashboard({ metadata }: { metadata: RouteMetadata | null }) {
   const [start, setStart] = useState(day); const [end, setEnd] = useState(day);
   const [data, setData] = useState<OperationalIndicators | null>(null); const [error, setError] = useState<string | null>(null); const [loading, setLoading] = useState(false);
   useEffect(() => { if (metadata?.fecha_operacion) { setStart(metadata.fecha_operacion); setEnd(metadata.fecha_operacion); } }, [metadata?.fecha_operacion]);
-  async function load() { setLoading(true); setError(null); try { setData(await fetchOperationalIndicators(start, end)); } catch (reason) { setData(null); setError(reason instanceof Error ? reason.message : "No se pudieron cargar los indicadores."); } finally { setLoading(false); } }
-  useEffect(() => { void load(); }, [start, end]);
+  const pending = useRef<AbortController | null>(null);
+  const load = useCallback(async () => {
+    pending.current?.abort();
+    const controller = new AbortController();
+    pending.current = controller;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchOperationalIndicators(start, end, controller.signal);
+      if (!controller.signal.aborted) setData(result);
+    } catch (reason) {
+      if (!controller.signal.aborted) {
+        setData(null);
+        setError(reason instanceof Error ? reason.message : "No se pudieron cargar los indicadores.");
+      }
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }, [start, end]);
+  useEffect(() => {
+    void load();
+    return () => pending.current?.abort();
+  }, [load]);
   const comparable = data?.linea_base_secuencial_km != null && data?.linea_base_secuencial_co2_kg != null;
   return <section className="border-b border-stone-200 bg-[#f7f4ee] px-4 py-3">
     <div className="mb-3 flex flex-wrap items-end gap-2"><label className="text-xs text-stone-600">Desde<input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="mt-1 block min-h-11 rounded border border-stone-300 bg-white p-2" /></label><label className="text-xs text-stone-600">Hasta<input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="mt-1 block min-h-11 rounded border border-stone-300 bg-white p-2" /></label><button type="button" onClick={() => void load()} className="min-h-11 rounded-xl bg-emerald-800 px-3 text-sm font-semibold text-white">Actualizar</button>{loading ? <span className="text-sm text-stone-600" role="status" aria-live="polite">Actualizando…</span> : null}</div>

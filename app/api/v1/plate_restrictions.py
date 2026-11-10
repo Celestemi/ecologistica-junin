@@ -1,6 +1,6 @@
 """Administración de restricciones vehiculares por placa (US-002 / RF-002)."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -66,11 +66,17 @@ async def read_plate_restrictions(
     summary="Historial de cambios en restricciones por placa",
 )
 async def plate_restriction_history(
+    limite: int | None = Query(None, ge=1, le=100),
+    antes_de: int | None = Query(None, ge=1),
     session: AsyncSession = Depends(get_db),
     _: Usuario = Depends(require_roles(*DESK, accion="restriccion_placa_denegada", detail=DENY_READ)),
 ) -> list[HistorialRestriccionPlaca]:
+    page_size = limite if limite is not None else 30
     result = await session.scalars(
-        select(HistorialRestriccionPlaca).order_by(HistorialRestriccionPlaca.id.desc()).limit(30)
+        select(HistorialRestriccionPlaca)
+        .where(*([HistorialRestriccionPlaca.id < antes_de] if antes_de is not None else []))
+        .order_by(HistorialRestriccionPlaca.id.desc())
+        .limit(page_size)
     )
     return list(result.all())
 

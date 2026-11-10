@@ -27,6 +27,7 @@ from app.services.driver_assignment import assigned_vehicle, conductor_may_drive
 from app.services.vehicle_state import is_available_for_routing
 from app.services.tokens import read_access_token
 from app.services.tracking_tokens import is_tracking_token
+from app.services.optimizer_runtime import run_optimizer_in_worker
 from app.services.realtime_router import (
     ADMIN_CHANNEL,
     GpsFix,
@@ -282,7 +283,8 @@ async def _reroute(
             order = await _require_order(session, code)
             added.append(order)
         cancel_ids = [order.id for order in by_code.values() if order.codigo_pedido in cancel_codes]
-        reroute = reoptimize_live_route(
+        reroute = await run_optimizer_in_worker(
+            reoptimize_live_route,
             vehicle=vehicle,
             depot=depot,
             origin=live.fix,

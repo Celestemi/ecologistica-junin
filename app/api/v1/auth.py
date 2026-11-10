@@ -1,6 +1,6 @@
 """Ingreso y consulta de la bitácora."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,7 +38,8 @@ async def me(user: Usuario = Depends(get_current_user)) -> Usuario:
     responses={403: {"description": "El rol no puede leer la bitácora."}},
 )
 async def list_audit(
-    limite: int = 50,
+    limite: int = Query(50, ge=1, le=200),
+    antes_de: int | None = Query(None, ge=1),
     session: AsyncSession = Depends(get_db),
     _: Usuario = Depends(
         require_roles(
@@ -49,6 +50,8 @@ async def list_audit(
         )
     ),
 ) -> list[Bitacora]:
-    capped = min(max(limite, 1), 200)
-    result = await session.scalars(select(Bitacora).order_by(Bitacora.id.desc()).limit(capped))
+    filters = (Bitacora.id < antes_de,) if antes_de is not None else ()
+    result = await session.scalars(
+        select(Bitacora).where(*filters).order_by(Bitacora.id.desc()).limit(limite + 1)
+    )
     return list(result.all())

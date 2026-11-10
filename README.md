@@ -114,7 +114,11 @@ Los cinco documentos usan la versión documental inicial `V_1_0_0`. Este cierre 
 
 ### 💻 Código fuente activo
 * [📁 Backend](app/) — *API REST en FastAPI, SQLAlchemy asíncrono y PostgreSQL/PostGIS.*
-* [📁 Frontend](src/) — *Aplicación React, TypeScript, Vite, Tailwind, Leaflet y Recharts.*
+* [📁 Frontend](src/) — *Aplicación React, TypeScript, Vite, Tailwind y Leaflet.*
+
+### 🌱 Optimización Green IT
+
+* [Informe de reducción del impacto ambiental y estándares de ingeniería de software](docs/03%20Implementaci%C3%B3n/reduccion%20del%20impacto%20ambiental/01%20Informe%20de%20reduccion%20del%20impacto%20ambiental%20V_1_0_0.md) — Primera versión: optimizaciones frontend/backend, paginación, matriz OSRM por bloques, caché offline y entrega comprimida, con evidencias y límites de validación.
 
 ---
 
@@ -127,7 +131,7 @@ Los cinco documentos usan la versión documental inicial `V_1_0_0`. Este cierre 
 | **Base de Datos Geoespacial** | PostgreSQL 15 + PostGIS 3 | Persistencia activa con SQLAlchemy/GeoAlchemy y geometrías SRID 4326; la decisión `geometry`/`GEOGRAPHY` sigue pendiente de consolidación. |
 | **Frontend Web** | React.js + Tailwind CSS | Interfaz modular e interactiva para operadores logísticos. |
 | **Móvil / Conductor** | React.js + PWA parcial | Vista de conductor, IndexedDB, Service Worker y cola de sincronización implementados; faltan pruebas extremo a extremo de desconexión, reconexión y no duplicidad para acreditar EN-004 como *Done*. |
-| **Cartografía y Ruteo** | Leaflet + distancia geodésica; OSRM opcional | OSRM está apagado por defecto y no forma parte de `docker-compose.yml`. |
+| **Cartografía y Ruteo** | Leaflet + distancia geodésica; OSRM opcional | Compose configura el endpoint público de OSRM por defecto para demo; no ejecuta un servicio OSRM propio. Fuera de Compose, OSRM depende de `OSRM_BASE_URL`. |
 | **Tareas asíncronas** | Sin servicio separado implementado | Redis/Celery pertenecen a la arquitectura prevista, no al runtime actual |
 
 ---

@@ -210,7 +210,18 @@ async def import_orders(
     if error is not None:
         raise ValueError(error)
     jornada = await ensure_jornada(session, fecha)
-    existing = set(await session.scalars(select(Pedido.codigo_pedido)))
+    candidate_codes = {
+        item.get("codigo", "").strip()
+        for item in parsed
+        if item.get("codigo", "").strip()
+    }
+    existing = (
+        set(await session.scalars(
+            select(Pedido.codigo_pedido).where(Pedido.codigo_pedido.in_(candidate_codes))
+        ))
+        if candidate_codes
+        else set()
+    )
     seen: set[str] = set()
     report = ImportReport(fecha=fecha, total_filas=len(parsed))
     for index, item in enumerate(parsed, start=2):

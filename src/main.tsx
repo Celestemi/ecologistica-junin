@@ -1,20 +1,25 @@
-import { StrictMode } from "react";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import "leaflet/dist/leaflet.css";
-import { App } from "./App";
-import { DriverApp } from "./components/driver/DriverApp";
 import { homeFor, screenAllowed } from "./lib/access";
 import { loadSession } from "./lib/session";
-import { AuditLog } from "./pages/AuditLog";
-import { Fleet } from "./pages/Fleet";
-import { PlateRestrictions } from "./pages/PlateRestrictions";
-import { Login } from "./pages/Login";
-import { OrdersDay } from "./pages/OrdersDay";
-import { Tracking } from "./pages/Tracking";
 import "./index.css";
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => void navigator.serviceWorker.register("/sw.js"));
+const App = lazy(() => import("./App").then((module) => ({ default: module.App })));
+const DriverApp = lazy(() => import("./components/driver/DriverApp").then((module) => ({ default: module.DriverApp })));
+const AuditLog = lazy(() => import("./pages/AuditLog").then((module) => ({ default: module.AuditLog })));
+const Fleet = lazy(() => import("./pages/Fleet").then((module) => ({ default: module.Fleet })));
+const PlateRestrictions = lazy(() => import("./pages/PlateRestrictions").then((module) => ({ default: module.PlateRestrictions })));
+const Login = lazy(() => import("./pages/Login").then((module) => ({ default: module.Login })));
+const OrdersDay = lazy(() => import("./pages/OrdersDay").then((module) => ({ default: module.OrdersDay })));
+const Tracking = lazy(() => import("./pages/Tracking").then((module) => ({ default: module.Tracking })));
+
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register("/sw.js").catch((error: unknown) => {
+      console.warn("No se pudo activar el soporte offline.", error);
+    });
+  });
 }
 
 const root = document.getElementById("root");
@@ -61,6 +66,8 @@ function Root() {
 
 createRoot(root).render(
   <StrictMode>
-    <Root />
+    <Suspense fallback={<div className="min-h-screen bg-[#f3efe6] p-4 text-stone-900" role="status">Cargando…</div>}>
+      <Root />
+    </Suspense>
   </StrictMode>,
 );

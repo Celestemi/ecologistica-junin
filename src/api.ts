@@ -64,6 +64,7 @@ export function fetchVehicles(): Promise<Vehicle[]> {
 }
 
 export type VehicleHistory = {
+  id: number;
   activo: boolean;
   estado_anterior: string | null;
   estado_nuevo: string | null;
@@ -103,10 +104,14 @@ export type ImportReport = {
 export type DayOrders = {
   fecha: string;
   pedidos: Order[];
+  total_pedidos: number;
+  offset: number;
+  limite: number;
+  hay_mas: boolean;
 };
 
-export function fetchDay(fecha: string): Promise<DayOrders> {
-  return request<DayOrders>(`/api/v1/jornadas/${fecha}`);
+export function fetchDay(fecha: string, offset = 0, limit = 100): Promise<DayOrders> {
+  return request<DayOrders>(`/api/v1/jornadas/${fecha}?offset=${offset}&limite=${limit}`);
 }
 
 export function importDay(
@@ -170,8 +175,12 @@ export function updateVehicle(id: number, body: Record<string, unknown>): Promis
   });
 }
 
-export function fetchVehicleHistory(id: number): Promise<VehicleHistory[]> {
-  return request<VehicleHistory[]>(`/api/v1/flota/${id}/historial`);
+export function fetchVehicleHistory(id: number, limit?: number, beforeId?: number): Promise<VehicleHistory[]> {
+  const query = new URLSearchParams();
+  if (limit !== undefined) query.set("limite", String(limit));
+  if (beforeId !== undefined) query.set("antes_de", String(beforeId));
+  const suffix = query.size ? `?${query.toString()}` : "";
+  return request<VehicleHistory[]>(`/api/v1/flota/${id}/historial${suffix}`);
 }
 
 export type PlateRestrictionRule = {
@@ -192,6 +201,7 @@ export type PlateRestrictionConfig = {
 };
 
 export type PlateRestrictionHistory = {
+  id: number;
   correo: string;
   detalle: string;
   creado_en: string;
@@ -211,8 +221,12 @@ export function updatePlateRestrictionConfig(
   });
 }
 
-export function fetchPlateRestrictionHistory(): Promise<PlateRestrictionHistory[]> {
-  return request<PlateRestrictionHistory[]>("/api/v1/restricciones-placa/historial");
+export function fetchPlateRestrictionHistory(limit?: number, beforeId?: number): Promise<PlateRestrictionHistory[]> {
+  const query = new URLSearchParams();
+  if (limit !== undefined) query.set("limite", String(limit));
+  if (beforeId !== undefined) query.set("antes_de", String(beforeId));
+  const suffix = query.size ? `?${query.toString()}` : "";
+  return request<PlateRestrictionHistory[]>(`/api/v1/restricciones-placa/historial${suffix}`);
 }
 
 export function fetchDepots(): Promise<Depot[]> {
@@ -252,8 +266,8 @@ export async function fetchPublishedRoute(): Promise<RouteOptimization | null> {
   }
 }
 
-export function fetchOperationalIndicators(start: string, end: string): Promise<OperationalIndicators> {
-  return request<OperationalIndicators>(`/api/v1/indicadores?fecha_inicio=${encodeURIComponent(start)}&fecha_fin=${encodeURIComponent(end)}`);
+export function fetchOperationalIndicators(start: string, end: string, signal?: AbortSignal): Promise<OperationalIndicators> {
+  return request<OperationalIndicators>(`/api/v1/indicadores?fecha_inicio=${encodeURIComponent(start)}&fecha_fin=${encodeURIComponent(end)}`, { signal });
 }
 
 export function fetchActiveRoute(plate?: string): Promise<ActiveRoute> {
@@ -298,8 +312,14 @@ export type AuditEvent = {
   creado_en: string;
 };
 
-export function fetchAuditLog(): Promise<AuditEvent[]> {
-  return request<AuditEvent[]>("/api/v1/auth/bitacora");
+export function fetchAuditLog(limit?: number, beforeId?: number): Promise<AuditEvent[]> {
+  if (limit === undefined && beforeId === undefined) {
+    return request<AuditEvent[]>("/api/v1/auth/bitacora");
+  }
+  const query = new URLSearchParams();
+  if (limit !== undefined) query.set("limite", String(limit));
+  if (beforeId !== undefined) query.set("antes_de", String(beforeId));
+  return request<AuditEvent[]>(`/api/v1/auth/bitacora?${query.toString()}`);
 }
 
 export async function downloadSustainabilityPdf(): Promise<void> {

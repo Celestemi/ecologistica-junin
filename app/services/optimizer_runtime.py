@@ -2,8 +2,39 @@
 
 from __future__ import annotations
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+from threading import BoundedSemaphore
+from typing import Any, Callable
+
 from app.core.config import get_settings
 from app.services.genetic_solver import GENERATIONS, POPULATION_SIZE
+
+_OPTIMIZER_EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="eco-optimizer")
+_OPTIMIZER_SLOT = BoundedSemaphore(1)
+
+
+class OptimizerBusyError(RuntimeError):
+    """There is already one CPU-heavy route calculation in this worker."""
+
+
+async def run_optimizer_in_worker(function: Callable[..., Any], /, *args: Any, **kwargs: Any) -> Any:
+    """Keep CPU and blocking routing calls off the ASGI event loop with one bounded slot."""
+    if not _OPTIMIZER_SLOT.acquire(blocking=False):
+        raise OptimizerBusyError("El optimizador está ocupado; vuelve a intentarlo en unos segundos.")
+    loop = asyncio.get_running_loop()
+    work = loop.run_in_executor(_OPTIMIZER_EXECUTOR, partial(function, *args, **kwargs))
+    try:
+        result = await asyncio.shield(work)
+    except asyncio.CancelledError:
+        work.add_done_callback(lambda _: _OPTIMIZER_SLOT.release())
+        raise
+    except BaseException:
+        _OPTIMIZER_SLOT.release()
+        raise
+    _OPTIMIZER_SLOT.release()
+    return result
 
 
 def resolve_ga_parameters(order_count: int, vehicle_count: int) -> tuple[int, int]:

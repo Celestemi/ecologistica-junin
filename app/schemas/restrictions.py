@@ -52,6 +52,7 @@ class RestriccionPlacaConfigUpdate(BaseModel):
 class HistorialRestriccionPlacaRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: int
     correo: str
     detalle: str
     creado_en: datetime

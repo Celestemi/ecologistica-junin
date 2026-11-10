@@ -3,9 +3,9 @@
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_roles
@@ -36,6 +36,7 @@ class DayImport(BaseModel):
 
 
 class HistorialRead(BaseModel):
+    id: int
     activo: bool
     estado_anterior: str | None
     estado_nuevo: str | None
@@ -48,6 +49,10 @@ class HistorialRead(BaseModel):
 class JornadaRead(BaseModel):
     fecha: date
     pedidos: list[PedidoRead]
+    total_pedidos: int
+    offset: int
+    limite: int
+    hay_mas: bool
 
 
 def _day_bounds(fecha: date) -> tuple[datetime, datetime]:
@@ -62,16 +67,31 @@ def _day_bounds(fecha: date) -> tuple[datetime, datetime]:
 )
 async def read_day(
     fecha: date,
+    offset: int = Query(0, ge=0),
+    limite: int = Query(100, ge=1, le=250),
     session: AsyncSession = Depends(get_db),
     _: Usuario = Depends(require_roles(*DESK, accion="jornada_denegada", detail=DENY_READ)),
 ) -> JornadaRead:
     start, end = _day_bounds(fecha)
+    filters = (Pedido.ventana_inicio >= start, Pedido.ventana_inicio < end)
+    total = await session.scalar(select(func.count(Pedido.id)).where(*filters)) or 0
     result = await session.scalars(
         select(Pedido)
-        .where(Pedido.ventana_inicio >= start, Pedido.ventana_inicio < end)
+        .where(*filters)
         .order_by(Pedido.ventana_inicio, Pedido.id)
+        .offset(offset)
+        .limit(limite + 1)
     )
-    return JornadaRead(fecha=fecha, pedidos=list(result.all()))
+    rows = list(result.all())
+    hay_mas = len(rows) > limite
+    return JornadaRead(
+        fecha=fecha,
+        pedidos=rows[:limite],
+        total_pedidos=total,
+        offset=offset,
+        limite=limite,
+        hay_mas=hay_mas,
+    )
 
 
 @router.post(
@@ -234,14 +254,20 @@ async def update_vehicle(
 )
 async def vehicle_history(
     vehiculo_id: int,
+    limite: int | None = Query(None, ge=1, le=100),
+    antes_de: int | None = Query(None, ge=1),
     session: AsyncSession = Depends(get_db),
     _: Usuario = Depends(require_roles(*DESK, accion="flota_denegada", detail=DENY_READ)),
 ) -> list[HistorialVehiculo]:
+    page_size = limite if limite is not None else 20
     result = await session.scalars(
         select(HistorialVehiculo)
-        .where(HistorialVehiculo.vehiculo_id == vehiculo_id)
+        .where(
+            HistorialVehiculo.vehiculo_id == vehiculo_id,
+            *([HistorialVehiculo.id < antes_de] if antes_de is not None else []),
+        )
         .order_by(HistorialVehiculo.id.desc())
-        .limit(20)
+        .limit(page_size)
     )
     return list(result.all())
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -168,6 +168,23 @@ describe("dashboard, login and audit behavior", () => {
     mocks.fetchOperationalIndicators.mockRejectedValue("offline");
     render(<Dashboard metadata={null} />);
     expect(await screen.findByText(/No se pudieron cargar/)).toBeTruthy();
+  });
+
+  it("cancels obsolete indicator reads and ignores late results", async () => {
+    let finishOld!: (result: { rutas: number }) => void;
+    mocks.fetchOperationalIndicators
+      .mockImplementationOnce(() => new Promise((resolve) => { finishOld = resolve; }))
+      .mockResolvedValue({ rutas: 0 });
+    const { unmount } = render(<Dashboard metadata={null} />);
+    const firstSignal = mocks.fetchOperationalIndicators.mock.calls[0][2] as AbortSignal;
+    fireEvent.change(screen.getByLabelText("Desde"), { target: { value: "2026-10-01" } });
+    expect(firstSignal.aborted).toBe(true);
+    expect(await screen.findByText(/No hay información/)).toBeTruthy();
+    await act(async () => { finishOld({ rutas: 99 }); });
+    expect(screen.queryByText("Consumo estimado")).toBeNull();
+    const lastSignal = mocks.fetchOperationalIndicators.mock.calls.at(-1)![2] as AbortSignal;
+    unmount();
+    expect(lastSignal.aborted).toBe(true);
   });
 
   it("fills a demo login and displays a backend authentication error", async () => {

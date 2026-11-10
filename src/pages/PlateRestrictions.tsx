@@ -28,6 +28,8 @@ export function PlateRestrictions() {
   const canValidate = rol === "admin";
   const [config, setConfig] = useState<PlateRestrictionConfig | null>(null);
   const [history, setHistory] = useState<PlateRestrictionHistory[]>([]);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
   const [digit, setDigit] = useState("0");
   const [days, setDays] = useState<number[]>([2]);
   const [referencia, setReferencia] = useState("");
@@ -38,10 +40,11 @@ export function PlateRestrictions() {
   async function reload() {
     const [cfg, rows] = await Promise.all([
       fetchPlateRestrictionConfig(),
-      fetchPlateRestrictionHistory(),
+      fetchPlateRestrictionHistory(31),
     ]);
     setConfig(cfg);
-    setHistory(rows);
+    setHistory(rows.slice(0, 30));
+    setHistoryHasMore(rows.length > 30);
     setReferencia(cfg.referencia_normativa ?? "");
     if (cfg.reglas[0]) {
       setDigit(String(cfg.reglas[0].ultimo_digito));
@@ -62,13 +65,28 @@ export function PlateRestrictions() {
     try {
       const updated = await updatePlateRestrictionConfig(body);
       setConfig(updated);
-      const rows = await fetchPlateRestrictionHistory();
-      setHistory(rows);
+      const rows = await fetchPlateRestrictionHistory(31);
+      setHistory(rows.slice(0, 30));
+      setHistoryHasMore(rows.length > 30);
       setSuccess("Configuración guardada.");
     } catch (reason: unknown) {
       setError(reason instanceof ApiError ? reason.message : "No se pudo guardar.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function loadMoreHistory() {
+    if (!historyHasMore || historyLoadingMore) return;
+    setHistoryLoadingMore(true);
+    try {
+      const rows = await fetchPlateRestrictionHistory(31, history.at(-1)?.id);
+      setHistory((current) => [...current, ...rows.slice(0, 30)]);
+      setHistoryHasMore(rows.length > 30);
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : "No se pudo leer más historial.");
+    } finally {
+      setHistoryLoadingMore(false);
     }
   }
 
@@ -211,6 +229,16 @@ export function PlateRestrictions() {
               ))
             )}
           </ul>
+          {historyHasMore ? (
+            <button
+              type="button"
+              className="mt-3 min-h-11 rounded-full bg-stone-200 px-4 text-sm font-semibold disabled:opacity-50"
+              disabled={historyLoadingMore}
+              onClick={() => void loadMoreHistory()}
+            >
+              {historyLoadingMore ? "Cargando…" : "Cargar cambios anteriores"}
+            </button>
+          ) : null}
         </section>
       </main>
     </div>

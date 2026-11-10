@@ -258,6 +258,7 @@ class _Problem:
         depot_name: str,
         distance_adjuster: Callable[[float, float, float, float, float], float | None] | None = None,
         routing_cache: Any | None = None,
+        matrix_deadline: float | None = None,
     ) -> None:
         self.orders = orders
         self.vehicles = vehicles
@@ -288,6 +289,12 @@ class _Problem:
         self.distance_model = [
             [ModeloDistancia.GEODESICA for _ in range(size)] for _ in range(size)
         ]
+        if routing_cache is not None and hasattr(routing_cache, "prepare_distance_matrix"):
+            routing_cache.prepare_distance_matrix(
+                list(zip(latitudes, longitudes)),
+                chunk_size=get_settings().osrm_matrix_chunk_size,
+                deadline=matrix_deadline,
+            )
         for origin in range(size):
             for destination in range(size):
                 if origin == destination:
@@ -329,6 +336,14 @@ class _Problem:
     def leg_travel_minutes(self, origin: int, destination: int) -> float:
         distance = self.distance_km[origin][destination]
         if self.routing_cache is not None:
+            if getattr(self.routing_cache, "matrix_prepared", False):
+                leg = self.routing_cache.get_matrix_leg(
+                    self._latitudes[origin], self._longitudes[origin],
+                    self._latitudes[destination], self._longitudes[destination],
+                )
+                if leg is not None:
+                    return leg[1]
+                return travel_minutes(distance)
             leg = self.routing_cache.get_leg(
                 self._latitudes[origin],
                 self._longitudes[origin],
@@ -459,17 +474,18 @@ def solve_vrptw(
     )
     budget = max(0.0, float(budget)) if budget is not None else None
 
+    started = perf_counter()
     problem = _build_problem(
         orders,
         vehicles,
         depot,
         distance_adjuster=distance_adjuster,
         routing_cache=routing_cache,
+        matrix_deadline=started + budget if budget is not None else None,
     )
     if not problem.orders:
         return _empty_solution(generations, population_size, seed)
 
-    started = perf_counter()
     rng = random.Random(seed)
     cache: dict[tuple[tuple[int, ...], ...], _Evaluation] = {}
 
@@ -587,6 +603,7 @@ def _build_problem(
     depot: Deposito,
     distance_adjuster: Callable[[float, float, float, float, float], float | None] | None = None,
     routing_cache: Any | None = None,
+    matrix_deadline: float | None = None,
 ) -> _Problem:
     active = [vehicle for vehicle in vehicles if getattr(vehicle, "activo", True)]
     if not active:
@@ -613,6 +630,7 @@ def _build_problem(
         depot_name=str(depot.nombre),
         distance_adjuster=distance_adjuster,
         routing_cache=routing_cache,
+        matrix_deadline=matrix_deadline,
     )
 
 
