@@ -87,6 +87,23 @@ La CI del repositorio instala las dependencias backend de desarrollo, audita dep
 | Service Worker | `scripts/test-service-worker.mjs` en CI | Complementar simulación con navegación E2E real para claims offline. |
 | Dependencias | `pip-audit` sobre requisitos productivos y auditoría npm de instalación | Investigar advisories; actualizar lockfiles de forma revisable. |
 
+### 5.1 Presupuesto provisional de rendimiento
+
+Para que la primera versión tenga criterios cuantitativos de revisión, se proponen los siguientes presupuestos **estimados**. Son metas de planificación, no resultados ya alcanzados. Se basan en el tamaño de build disponible y en un escenario de móvil Android medio, caché fría y 4G variable; el equipo debe ajustarlos después de obtener Lighthouse y trazas reales.
+
+| Indicador | Presupuesto inicial propuesto | Estado actual conocido |
+|---|---:|---|
+| HTML + JavaScript inicial + CSS con Gzip | ≤80 KB | ~61 KB aproximados calculados a partir de artefactos actuales. |
+| Lighthouse Performance móvil | ≥70/100 | Aún no medido; estimación de la primera versión 64–78/100. |
+| FCP | ≤2,8 s | Estimación 1,7–2,8 s; no instrumentado. |
+| LCP | ≤4,0 s | Estimación 2,8–4,5 s; el mapa puede exceder el presupuesto. |
+| TBT | ≤400 ms | Estimación 190–430 ms; medir en los dispositivos objetivo. |
+| CLS | ≤0,15 | Estimación 0,05–0,15; validar visualmente las pantallas. |
+| p95 de primera página de jornada | ≤650 ms | Estimación 250–650 ms suponiendo BD cercana y baja concurrencia. |
+| Escenario digital ilustrativo | 0,1125 → 0,1013 g CO₂e/visita para 1 000 visitas | Solo cálculo con supuestos didácticos del informe acompañante; no es huella del proyecto ni meta verificada. |
+
+El presupuesto de LCP/TBT queda intencionalmente algo más amplio que un objetivo ideal porque la cartografía y las condiciones de red pueden dominar la experiencia. Debe revisarse tras 3–5 ejecuciones comparables en móvil y usar mediana/rango; no marcar como cumplido usando solo la estimación.
+
 ## 6. Matriz de mapeo: estándares, optimizaciones y evidencia
 
 | Área | Calidad de producto relacionada | GSF/WSG relacionado | Evidencia en EcoLogística | Brecha de aceptación |
@@ -106,7 +123,7 @@ La CI del repositorio instala las dependencias backend de desarrollo, audita dep
 2. Recorrido de permisos y flujos principales con consola sin errores, sin regresión visual y con funcionalidad preservada.
 3. Paginación consistente (sin omisiones/duplicados bajo altas concurrentes razonables) y contrato de jornada confirmado con consumidores.
 4. Prueba de actualización del SW, disponibilidad offline de ruta previamente descargada y sincronización de entregas sin duplicados.
-5. Perfil de navegador reproducible por ruta con bytes transferidos, solicitudes, LCP/INP/CLS y estado de caché; guardar informes de Lighthouse.
+5. Perfil de navegador reproducible por ruta con bytes transferidos, solicitudes, LCP/INP/CLS y estado de caché; guardar informes de Lighthouse y reemplazar los rangos de planeación del apartado 5.1.
 6. Latencias/recursos de API, consultas y solver medidos con datos de prueba representativos; derivar presupuestos de desempeño de esos resultados.
 7. Toda afirmación ambiental usa método, unidad, límite del sistema, factor, origen y fecha; separar dato medido de estimación.
 8. Cambios de esquema/índices se proponen aparte con evidencia y aprobación del proyecto.

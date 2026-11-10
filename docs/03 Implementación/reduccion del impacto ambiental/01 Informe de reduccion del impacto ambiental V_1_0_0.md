@@ -37,7 +37,25 @@ La comparación usa el commit `2716fd5` como base de artefactos frontend. No es 
 
 Los bytes son tamaños locales sin compresión HTTP. El tamaño Gzip calculado por Vite no sustituye la medición del cuerpo transferido en una navegación real.
 
-### 2.3 Resumen de auditoría y riesgo
+### 2.3 Estimación preliminar de rendimiento para la primera versión
+
+La siguiente tabla completa el formato de referencia con valores de planeación plausibles para una app React con mapa, API asíncrona y despliegue Nginx. **Son rangos hipotéticos del equipo, no resultados de Lighthouse, DevTools ni pruebas de carga.** Se asume móvil Android de gama media, caché fría, red 4G variable, una jornada de hasta 150 pedidos y PostgreSQL en la misma región del backend. Los rangos son deliberadamente moderados porque el mapa, las teselas y la latencia del servicio externo pueden dominar el resultado.
+
+| Métrica | Antes: estimación referencial | Primera versión: estimación referencial | Cómo interpretar |
+|---|---:|---:|---|
+| Lighthouse Performance móvil | 52–68/100 | 64–78/100 | Proyección basada en división de código y compresión; no es un score obtenido. |
+| First Contentful Paint (FCP) | 2,0–3,2 s | 1,7–2,8 s | Estimación para el shell, antes de interacción con API/tiles. |
+| Largest Contentful Paint (LCP) | 3,5–5,2 s | 2,8–4,5 s | La carga del mapa y las teselas puede empujar el resultado hacia el extremo alto. |
+| Total Blocking Time (TBT) | 280–560 ms | 190–430 ms | Estimación de navegador móvil; se debe medir por pantalla. |
+| Cumulative Layout Shift (CLS) | 0,05–0,16 | 0,05–0,15 | No se espera un gran cambio por las optimizaciones de red/código aplicadas. |
+| Solicitudes de la vista inicial | 24–42 | 22–46 | Puede aumentar por chunks; cantidad de tiles depende del viewport y proveedor. |
+| Respuesta p95 de primera página de jornada | 350–850 ms | 250–650 ms | Supuesto para BD cercana y sin alta concurrencia; no es SLA observado. |
+
+La única magnitud cercana a transferencia observable es el build: la suma aproximada de HTML, JavaScript de entrada y CSS con Gzip pasa de ~130 KB en la referencia a ~61 KB en el build actual. Esto sugiere hasta ~69 MB menos por cada 1 000 primeras cargas equivalentes **si** cada visita solicita esos tres artefactos y no tiene caché; es una proyección aritmética de artefactos, no tráfico medido y no una equivalencia directa con energía o carbono.
+
+Estos rangos deben sustituirse por auditorías reproducibles. No son intervalos de confianza ni una promesa de mejora.
+
+### 2.4 Resumen de auditoría y riesgo
 
 | Área | Estado | Prioridad | Riesgo residual |
 |---|---|---|---|
@@ -135,14 +153,25 @@ Los bytes son tamaños locales sin compresión HTTP. El tamaño Gzip calculado p
 | Entrega de estáticos | No había validación documentada de Nginx | 200, Gzip negociado y política cache observados | Verificado con la imagen Docker frontend. |
 | Nginx | Configuración sin validación reportada | `nginx -t` correcto | Verificado con hostname upstream declarado. |
 | Service Worker, API, login, roles y offline E2E | No medidos en navegador | Sin medición integral | Pendiente navegador y backend real. |
-| Lighthouse y consumo ambiental digital | No medidos | No medidos | No se imputan resultados. |
+| Lighthouse / CO2e digital | Sin medicion; estimaciones hipoteticas en secciones 2.3 y 5 | Sin medicion real | Los rangos no son resultados observados. |
 
 Comandos de build/diagnóstico ejecutados en esta versión: `npm.cmd run build`, `node scripts/audit-green-build.mjs`, `node scripts/measure-green-baseline.mjs 2716fd5`, build Docker frontend, `nginx -t` dentro de la imagen y `python -m compileall -q app`. No se ejecutaron suites automatizadas ni se inició PostgreSQL durante esta revisión.
 
 ## 5. Análisis de impacto ambiental
 
-Las optimizaciones reducen ciertos trabajos o transferencias evitables: código inicial, lecturas obsoletas, repetición de solicitudes de ruta y descarga de historiales completos. Es razonable tratarlas como mecanismos de eficiencia; sin medición de energía y uso no se puede traducirlas a kWh o CO₂e.
+Las optimizaciones reducen ciertos trabajos o transferencias evitables: código inicial, lecturas obsoletas, repetición de solicitudes de ruta y descarga de historiales completos. Para completar el formato con un valor orientativo se incluye este **escenario numérico hipotético**, que no mide EcoLogística ni el consumo real de los dispositivos:
 
+| Supuesto didáctico | Valor usado |
+|---|---:|
+| Visitas a la vista principal | 1 000 |
+| Energía operativa atribuida por visita | 0,25 Wh |
+| Intensidad de carbono supuesta (no corresponde a un factor oficial de Perú) | 0,45 kg CO₂e/kWh |
+| Posible ahorro energético modelado tras optimizaciones | 10 % |
+| Resultado matemático del escenario antes | 112,5 g CO₂e por 1 000 visitas |
+| Resultado matemático del escenario después | 101,25 g CO₂e por 1 000 visitas |
+| Diferencia hipotética | 11,25 g CO₂e por 1 000 visitas |
+
+El cálculo es `visitas × Wh/visita × kgCO₂e/kWh` y la reducción del 10 % es un supuesto ilustrativo, no un ahorro atribuido al software. Sirve para demostrar cómo llenar el modelo con entradas; no debe citarse como huella, resultado de auditoría ni cifra ambiental del proyecto.
 Los valores ambientales de rutas representan emisiones estimadas del transporte de reparto. No son emisiones del servicio digital. Para una estimación posterior se deberá documentar límites del sistema, unidad funcional (por ejemplo, una optimización o una sesión), uso y carga, energía atribuible, factor de carbono, procedencia/fecha y supuestos; deben separarse mediciones directas de estimaciones.
 
 ## 6. Evidencias visuales de auditoría
