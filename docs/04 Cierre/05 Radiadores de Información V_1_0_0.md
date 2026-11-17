@@ -2,6 +2,8 @@
 
 # Radiadores de Información (Information Radiators)
 
+> **Revisión técnica r2 — 17/11/2026, America/Lima.** Se conserva versión base 1.0.0 y nombre exigido por la plantilla. Referencia vigente: main / b47d5eb7cda26444c56460ea74591cc5f973e0b3 + correcciones sin commit. [Control de implementación](../../AUDITORIA/CONTROL_CORRECCIONES_SPRINT4.md) y [resultados actuales](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md). El estado es borrador, sin aceptación administrativa. Los resultados previos se conservan en sus fuentes y en el historial al final.
+
 **Proyecto:** EcoLogística Junín / Huancayo. **Marco Ágil Utilizado:** Scrum dentro del enfoque híbrido documentado. **Versión:** 1.0.0.
 
 **Borrador; evidencia histórica incompleta; cierre pendiente de aprobación.** Plantilla 5.5, corte 17/11/2026, America/Lima. Las imágenes ya existentes se enlazan sin alterar fechas ni presentarlas como capturas actuales. No se accedió a Jira remoto ni se verificó autenticidad/exportación de origen. [Inventario y discrepancias](../../AUDITORIA/EVIDENCIAS_DISPONIBLES_Y_FALTANTES.md), [fuentes actuales/históricas](../../AUDITORIA/SPRINT4_EVIDENCIAS_TECNICAS.md).
@@ -37,8 +39,22 @@
 
 **Evidencia:** no se localizó imagen de un tablero real ni acta/participación de reunión de cierre. Existen retrospectivas textuales de Sprint 1/2/3; Sprint 2 se identifica como borrador técnico y Sprint 1 contiene propuestas no aprobadas. No sustituyen captura y ceremonia reales.
 
-- **Lo que funcionó bien:** se dispone de trazabilidad entre código y pruebas y se logró ejecutar PostGIS aislado en este corte; es observación técnica sustentada, no conclusión votada por el equipo.
+- **Lo que funcionó bien:** PostGIS descartable permitió regresiones de seguridad, integridad y suites completas; hay pruebas previas rojas y posteriores verdes conservadas. Es observación técnica, no resultado votado en retrospectiva.
 - **Oportunidades de mejora:** alinear afirmaciones de Done, resultados originales, cobertura y contratos de prueba; registrar cambios, ánimo y aceptación oportunamente.
-- **Acciones implementadas:** esta ejecución generó evidencia/diagnóstico y preservó fuentes; no se acredita ejecución histórica de las propuestas de retro ni compromisos de equipo sin soporte.
+- **Acciones implementadas:** AF-01/02/03/24 corregidos con pruebas; estas son respuestas de ingeniería del ciclo autorizado, no acuerdos de una ceremonia histórica. No se acredita reunión/compromisos de equipo.
 
 Faltan burndown/burnup/Mood/retro auténticos y un Kanban vigente para satisfacer completamente la rúbrica. No se fabricaron capturas, entrevistas ni series.
+
+## Recolección pendiente, revisión r2
+
+Las pruebas nuevas no aportan historia Jira, Mood o una retrospectiva real. [Solicitud prospectiva de evidencias](../../AUDITORIA/SOLICITUD_EVIDENCIAS_HUMANAS.md) y [fuentes irresolubles](../../AUDITORIA/FUENTES_HISTORICAS_IRRESOLUBLES.md). No se modificaron capturas ni fechas.
+
+## Historial de revisiones del borrador
+
+| Versión base / revisión | Fecha | Cambio y fuente |
+|---|---|---|
+|1.0.0 / r0 |17/11/2026, corte previo |Contenido previo conservado en Git b47d5eb y snapshot de bytes/hash [docs_cierre_antes_r1.json](../../AUDITORIA/CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r1.json); auditorías originales sin editar. |
+|1.0.0 / r1 técnica |17/11/2026, post auditoría |Actualización autorizada con evidencia nueva, corrección de referencias corruptas y límites explícitos. No cambia baseline aprobada ni constituye aceptación/cierre. |
+|1.0.0 / r2 técnica |17/11/2026, validación final |210 backend/70 frontend/4 SW; cobertura final y escape literal en PDF. Evidencia r1 preservada en CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r2.json. Sin aceptación administrativa. |
+
+Audiovisual: **EXCLUIDO TEMPORALMENTE — NO EVALUADO**. El ensayo técnico en vivo de diez minutos continúa pendiente de observación real.

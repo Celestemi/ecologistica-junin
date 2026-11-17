@@ -322,8 +322,12 @@ export function fetchAuditLog(limit?: number, beforeId?: number): Promise<AuditE
   return request<AuditEvent[]>(`/api/v1/auth/bitacora?${query.toString()}`);
 }
 
-export async function downloadSustainabilityPdf(): Promise<void> {
-  const response = await fetch("/api/v1/reportes/sostenibilidad/pdf", withAuth());
+export async function downloadSustainabilityPdf(start?: string, end?: string, format: 'pdf' | 'csv' = 'pdf'): Promise<void> {
+  const query = new URLSearchParams();
+  if (start) query.set('fecha_inicio', start);
+  if (end) query.set('fecha_fin', end);
+  const suffix = query.size ? `?${query}` : '';
+  const response = await fetch(`/api/v1/reportes/sostenibilidad/${format}${suffix}`, withAuth());
   if (response.status === 401 && loadSession()) {
     clearSession();
     window.location.assign("/ingresar");
@@ -344,7 +348,7 @@ export async function downloadSustainabilityPdf(): Promise<void> {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = fileName(response.headers.get("Content-Disposition")) ?? "sostenibilidad.pdf";
+  link.download = fileName(response.headers.get("Content-Disposition")) ?? `sostenibilidad.${format}`;
   link.click();
   URL.revokeObjectURL(url);
 }

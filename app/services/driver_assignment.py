@@ -13,8 +13,9 @@ from app.services.vehicle_state import is_available_for_routing
 async def assigned_vehicle(
     session: AsyncSession,
     usuario_id: int,
+    *, lock: bool = False,
 ) -> Vehiculo | None:
-    row = await session.scalar(
+    query = (
         select(AsignacionConductor)
         .where(
             AsignacionConductor.usuario_id == usuario_id,
@@ -22,6 +23,9 @@ async def assigned_vehicle(
         )
         .limit(1)
     )
+    if lock:
+        query = query.with_for_update()
+    row = await session.scalar(query)
     if row is None:
         return None
     return await session.get(Vehiculo, row.vehiculo_id)

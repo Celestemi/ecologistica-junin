@@ -2,9 +2,11 @@
 
 # Tableros de Control Híbridos (Hybrid Dashboards)
 
+> **Revisión técnica r2 — 17/11/2026, America/Lima.** Se conserva versión base 1.0.0 y nombre exigido por la plantilla. Referencia vigente: main / b47d5eb7cda26444c56460ea74591cc5f973e0b3 + correcciones sin commit. [Control de implementación](../../AUDITORIA/CONTROL_CORRECCIONES_SPRINT4.md) y [resultados actuales](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md). El estado es borrador, sin aceptación administrativa. Los resultados previos se conservan en sus fuentes y en el historial al final.
+
 **Proyecto:** EcoLogística Junín / Huancayo. **Frecuencia de Actualización:** propuesta al terminar cada validación y revisión de sprint; responsable por confirmar. **Versión:** 1.0.0.
 
-**Borrador; cierre pendiente de aprobación.** Plantilla 5.4; corte 17/11/2026, America/Lima, HEAD 61 f0 e1 e+B-08 sin commit. [Resultados actuales](../../AUDITORIA/SPRINT4_RESULTADOS_PRUEBAS.md), [matriz de aceptación](../../AUDITORIA/SPRINT4_MATRIZ_ACEPTACION.md), [presupuesto estimado 15/09/2026](../02%20Planificacion/04_presupuesto_del_proyecto_v_1_0_0.md). Un dashboard logístico de km/CO₂ del producto no equivale a gestión económica del proyecto.
+**Borrador; cierre pendiente de aprobación.** Plantilla 5.4; corte vigente r2 sobre b47d5eb + correcciones. [Resultados actuales](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md), [matriz vigente](../../AUDITORIA/MATRIZ_PRUEBAS_ACTUALIZADA.md). El dashboard logístico no equivale a gestión financiera del proyecto. Corte anterior: HEAD 61f0e1e9b0d71c1a0ea3c971fb77e93d0ea977b1 + B-08 sin commit, preservado en sus fuentes.
 
 ## 1. Justificación de Métricas (Principio Less is More)
 
@@ -17,10 +19,10 @@ Regla de este corte: verde solo evidencia suficiente para el componente estrecho
 
 | Componente / Entregable | Enfoque (Predictivo/Adaptativo) | Estado (🟢 Verde / 🟡 Ámbar / 🔴 Rojo) | Observación / Umbral |
 |---|---|---|---|
-| Suite backend de este árbol | Adaptativo | Verde |185/185 casos aprobados con PostGIS aislado; únicamente ese conjunto. |
+| Suite backend de este árbol | Adaptativo | Verde |210/210 aprobadas con PostGIS descartable; combinado 80,22 %; solo ese conjunto, no aceptación global. |
 | Publicación B-08 | Adaptativo | Ámbar |14/14 casos PostGIS pasan; revisión del responsable pendiente, no cierre de RF-03/07 completos. |
-| Calidad frontend | Adaptativo | Rojo |1/69 caso fallido; 78,80% líneas<80% DoD. |
-| Seguridad/integridad del incremento integral | Adaptativo/transversal | Rojo |DEF-02/03/04 siguen abiertos; gate de aceptación bloqueado. |
+| Calidad frontend | Adaptativo | Verde |70/70 aprobadas; 80,47 % líneas. AF-24 corregido y regresión de cursor añadida. |
+| Seguridad/integridad del incremento integral | Adaptativo/transversal | Ámbar |AF-01/02/03 probados; sesiones y SCA mejorados. Infraestructura, privacidad de comprobantes/GPS, alcance y aceptación residual pendientes. |
 | Presupuesto/cronograma/EVM | Predictivo | Rojo |Sin BAC aprobado/PV temporal/EV valorado/AC sustentado; no hay proyección económica defendible. |
 | Cierre y satisfacción | Híbrido | Rojo |Sin acta/encuesta/transferencia aceptada; documentos como borradores. |
 
@@ -46,11 +48,21 @@ Diagrama estructurado de **casos automáticos de la corrida actual**, no de avan
 xychart-beta
     title "Casos aprobados y fallidos — 17/11/2026"
     x-axis [Backend, Frontend, SW]
-    y-axis "Casos" 0 --> 200
-    bar [185, 68, 4]
-    bar [0, 1, 0]
+    y-axis "Casos" 0 --> 250
+    bar [210, 70, 4]
+    bar [0, 0, 0]
 ```
 
-Primera serie aprobados; segunda fallidos. Tabla de respaldo accesible: backend 185/0, frontend 68/1, SW 4/0. Los 14 B-08 ya están en backend; no sumarlos aparte. **Interpretación:** backend verde en los casos medidos, frontend requiere atender DEF-01; la escala no debe ocultar que un solo fallo bloquea suite verde. [JUnit y JSON originales](../../AUDITORIA/SPRINT4_EVIDENCIAS_TECNICAS.md).
+Primera serie aprobados; segunda fallidos. Respaldo accesible: backend 210/0, frontend 70/0, SW 4/0; cero omitidas en estas suites. Los 14 B-08 ya están en backend. **Interpretación:** suites verdes en el corte r2, sin acreditar satisfacción, RF completos o EV. [JUnit/JSON y límites actuales](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md).
 
-Cobertura de líneas actual: backend 83,27%, frontend 78,80%; no representan satisfacción, RF completos o EV. Faltan tres series/gráficos exigidos para completar la plantilla y radiadores auténticos del documento 05. Esta visualización no sustituye esa brecha de rúbrica.
+Cobertura actual: backend 84,37 % líneas / 63,83 % ramas / 80,22 % combinado; frontend 80,47 % líneas / 71,55 % ramas. No es satisfacción, RF aceptados o EV. Siguen pendientes tres gráficos/series y radiadores auténticos: no se fabrican para completar la rúbrica.
+
+## Historial de revisiones del borrador
+
+| Versión base / revisión | Fecha | Cambio y fuente |
+|---|---|---|
+|1.0.0 / r0 |17/11/2026, corte previo |Contenido previo conservado en Git b47d5eb y snapshot de bytes/hash [docs_cierre_antes_r1.json](../../AUDITORIA/CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r1.json); auditorías originales sin editar. |
+|1.0.0 / r1 técnica |17/11/2026, post auditoría |Actualización autorizada con evidencia nueva, corrección de referencias corruptas y límites explícitos. No cambia baseline aprobada ni constituye aceptación/cierre. |
+|1.0.0 / r2 técnica |17/11/2026, validación final |210 backend/70 frontend/4 SW; cobertura final y escape literal en PDF. Evidencia r1 preservada en CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r2.json. Sin aceptación administrativa. |
+
+Audiovisual: **EXCLUIDO TEMPORALMENTE — NO EVALUADO**. El ensayo técnico en vivo de diez minutos continúa pendiente de observación real.

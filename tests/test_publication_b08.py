@@ -133,6 +133,9 @@ class TransactionDouble:
         self.timeline = timeline
         self.fail_commit = fail_commit
         self.flush = AsyncMock()
+        # El lock PostgreSQL se comprueba con concurrencia real en la nueva suite.
+        self.execute = AsyncMock()
+        self.add = Mock()
 
     async def __aenter__(self):
         return self
@@ -177,6 +180,8 @@ async def live_case(publication_case, monkeypatch):
     persistence = Mock(side_effect=persist)
     monkeypatch.setattr(routes, "_persist_solution", persistence)
     monkeypatch.setattr(routes, "retain_other_vehicles", AsyncMock())
+    from app.services import active_plan
+    monkeypatch.setattr(active_plan, 'activate_snapshot', AsyncMock())
     return SimpleNamespace(order=order, vehicle=vehicle, solution=solution, worker=worker,
                            session=session, state=state, manager=manager, persistence=persistence,
                            timeline=timeline, result=result)
@@ -356,7 +361,8 @@ async def test_retaining_other_vehicle_preserves_but_does_not_invent_validation(
         previous.metadatos_ga = {"feasible": True}
     # El vehículo 2 es el recién recalculado; el 1 viene del plan previo.
     new = SimpleNamespace(
-        id=2, metadatos_ga={PUBLICATION_VEHICLE_IDS: [2]}, distancia_total_km=1.0,
+        id=2, fecha_operacion=previous.fecha_operacion, co2_estimado_kg=0.0,
+        metadatos_ga={PUBLICATION_VEHICLE_IDS: [2]}, distancia_total_km=1.0,
         duracion_total_min=1.0, co2_referencia_kg=0.0, co2_evitado_kg=0.0, arboles_quinual_eq=0.0,
     )
     session.scalar = AsyncMock(return_value=previous)

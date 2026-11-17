@@ -69,6 +69,16 @@ def test_pdf_bytes_include_the_iso_frame_and_tco() -> None:
     assert _report().quinual_trees == pytest.approx(5.8 / 12.0)
 
 
+def test_pdf_treats_customer_supplied_markup_as_literal_text() -> None:
+    """AF-15: datos de pedido/flota no son instrucciones XML del PDF."""
+    from dataclasses import replace
+    report = _report()
+    hostile = replace(report.deliveries[0], code='PED-</para>',
+        customer='Literal </para><b>', address='A & B <img>', plate='X</para>')
+    pdf = build_sustainability_pdf(replace(report, deliveries=(hostile,)))
+    assert pdf.startswith(b'%PDF')
+
+
 @pytest.mark.asyncio
 async def test_sustainability_pdf_endpoint(client: AsyncClient) -> None:
     from tests.helpers import login_headers

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="0.832" timestamp="2026-11-17T10:07:56.922894-05:00" hostname="DESKTOP-OAU4B62"><testcase classname="tests.test_post_audit_security" name="test_reassigned_old_driver_cannot_deliver_but_current_driver_can" time="0.376"><failure message="assert 400 == 403&#10; +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code">reassigned_case = namespace(client=&lt;httpx.AsyncClient object at 0x000002C5325978D0&gt;, headers={'Authorization': 'Bearer eyJhbGciOiJIUzI1N...jAD5tXnyU7REuuki2BECwJJYirXRQ'}, code='PED-001', order_id=1, old_vehicle=1, new_vehicle=2, assignment_id=1, actor_id=3)
+
+    @pytest.mark.asyncio
+    async def test_reassigned_old_driver_cannot_deliver_but_current_driver_can(reassigned_case):
+        case = reassigned_case
+        payload = {'operation_id': 'af-regression-1', 'delivered_at': datetime.now(ZoneInfo('America/Lima')).isoformat()}
+        denied = await case.client.post(f'/api/v1/pedidos/{case.code}/entrega', headers=case.headers, json=payload)
+&gt;       assert denied.status_code == 403
+E       assert 400 == 403
+E        +  where 400 = &lt;Response [400 Bad Request]&gt;.status_code
+
+tests\test_post_audit_security.py:54: AssertionError</failure></testcase><testcase classname="tests.test_post_audit_security" name="test_old_vehicle_cannot_cancel_reassigned_order" time="0.180"><failure message="Failed: DID NOT RAISE ValueError">reassigned_case = namespace(client=&lt;httpx.AsyncClient object at 0x000002C53257D650&gt;, headers={'Authorization': 'Bearer eyJhbGciOiJIUzI1N...jAD5tXnyU7REuuki2BECwJJYirXRQ'}, code='PED-001', order_id=1, old_vehicle=1, new_vehicle=2, assignment_id=1, actor_id=3)
+
+    @pytest.mark.asyncio
+    async def test_old_vehicle_cannot_cancel_reassigned_order(reassigned_case):
+        case = reassigned_case
+        async with async_session_factory() as session:
+            order = await session.get(Pedido, case.order_id)
+&gt;           with pytest.raises(ValueError, match='no pertenece'):
+E           Failed: DID NOT RAISE ValueError
+
+tests\test_post_audit_security.py:71: Failed</failure></testcase><testcase classname="tests.test_post_audit_security" name="test_terminal_order_is_not_changed_by_reroute[delivered]" time="0.005"><failure message="Failed: DID NOT RAISE ValueError">state = &lt;EstadoPedido.DELIVERED: 'delivered'&gt;
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('state', [EstadoPedido.DELIVERED, EstadoPedido.CANCELLED])
+    async def test_terminal_order_is_not_changed_by_reroute(state):
+        order = SimpleNamespace(estado=state)
+        from unittest.mock import AsyncMock
+        session = SimpleNamespace(flush=AsyncMock())
+&gt;       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE ValueError
+
+tests\test_post_audit_security.py:82: Failed</failure></testcase><testcase classname="tests.test_post_audit_security" name="test_terminal_order_is_not_changed_by_reroute[cancelled]" time="0.001"><failure message="Failed: DID NOT RAISE ValueError">state = &lt;EstadoPedido.CANCELLED: 'cancelled'&gt;
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('state', [EstadoPedido.DELIVERED, EstadoPedido.CANCELLED])
+    async def test_terminal_order_is_not_changed_by_reroute(state):
+        order = SimpleNamespace(estado=state)
+        from unittest.mock import AsyncMock
+        session = SimpleNamespace(flush=AsyncMock())
+&gt;       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE ValueError
+
+tests\test_post_audit_security.py:82: Failed</failure></testcase><testcase classname="tests.test_post_audit_security" name="test_public_channels_receive_only_their_safe_status_and_eta" time="0.001"><failure message="TypeError: ConnectionManager.connect_tracker() got an unexpected keyword argument 'public'">@pytest.mark.asyncio
+    async def test_public_channels_receive_only_their_safe_status_and_eta():
+        manager = ConnectionManager()
+        public_a, public_b, driver, desk = (FakeSocket() for _ in range(4))
+&gt;       await manager.connect_tracker('ONE', public_a, public=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: ConnectionManager.connect_tracker() got an unexpected keyword argument 'public'
+
+tests\test_post_audit_security.py:92: TypeError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,83 @@
+{
+  "source_sha256": "098e994680f3a923a7b339a655ddf876a5b3ca712357884ef5c8697a4186a6a2",
+  "documents": [
+    {
+      "file": "01 Reporte de Estado V_1_0_0.md",
+      "exists": true,
+      "checked_fields": 25,
+      "missing_fields": [],
+      "markers": 0,
+      "readme_to_document": true,
+      "document_to_readme": true,
+      "version_1_0_0": true,
+      "revision_history": true
+    },
+    {
+      "file": "02 Reporte de Variación V_1_0_0.md",
+      "exists": true,
+      "checked_fields": 18,
+      "missing_fields": [],
+      "markers": 0,
+      "readme_to_document": true,
+      "document_to_readme": true,
+      "version_1_0_0": true,
+      "revision_history": true
+    },
+    {
+      "file": "03 Reporte de Análisis de Valor Ganado - EVM V_1_0_0.md",
+      "exists": true,
+      "checked_fields": 32,
+      "missing_fields": [],
+      "markers": 0,
+      "readme_to_document": true,
+      "document_to_readme": true,
+      "version_1_0_0": true,
+      "revision_history": true
+    },
+    {
+      "file": "04 Tableros de Control - Híbridos V_1_0_0.md",
+      "exists": true,
+      "checked_fields": 18,
+      "missing_fields": [],
+      "markers": 0,
+      "readme_to_document": true,
+      "document_to_readme": true,
+      "version_1_0_0": true,
+      "revision_history": true
+    },
+    {
+      "file": "05 Radiadores de Información V_1_0_0.md",
+      "exists": true,
+      "checked_fields": 20,
+      "missing_fields": [],
+      "markers": 0,
+      "readme_to_document": true,
+      "document_to_readme": true,
+      "version_1_0_0": true,
+      "revision_history": true
+    },
+    {
+      "file": "06 Reporte Final del Proyecto V_1_0_0.md",
+      "exists": true,
+      "checked_fields": 25,
+      "missing_fields": [],
+      "markers": 0,
+      "readme_to_document": true,
+      "document_to_readme": true,
+      "version_1_0_0": true,
+      "revision_history": true
+    },
+    {
+      "file": "07 Reporte Final de Lecciones Aprendidas V_1_0_0.md",
+      "exists": true,
+      "checked_fields": 22,
+      "missing_fields": [],
+      "markers": 0,
+      "readme_to_document": true,
+      "document_to_readme": true,
+      "version_1_0_0": true,
+      "revision_history": true
+    }
+  ],
+  "limits": "Structural presence only. Missing real values/graphs/acceptance remain evaluated separately."
+}

@@ -63,6 +63,12 @@ export function saveSession(token: string, usuario: SessionUser): void {
 }
 
 export function clearSession(): void {
+  const token = readStored()?.token;
+  if (token && typeof fetch === 'function') {
+    // La revocación durable no guarda el JWT; el servidor conserva solo su jti.
+    void fetch('/api/v1/auth/salir', { method: 'POST', keepalive: true,
+      headers: { Authorization: `Bearer ${token}` } }).catch(() => undefined);
+  }
   sessionStorage.removeItem(KEY);
   localStorage.removeItem(KEY);
   // La cola IndexedDB nunca contiene el token; se elimina también al salir.

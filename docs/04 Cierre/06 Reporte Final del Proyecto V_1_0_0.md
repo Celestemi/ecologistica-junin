@@ -2,9 +2,11 @@
 
 # Reporte Final del Proyecto (Final Project Report)
 
+> **Revisión técnica r2 — 17/11/2026, America/Lima.** Se conserva versión base 1.0.0 y nombre exigido por la plantilla. Referencia vigente: main / b47d5eb7cda26444c56460ea74591cc5f973e0b3 + correcciones sin commit. [Control de implementación](../../AUDITORIA/CONTROL_CORRECCIONES_SPRINT4.md) y [resultados actuales](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md). El estado es borrador, sin aceptación administrativa. Los resultados previos se conservan en sus fuentes y en el historial al final.
+
 **Proyecto:** EcoLogística Junín / Huancayo. **Fecha de Cierre:** No disponible en los registros revisados; **cierre pendiente de aprobación**. **Versión:** 1.0.0.
 
-**Borrador de situación de cierre, no acta de aceptación.** Plantilla 5.6; corte 17/11/2026, America/Lima. Referencia HEAD 61 f0 e1 e con B-08 sin commit. [Resultados actuales](../../AUDITORIA/SPRINT4_RESULTADOS_PRUEBAS.md) y [matriz integral](../../AUDITORIA/SPRINT4_MATRIZ_ACEPTACION.md).
+**Borrador de situación de cierre, no acta de aceptación.** Plantilla 5.6. Corte técnico vigente b47d5eb + correcciones sin commit; referencia previa HEAD 61f0e1e9b0d71c1a0ea3c971fb77e93d0ea977b1 + B-08 sin commit preservada. [Resultados](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md) y [matriz vigente](../../AUDITORIA/MATRIZ_PRUEBAS_ACTUALIZADA.md).
 
 ## 1. Descripción General del Proyecto
 
@@ -15,13 +17,13 @@ Plataforma web de rutas sostenibles para el caso académico DistriRápido S.A.C.
 ### 2.1 Alcance (Predictivo y Adaptativo)
 
 - **Objetivos y criterios de éxito:** acta busca≥15% reducción de distancia frente a secuencia,≥10% CO₂ mensual,≥90% ventanas y MVP≥70% RF-01…07; requiere contrastar fuente original ausente. Predictivo: arquitectura/requisitos/hitos y presupuesto; adaptativo: historias e incrementos con DoD.
-- **Evidencia de cumplimiento:**185 backend aprobadas,68/69 frontend y4 SW; 14 casos B-08 PostGIS acreditan escenarios de publicación/rollback. No se acredita ningún RF integral completo debido a brechas concretas de datos, seguridad, cifras o alcance. No confundir conteos con aceptación ni ahorro operativo.
+- **Evidencia de cumplimiento:** 210 backend aprobadas; 70/70 frontend y 4/4 SW. Backend 84,37 % líneas / 63,83 % ramas / 80,22 % combinado; frontend 80,47 % líneas / 71,55 % ramas; P0 AF-01/02/03 y AF-24 corregidos con evidencia. Flujo HTTP/WS + BD real de 10 pasos pasó; frontend accesible por HTTP/proxy, sin navegador. SLA 150×15 factible probado en escenario sintético favorable, no universal. RF/RNF y metas operativas no se declaran aceptados por conteos.
 - **Variaciones, causas y su impacto:** hay implementación parcial y desalineación documental de Done; faltan módulos/condiciones y evidencia real de aceptación. Cambios de alcance/exenciones aprobadas no disponibles. El crecimiento de código no constituye aprobación de rebaselining.
 
 ### 2.2 Calidad
 
 - **Requisitos y criterios de aceptación:** DoD histórica≥80% por capa, análisis sin vulnerabilidades altas/críticas/deuda bloqueante, PR por par, staging automatizado, API actualizada y RF/RNF aceptados.
-- **Resultados de verificación y validación:** backend 83,27% líneas/59,98% ramas/78,68% combinado; frontend 78,80% líneas/70,80% ramas. DEF-01 falla; DEF-02/03/04 y otras brechas permanecen. Los tests actuales no acreditan certificación, E2 E navegador, SLA con OSRM ni disponibilidad.
+- **Resultados de verificación y validación:** 210 backend/70 frontend/4 SW verdes; gates 80 % combinado backend y 80 % líneas frontend pasan. SCA npm y OSV sin avisos tras parche transitivo 1.45.2. Build actual/PWA y flujo TCP pasan. No certifica E2E navegador, WCAG integral, OSRM/TLS, disponibilidad productiva ni aceptación por tercero.
 - **Requisitos eximidos o variaciones:** no disponibles en registros revisados como exenciones aprobadas. Mantener pendientes explícitos; no excluirlos para obtener un porcentaje favorable.
 
 ### 2.3 Cronograma
@@ -44,9 +46,9 @@ Plataforma web de rutas sostenibles para el caso académico DistriRápido S.A.C.
 | ID / Descripción | Tipo (Riesgo/Incidente/Impedimento) | Impacto Real | Respuesta Aplicada |
 |---|---|---|---|
 | IMP-010 / entorno de prueba antes no disponible | Impedimento histórico |14 casos B-08 no se habían ejecutado en fase 2 |En este corte se creó PostGIS descartable y14 casos aprobaron; no se reescribe informe anterior. |
-| DEF-01 / contrato de prueba historial | Incidente de validación |1 caso frontend fallido; suite no verde |Registrado con fuente; no corregido por restricción de fases actuales. |
-| DEF-02/03/04 / autorización, terminalidad y privacidad | Riesgos/defectos de diseño detectados |Cierre técnico bloqueado; no explotación de datos reales observada |Documentados; B-09/10 pendientes. B-08 no los resuelve. |
-| DEF-10 / factibilidad y SLA | Riesgo técnico/aceptación |Tres resultados de solver inválidos; no prueba de SLA HTTP |Medidos y declarados insuficientes; no se relaja el validador. |
+| DEF-01 / contrato de prueba historial (AF-24) | Incidente histórico de validación |Un caso frontend fallaba en corte previo; ahora 70/70 pasan |Contrato 20+1 y cursor verificados, manteniendo mantenimiento/edición; corregido en ciclo autorizado. |
+| DEF-02/03/04 / autorización, terminalidad y privacidad (AF-01/02/03) | Defectos del corte previo |Riesgos de integridad/privacidad detectados, sin explotación de datos reales |Corregidos y probados con reasignación, carrera, terminales y canales públicos separados; revisión de entorno/riesgo residual pendiente. |
+| DEF-10 / factibilidad y SLA | Riesgo técnico/aceptación |Tres resultados aleatorios previos infactibles; no se elimina ese antecedente |Nuevo escenario sintético con testigo independiente: 150 únicos factibles en 1,7821 s API ASGI; dinámica .2373 s pipeline. Sin OSRM/red ni prueba universal. |
 | DEF-14 / registros económicos y aceptación ausentes | Impedimento de gestión |EVM y cierre administrativo no acreditables |Campos no disponibles explícitos; solicitar soportes/aprobación. |
 
 Registro histórico RIE-001…010 y otras incidencias se conservan; esta tabla no afirma que sus planes preventivos fueron aplicados sin evidencia. [Defectos vigentes](../../AUDITORIA/SPRINT4_DEFECTOS_PENDIENTES.md).
@@ -55,4 +57,14 @@ Registro histórico RIE-001…010 y otras incidencias se conservan; esta tabla n
 
 - **Satisfacción de los interesados (Stakeholders):** no disponible; faltan encuesta/escala/muestra/fecha y aceptación real. La matriz de interesados no es satisfacción medida.
 - **Satisfacción y reconocimiento del equipo:** no disponibles como medición/reunión real; no inferir por resultados de tests o retrospectivas genéricas.
-- **Transición operativa y cierre administrativo:** pendientes de aprobación; faltan manuales/runbook consolidado, responsables de soporte, transferencia, obligaciones económicas y acta real. Existen avances técnicos, pero no se declara éxito integral o proyecto cerrado.
+- **Transición operativa y cierre administrativo:** pendientes de aprobación. Se prepararon runbook, guía por roles y protocolos reproducibles; falta validación por tercero, receptor/soporte, obligaciones económicas y acta real. [Runbook](../../AUDITORIA/RUNBOOK_TECNICO_POST_CORRECCIONES.md), [solicitud humana](../../AUDITORIA/SOLICITUD_EVIDENCIAS_HUMANAS.md). No se declara éxito integral.
+
+## Historial de revisiones del borrador
+
+| Versión base / revisión | Fecha | Cambio y fuente |
+|---|---|---|
+|1.0.0 / r0 |17/11/2026, corte previo |Contenido previo conservado en Git b47d5eb y snapshot de bytes/hash [docs_cierre_antes_r1.json](../../AUDITORIA/CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r1.json); auditorías originales sin editar. |
+|1.0.0 / r1 técnica |17/11/2026, post auditoría |Actualización autorizada con evidencia nueva, corrección de referencias corruptas y límites explícitos. No cambia baseline aprobada ni constituye aceptación/cierre. |
+|1.0.0 / r2 técnica |17/11/2026, validación final |210 backend/70 frontend/4 SW; cobertura final y escape literal en PDF. Evidencia r1 preservada en CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r2.json. Sin aceptación administrativa. |
+
+Audiovisual: **EXCLUIDO TEMPORALMENTE — NO EVALUADO**. El ensayo técnico en vivo de diez minutos continúa pendiente de observación real.

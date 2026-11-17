@@ -256,8 +256,15 @@ class ActiveRouteRead(BaseModel):
 class DeliveryConfirmationRequest(BaseModel):
     """Operación de entrega creada en el teléfono; su identificador permite reintentos."""
 
-    operation_id: str = Field(min_length=16, max_length=80)
+    operation_id: str = Field(min_length=16, max_length=80, pattern=r'^[A-Za-z0-9_-]+$')
     delivered_at: datetime
+
+    @field_validator('delivered_at')
+    @classmethod
+    def delivery_time_is_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError('La hora de entrega debe incluir zona horaria.')
+        return value
 
 
 class PublicTrackingRead(BaseModel):
@@ -588,6 +595,10 @@ class RouteOptimizationGeoJSON(BaseModel):
 
 
 class OperationalIndicatorsRead(BaseModel):
+    referencia_comparable: bool = True
+    consumo_estimado_kwh: float | None = None
+    costo_estimado_pen: float | None = None
+    base_metricas: str = 'plan_vigente_estimado'
     fecha_inicio: date
     fecha_fin: date
     rutas: int

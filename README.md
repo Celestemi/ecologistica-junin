@@ -148,9 +148,21 @@ Los cinco documentos usan la versión documental inicial `V_1_0_0`. Este cierre 
 
 ---
 
-## Documentos de gestión y cierre ? corte 17/11/2026
+## Documentos de gestión y cierre — corte 17/11/2026
 
-Estado: **borradores verificables; cierre pendiente de aprobación**. Hay un caso frontend fallido, brechas técnicas abiertas y datos económicos/aceptación no disponibles. Consulte las limitaciones de cada documento y los informes de fase 3 en AUDITORIA. Estos archivos no constituyen un acta de cierre.
+Estado de revisión técnica r2: **borradores verificables; cierre pendiente de aprobación**. Las correcciones post auditoría tienen 210 pruebas backend, 70 frontend y 4 Service Worker aprobadas; AF-01/02/03 y AF-24 corregidos con regresiones. Persisten condiciones parciales de alcance/operación, datos económicos, radiadores y aceptación. El flujo HTTP/WebSocket local con BD real pasó; navegador y ensayo de diez minutos no se verificaron. Estos resultados no son acta de cierre ni EV.
+
+Referencia: `main/b47d5eb7cda26444c56460ea74591cc5f973e0b3` + cambios sin commit. La revisión anterior permanece en Git y en los cuatro informes finales originales de AUDITORIA. Se conservan la versión base 1.0.0 y los nombres exactos exigidos de los siete documentos, con revisión técnica e historial explícitos.
+
+- [Control por fases y archivos](AUDITORIA/CONTROL_CORRECCIONES_SPRINT4.md)
+- [Resultados actuales y límites](AUDITORIA/RESULTADOS_FASE3_PRUEBAS.md)
+- [Matriz RF/RNF y pruebas](AUDITORIA/MATRIZ_PRUEBAS_ACTUALIZADA.md)
+- [Runbook por roles, pruebas, recuperación y límites](AUDITORIA/RUNBOOK_TECNICO_POST_CORRECCIONES.md)
+- [Guía de demostración; tiempo de exposición pendiente](AUDITORIA/GUIA_DEMO_VERIFICADA.md)
+- [Datos EVM requeridos](AUDITORIA/SOLICITUD_DATOS_EVM.md)
+- [Evidencias y decisiones humanas](AUDITORIA/SOLICITUD_EVIDENCIAS_HUMANAS.md)
+
+El laboratorio usa exclusivamente PostGIS nuevo y descartable. La migración propuesta de geometría no está integrada al arranque ni fue aplicada a una BD existente. Temporales/build/backup se controlan en `AUDITORIA/CORRECCIONES_EVIDENCIAS/runtime/` ignorado; el residual `.vitest/json/output.json` anterior se conserva. Audiovisual **EXCLUIDO TEMPORALMENTE — NO EVALUADO**; sí está pendiente el ensayo técnico en vivo.
 
 * [01 Reporte de Estado V_1_0_0.md](docs/04%20Cierre/01%20Reporte%20de%20Estado%20V_1_0_0.md)
 * [02 Reporte de Variación V_1_0_0.md](docs/04%20Cierre/02%20Reporte%20de%20Variaci%C3%B3n%20V_1_0_0.md)
@@ -159,3 +171,5 @@ Estado: **borradores verificables; cierre pendiente de aprobación**. Hay un cas
 * [05 Radiadores de Información V_1_0_0.md](docs/04%20Cierre/05%20Radiadores%20de%20Informaci%C3%B3n%20V_1_0_0.md)
 * [06 Reporte Final del Proyecto V_1_0_0.md](docs/04%20Cierre/06%20Reporte%20Final%20del%20Proyecto%20V_1_0_0.md)
 * [07 Reporte Final de Lecciones Aprendidas V_1_0_0.md](docs/04%20Cierre/07%20Reporte%20Final%20de%20Lecciones%20Aprendidas%20V_1_0_0.md)
+
+Revisión final: [reauditoría post correcciones](AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md), [35 hallazgos](AUDITORIA/MATRIZ_AF_01_A_AF_35.md) y [pendientes para equipo/docente](AUDITORIA/PENDIENTES_PARA_USUARIO_Y_DOCENTE.md). Sin commits automáticos ni cierre administrativo acreditado.

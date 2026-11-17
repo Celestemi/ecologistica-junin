@@ -13,7 +13,7 @@ from app.models.enums import RolUsuario
 from app.models.identity import Usuario
 from app.services.access import record
 from app.services.rbac import DENY_ANON
-from app.services.tokens import read_access_token
+from app.services.tokens import read_access_token, session_is_current
 
 bearer_scheme = HTTPBearer(auto_error=False)
 logger = logging.getLogger("ecologistica.security")
@@ -45,12 +45,13 @@ async def get_current_user(
             detail="La sesión no es válida. Vuelve a ingresar.",
         ) from None
     user = await session.scalar(select(Usuario).where(Usuario.id == user_id))
-    if user is None or not user.activo:
+    if user is None or not await session_is_current(session, payload, user):
         logger.warning("security_event=authentication_rejected reason=inactive_or_unknown_user")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="La sesión no es válida. Vuelve a ingresar.",
         )
+    session.info['access_payload'] = payload
     return user
 
 

@@ -174,7 +174,7 @@ export function DriverApp() {
       }
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       socket = new WebSocket(
-        `${protocol}//${window.location.host}/ws/driver/${encodeURIComponent(plate)}?token=${encodeURIComponent(token)}`,
+        `${protocol}//${window.location.host}/ws/driver/${encodeURIComponent(plate)}`, [`bearer.${token}`],
       );
       socketRef.current = socket;
       socket.onopen = () => {

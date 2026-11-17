@@ -93,6 +93,8 @@ async def _reset_seed() -> None:
 @pytest.fixture(scope="session")
 async def database() -> None:
     """Crea PostGIS de prueba y cierra el pool al terminar la sesión."""
+    if os.environ.get('ECOLOGISTICA_TEST_DISPOSABLE') != '1':
+        raise RuntimeError('BD no autorizada: verificar aislamiento descartable y usar scripts/run-post-audit-tests.ps1.')
     await _ensure_test_database()
     await init_database()
     yield

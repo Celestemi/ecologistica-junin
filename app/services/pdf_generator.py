@@ -9,6 +9,7 @@ ni un certificado de la norma: es el informe de la cadena de última milla.
 from __future__ import annotations
 
 import io
+from html import escape
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -34,6 +35,9 @@ from sqlalchemy.orm import selectinload
 from app.core.emissions import quinual_equivalent
 from app.models.domain import Pedido, RutaDetalle, SolucionRuta, Vehiculo
 from app.models.enums import EstadoPedido, TipoCombustible, TipoParada
+from app.services.active_plan import latest_snapshots
+from app.services.delivery_events import delivery_events
+from app.services.energy_accounting import estimate_energy, vehicle_factors
 
 LIMA = ZoneInfo("America/Lima")
 
@@ -79,6 +83,7 @@ class DeliveryRow:
     vehicle_class: str
     distance_km: float
     co2_g: float
+    version_plan: int | None = None
 
 
 @dataclass(frozen=True)
@@ -107,6 +112,7 @@ class SustainabilityReport:
     distance_km: float
     deliveries: tuple[DeliveryRow, ...]
     tco: tuple[TcoRow, ...]
+    reference_comparable: bool = True
 
     @property
     def quinual_trees(self) -> float:
@@ -125,18 +131,10 @@ def vehicle_class(fuel: TipoCombustible | str) -> str:
     return "Eléctrico" if as_fuel(fuel) is TipoCombustible.ELECTRIC else "Combustible"
 
 
-def leg_cost(fuel: TipoCombustible | str, distance_km: float, co2_g: float) -> tuple[float, float]:
+def leg_cost(fuel: TipoCombustible | str, distance_km: float, co2_g: float, efficiency_km_gal: float | None = None) -> tuple[float, float]:
     """Energía y mantenimiento en soles de un tramo, a partir de su CO2 y sus km."""
-    kind = as_fuel(fuel)
-    distance = max(0.0, distance_km)
-    grams = max(0.0, co2_g)
-    if kind is TipoCombustible.ELECTRIC:
-        kilowatt_hours = (grams / 1000.0) / GRID_KG_CO2_PER_KWH
-        energy = kilowatt_hours * PEN_PER_KWH
-    else:
-        energy = (grams / GRAMS_PER_LITER[kind]) * PEN_PER_LITER[kind]
-    maintenance = distance * MAINTENANCE_PEN_PER_KM[vehicle_class(kind)]
-    return energy, maintenance
+    energy = estimate_energy(fuel, distance_km, co2_g, efficiency_km_gal)
+    return energy.energy_pen, energy.maintenance_pen
 
 
 def build_tco(legs: Sequence[tuple[TipoCombustible | str, float, float]]) -> tuple[TcoRow, ...]:
@@ -145,9 +143,10 @@ def build_tco(legs: Sequence[tuple[TipoCombustible | str, float, float]]) -> tup
         "Combustible": {"km": 0.0, "energy": 0.0, "maintenance": 0.0, "co2_g": 0.0},
         "Eléctrico": {"km": 0.0, "energy": 0.0, "maintenance": 0.0, "co2_g": 0.0},
     }
-    for fuel, distance_km, co2_g in legs:
+    for leg in legs:
+        fuel, distance_km, co2_g, *efficiency = leg
         bucket = buckets[vehicle_class(fuel)]
-        energy, maintenance = leg_cost(fuel, distance_km, co2_g)
+        energy, maintenance = leg_cost(fuel, distance_km, co2_g, efficiency[0] if efficiency else None)
         bucket["km"] += max(0.0, distance_km)
         bucket["energy"] += energy
         bucket["maintenance"] += maintenance
@@ -175,10 +174,6 @@ async def load_sustainability_report(
         (
             await session.scalars(
                 select(SolucionRuta)
-                .where(
-                    SolucionRuta.fecha_operacion >= start,
-                    SolucionRuta.fecha_operacion <= end,
-                )
                 .options(
                     selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.vehiculo),
                     selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.pedido),
@@ -187,17 +182,26 @@ async def load_sustainability_report(
             )
         ).all()
     )
-    emitted = sum(solution.co2_estimado_kg for solution in solutions)
-    avoided = sum(solution.co2_evitado_kg for solution in solutions)
-    distance = sum(solution.distancia_total_km for solution in solutions)
+    events = await delivery_events(session)
+    for solution in solutions:
+        for detail in solution.detalles:
+            event = events.get(detail.pedido_id)
+            if event and detail.pedido is not None:
+                detail.pedido._delivery_moment = event['moment']
+                detail.pedido._delivery_plan_id = event['plan']
+    current = [plan for plan in latest_snapshots(solutions) if start <= plan.fecha_operacion <= end]
+    emitted = sum(solution.co2_estimado_kg for solution in current)
+    avoided = sum(solution.co2_evitado_kg for solution in current)
+    distance = sum(solution.distancia_total_km for solution in current)
     legs: list[tuple[TipoCombustible | str, float, float]] = []
     deliveries = _completed_deliveries(solutions, start, end)
-    for solution in solutions:
+    for solution in current:
         for detail in solution.detalles:
             vehicle = detail.vehiculo
             if vehicle is None:
                 continue
-            legs.append((vehicle.tipo_combustible, detail.distancia_tramo_km, detail.co2_tramo_g))
+            fuel, efficiency = vehicle_factors(solution, vehicle)
+            legs.append((fuel, detail.distancia_tramo_km, detail.co2_tramo_g, efficiency))
     return SustainabilityReport(
         period_start=start,
         period_end=end,
@@ -206,6 +210,7 @@ async def load_sustainability_report(
         distance_km=distance,
         deliveries=tuple(deliveries),
         tco=build_tco(legs),
+        reference_comparable=all((plan.metadatos_ga or {}).get('referencia_comparable',True) for plan in current),
     )
 
 
@@ -238,7 +243,9 @@ def build_sustainability_pdf(report: SustainabilityReport) -> bytes:
         _section("1. Huella de carbono", styles),
         Paragraph(
             "CO2 de la operación de transporte calculado con los factores g/km de cada vehículo, "
-            "incluida la penalización por pendiente. El CO2 evitado se mide contra el reparto FIFO.",
+            "incluida la penalización por pendiente. Totales: estimaciones del plan vigente por jornada; "
+            "no son consumos medidos ni gasto real. Entregas: solo eventos con fecha efectiva registrada; "
+            "las entregas antiguas sin evento no se reconstruyen desde ETA. Referencia de CO2: reparto FIFO.",
             styles["body"],
         ),
         Spacer(1, 2 * mm),
@@ -246,8 +253,8 @@ def build_sustainability_pdf(report: SustainabilityReport) -> bytes:
         Spacer(1, 5 * mm),
         _section("2. TCO por tipo de vehículo", styles),
         Paragraph(
-            "Total Cost of Ownership del periodo, en soles. La energía sale del CO2 del tramo: "
-            "litros para diésel, gasolina y GLP, y kWh de red para el eléctrico. "
+            "Costo estimado del plan vigente, en soles; no gasto real. Combustible por km/rendimiento "
+            "cuando está registrado; electricidad inferida del CO2 del tramo. "
             "El mantenimiento es un supuesto por kilómetro.",
             styles["body"],
         ),
@@ -257,10 +264,10 @@ def build_sustainability_pdf(report: SustainabilityReport) -> bytes:
         Spacer(1, 5 * mm),
         _section("3. Equivalencia ecológica local", styles),
         Paragraph(
-            f"El CO2 evitado equivale a <b>{_num(report.quinual_trees, 2)}</b> árboles "
-            "Quinual o Aliso sembrados en el Valle del Mantaro. "
-            "Las dos especies comparten el factor local de 12 kg de CO2 al año por árbol; "
-            "no se suman entre sí.",
+            (f"Equivalencia referencial: <b>{_num(report.quinual_trees, 2)}</b> árboles/año. "
+             "No acredita plantación ni compensación ejecutada. Factor supuesto: 12 kg CO2/año por árbol; "
+             "Quinual y Aliso no se suman entre sí.") if report.reference_comparable else
+            "Equivalencia no verificable: falta una referencia comparable tras el recálculo.",
             styles["body"],
         ),
         Spacer(1, 2 * mm),
@@ -348,8 +355,8 @@ def _carbon_table(report: SustainabilityReport) -> Table:
     rows = [
         ["Indicador", "Valor"],
         ["CO2 emitido (ruta eco)", f"{_num(report.co2_emitted_kg)} kg"],
-        ["CO2 evitado frente al FIFO", f"{_num(report.co2_avoided_kg)} kg"],
-        ["Reducción sobre la referencia", f"{_num(avoided_share, 1)} %"],
+        ["CO2 evitado frente al FIFO", f"{_num(report.co2_avoided_kg)} kg" if report.reference_comparable else 'No verificable'],
+        ["Reducción sobre la referencia", f"{_num(avoided_share, 1)} %" if report.reference_comparable else 'No verificable'],
         ["Distancia de las soluciones", f"{_num(report.distance_km, 1)} km"],
     ]
     return _data_table(rows, [110 * mm, 68 * mm])
@@ -374,7 +381,7 @@ def _tco_table(rows: Sequence[TcoRow]) -> Table:
 
 
 def _equivalence_table(report: SustainabilityReport) -> Table:
-    trees = _num(report.quinual_trees, 2)
+    trees = _num(report.quinual_trees, 2) if report.reference_comparable else 'No verificable'
     rows = [
         ["Especie local", "Factor", "Equivalente del periodo"],
         ["Quinual", "12 kg CO2 / año", f"{trees} árboles"],
@@ -404,10 +411,10 @@ def _delivery_table(deliveries: Sequence[DeliveryRow], styles: dict[str, Paragra
         completed = row.completed_on.strftime("%d/%m/%Y") if row.completed_on else "—"
         body.append(
             [
-                Paragraph(row.code, styles["td"]),
-                Paragraph(f"{row.customer}<br/>{row.address}", styles["td"]),
+                Paragraph(escape(row.code), styles["td"]),
+                Paragraph(f"{escape(row.customer)}<br/>{escape(row.address)}", styles["td"]),
                 Paragraph(completed, styles["td"]),
-                Paragraph(f"{row.plate}<br/>{row.vehicle_class}", styles["td"]),
+                Paragraph(f"{escape(row.plate)}<br/>{escape(row.vehicle_class)}", styles["td"]),
                 Paragraph(_num(row.distance_km, 1), styles["td_right"]),
                 Paragraph(_num(row.co2_g, 0), styles["td_right"]),
             ]
@@ -602,6 +609,8 @@ def _completed_deliveries(
                 continue
             if order.estado is not EstadoPedido.DELIVERED:
                 continue
+            if getattr(order, '_delivery_plan_id', None) != detail.solucion_id:
+                continue
             completed = _completion_day(detail, order)
             if completed is None or not start <= completed <= end:
                 continue
@@ -627,11 +636,12 @@ def _delivery_row(detail: RutaDetalle) -> DeliveryRow:
         vehicle_class=vehicle_class(fuel),
         distance_km=detail.distancia_tramo_km,
         co2_g=detail.co2_tramo_g,
+        version_plan=detail.solucion_id,
     )
 
 
 def _completion_day(detail: RutaDetalle, order: Pedido) -> date | None:
-    moment = detail.eta or order.ventana_fin
+    moment = getattr(order, '_delivery_moment', None)
     if moment is None:
         return None
     if moment.tzinfo is None:

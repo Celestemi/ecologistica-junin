@@ -1,0 +1,55 @@
+{
+  "synthetic": true,
+  "date": "2026-11-17T11:28:35.558215-05:00",
+  "elapsed_seconds": 0.9387838000002375,
+  "scope": "real localhost HTTP/TCP WS + PostGIS; frontend HTTP/proxy only, NO browser/OSRM/TLS or timed 10-minute demo",
+  "head": "b47d5eb7cda26444c56460ea74591cc5f973e0b3",
+  "working_tree": "uncommitted corrections",
+  "steps": [
+    {
+      "step": "backend and real PostGIS health",
+      "result": "PASO"
+    },
+    {
+      "step": "frontend HTTP accessible; transformed JS and API proxy; not browser execution",
+      "result": "PASO"
+    },
+    {
+      "step": "login through frontend proxy and backend; synthetic roles",
+      "result": "PASO"
+    },
+    {
+      "step": "new order through real HTTP; persisted synthetic data",
+      "result": "PASO"
+    },
+    {
+      "step": "optimization -> persistence -> GeoJSON map -> assigned driver",
+      "result": "PASO",
+      "plan_id": 1,
+      "road_geometry": false
+    },
+    {
+      "step": "live TCP WebSockets: safe public snapshot/status; driver position; durable delivery and retry",
+      "result": "PASO"
+    },
+    {
+      "step": "dashboard API uses current snapshot once",
+      "result": "PASO",
+      "distance_km": 0.031105993035438043
+    },
+    {
+      "step": "authorized real PDF download",
+      "result": "PASO",
+      "bytes": 11909
+    },
+    {
+      "step": "authorized real CSV download",
+      "result": "PASO",
+      "bytes": 241
+    },
+    {
+      "step": "report role restriction and durable logout revocation",
+      "result": "PASO"
+    }
+  ]
+}

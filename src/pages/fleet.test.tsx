@@ -62,7 +62,7 @@ describe("fleet management page", () => {
   it("loads fleet, validates maintenance and saves edits", async () => {
     render(<Fleet />);
     expect(await screen.findByText(/ABC-123 · Activo/)).toBeTruthy();
-    await waitFor(() => expect(mocks.fetchVehicleHistory).toHaveBeenCalledWith(1));
+    await waitFor(() => expect(mocks.fetchVehicleHistory).toHaveBeenCalledWith(1, 21));
 
     await userEvent.click(screen.getByRole("button", { name: "Pasar a Mantenimiento" }));
     expect(await screen.findByText(/Indica un motivo/)).toBeTruthy();
@@ -91,6 +91,20 @@ describe("fleet management page", () => {
     mocks.updateVehicle.mockRejectedValue(new ApiError("Cambio rechazado", 409));
     await userEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
     expect(await screen.findByText("Cambio rechazado")).toBeTruthy();
+  });
+
+  it('loads history with a lookahead row and a stable cursor without duplicates', async () => {
+    const history = Array.from({ length: 21 }, (_, index) => ({ id: 100-index,
+      vehiculo_id: 1, activo: true, detalle: `Cambio ${100-index}`,
+      correo: 'synthetic@example.test', creado_en: '2026-11-17T08:00:00-05:00' }));
+    mocks.fetchVehicleHistory.mockResolvedValueOnce(history).mockResolvedValueOnce([history[20]]);
+    render(<Fleet />);
+    expect(await screen.findByText('Cambio 100')).toBeTruthy();
+    expect(screen.queryByText('Cambio 80')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name:'Cargar cambios anteriores' }));
+    await waitFor(() => expect(mocks.fetchVehicleHistory).toHaveBeenLastCalledWith(1, 21, 81));
+    expect(await screen.findAllByText('Cambio 80')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name:'Cargar cambios anteriores' })).toBeNull();
   });
 
   it("shows load errors and read-only mode", async () => {

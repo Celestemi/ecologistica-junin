@@ -1,8 +1,10 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import assert from "node:assert/strict";
+import { resolve, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-const root = new URL("../dist/", import.meta.url);
+const root = process.argv[2] ? pathToFileURL(resolve(process.argv[2]) + sep) : new URL("../dist/", import.meta.url);
 const files = readdirSync(new URL("assets/", root)).filter((name) => /\.(js|css)$/.test(name));
 const assets = files.map((name) => {
   const content = readFileSync(new URL(`assets/${name}`, root));

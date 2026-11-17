@@ -40,7 +40,7 @@ class FakeWebSocket {
   static instances: FakeWebSocket[] = [];
   onmessage: ((event: { data: unknown }) => void) | null = null;
   close = vi.fn();
-  constructor(public url: string) {
+  constructor(public url: string, public protocols?: string[]) {
     FakeWebSocket.instances.push(this);
   }
 }
@@ -69,7 +69,8 @@ describe("dispatch application", () => {
     await waitFor(() => expect(screen.getByText("listo")).toBeTruthy());
     expect(screen.getByText("pedidos:1")).toBeTruthy();
     expect(screen.getByText("optimiza:true")).toBeTruthy();
-    expect(FakeWebSocket.instances[0]?.url).toContain("token%20seguro");
+    expect(FakeWebSocket.instances[0]?.url).not.toContain('token');
+    expect(FakeWebSocket.instances[0]?.protocols).toEqual(['bearer.token seguro']);
 
     fireEvent.click(screen.getByRole("button", { name: "fallar mapa" }));
     expect(screen.getByText("tabla de ruta")).toBeTruthy();

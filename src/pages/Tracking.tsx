@@ -76,16 +76,15 @@ export function Tracking() {
         if (!message) {
           return;
         }
-        if (typeof message.paradas_previas === "number") {
-          setStopsBefore(message.paradas_previas);
+        if (!['eta', 'order_status', 'tracking_snapshot'].includes(String(message.type))) return;
+        if (typeof message.estado === 'string' && ['pending','assigned','in_transit','delivered','incident','cancelled'].includes(message.estado)) {
+          setOrder((current) => current ? { ...current, estado: message.estado as PublicOrderTracking['estado'] } : current);
         }
-        if (typeof message.lat === "number" || typeof message.minutes === "number" || typeof message.eta === "string") {
-          setLive((current) => ({
-            lat: typeof message.lat === "number" ? message.lat : (current?.lat ?? Number.NaN),
-            lon: typeof message.lon === "number" ? message.lon : (current?.lon ?? Number.NaN),
-            eta: typeof message.eta === "string" ? message.eta : (current?.eta ?? null),
-            minutes: typeof message.minutes === "number" ? message.minutes : (current?.minutes ?? null),
-          }));
+        if ('eta' in message && (typeof message.eta === 'string' || message.eta === null)) {
+          const eta = message.eta;
+          const remaining = eta ? (Date.parse(eta) - Date.now()) / 60000 : Number.NaN;
+          setLive({ lat: Number.NaN, lon: Number.NaN, eta,
+            minutes: Number.isFinite(remaining) && remaining >= 0 ? remaining : null });
         }
       };
       socket.onclose = () => {
@@ -113,7 +112,7 @@ export function Tracking() {
     setAlerts((current) => (current.length > 0 ? current : due));
   }, [live?.minutes, channels]);
 
-  const etaLabel = live?.eta ?? order?.eta ?? null;
+  const etaLabel = live ? live.eta : (order?.eta ?? null);
   const minutesLabel =
     live?.minutes !== null && live?.minutes !== undefined ? formatArrival(live.minutes) : "Esperando al repartidor";
   const session = loadSession();
@@ -289,7 +288,7 @@ function CustomerMap({ destination, driver }: { destination: [number, number]; d
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#0f766e]" /> Repartidor
         </p>
       ) : null}
-      {driver ? <p className="mt-1 text-stone-500">La posición del repartidor no representa un recorrido vial.</p> : null}
+      <p className="mt-1 text-stone-500">El destino aproximado no representa un recorrido vial.</p>
     </div>
     </div>
   );

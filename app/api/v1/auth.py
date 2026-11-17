@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.models.enums import RolUsuario
 from app.models.identity import Bitacora, Usuario
 from app.schemas.auth import BitacoraRead, LoginRequest, LoginResponse, UsuarioRead
-from app.services.access import authenticate
+from app.services.access import authenticate, record
 from app.services.tokens import create_access_token
 
 router = APIRouter(prefix="/api/v1/auth", tags=["acceso"])
@@ -29,6 +29,15 @@ async def login(body: LoginRequest, session: AsyncSession = Depends(get_db)) -> 
 @router.get("/yo", response_model=UsuarioRead, summary="Usuario de la sesión")
 async def me(user: Usuario = Depends(get_current_user)) -> Usuario:
     return user
+
+
+@router.post('/salir', status_code=204, summary='Revocar la sesión actual')
+async def logout(session: AsyncSession = Depends(get_db), user: Usuario = Depends(get_current_user)) -> None:
+    await session.scalar(select(Usuario).where(Usuario.id == user.id).with_for_update())
+    payload = session.info['access_payload']
+    await record(session, correo=user.correo, accion='sesion_revocada',
+                 detalle=f"jti:{payload['jti']}", usuario=user)
+    await session.commit()
 
 
 @router.get(

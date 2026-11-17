@@ -7,9 +7,13 @@ al administrador con todos los eventos de la flota.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from datetime import datetime
+from contextvars import ContextVar
+from time import monotonic
+from uuid import uuid4
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -21,11 +25,14 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import async_session_factory
 from app.models.domain import Deposito, Pedido, RutaDetalle, SolucionRuta, Vehiculo
-from app.models.enums import EstadoPedido, RolUsuario, TipoParada
+from app.models.enums import EstadoPedido, EstadoSolucion, RolUsuario, TipoParada
 from app.models.identity import Usuario
 from app.services.driver_assignment import assigned_vehicle, conductor_may_drive
+from app.services.active_plan import current_order_detail, lock_route_state, require_current_order_vehicle
+from app.services.order_lifecycle import require_transition, transition_order
 from app.services.vehicle_state import is_available_for_routing
-from app.services.tokens import read_access_token
+from app.services.tokens import read_access_token, session_is_current
+from app.core.config import get_settings
 from app.services.tracking_tokens import is_tracking_token
 from app.services.optimizer_runtime import run_optimizer_in_worker
 from app.services.genetic_solver import SERVICE_MINUTES
@@ -53,6 +60,20 @@ LIMA = ZoneInfo("America/Lima")
 MAX_MESSAGE_CHARS = 8_000
 DESK_ROLES = {RolUsuario.ADMIN, RolUsuario.OPERADOR, RolUsuario.GERENTE, RolUsuario.AUDITOR}
 FIELD_ROLES = {RolUsuario.OPERADOR, RolUsuario.CONDUCTOR}
+_socket_token: ContextVar[str | None] = ContextVar('socket_access_token', default=None)
+
+
+def _access_token(websocket: WebSocket) -> str:
+    for protocol in websocket.scope.get('subprotocols', []):
+        if protocol.startswith('bearer.'):
+            return protocol.removeprefix('bearer.')
+    authorization = websocket.headers.get('authorization', '')
+    if authorization.startswith('Bearer '):
+        return authorization.removeprefix('Bearer ')
+    # Compatibilidad local con tests/clientes previos; nunca URL JWT en producción.
+    if get_settings().app_environment == 'demo':
+        return websocket.query_params.get('token', '')
+    return ''
 
 
 async def _reject_socket(websocket: WebSocket) -> None:
@@ -63,7 +84,7 @@ async def _reject_socket(websocket: WebSocket) -> None:
 
 
 async def _socket_user(websocket: WebSocket) -> Usuario | None:
-    payload = read_access_token(websocket.query_params.get("token", ""))
+    payload = read_access_token(_access_token(websocket))
     if payload is None:
         return None
     try:
@@ -72,7 +93,7 @@ async def _socket_user(websocket: WebSocket) -> Usuario | None:
         return None
     async with async_session_factory() as session:
         user = await session.get(Usuario, user_id)
-        if user is None or not user.activo:
+        if user is None or not await session_is_current(session, payload, user):
             return None
         session.expunge(user)
         return user
@@ -105,16 +126,41 @@ async def driver_socket(websocket: WebSocket, driver_id: str) -> None:
         # el vehiculo sobre el que actua un conductor.
         bound_vehicle_id = vehicle.id if vehicle is not None else None
     await manager.connect_driver(driver_id, websocket)
+    window_start, received = monotonic(), 0
     try:
         while True:
-            raw = await websocket.receive_text()
+            # Revalida también cuando el socket permanece inactivo.
+            current = await _staff_socket(websocket, FIELD_ROLES)
+            if current is None or current.id != actor.id or current.rol != actor.rol:
+                await websocket.close(code=1008)
+                break
+            if current.rol == RolUsuario.CONDUCTOR:
+                async with async_session_factory() as session:
+                    vehicle = await assigned_vehicle(session, current.id)
+                    if vehicle is None or vehicle.id != bound_vehicle_id or not await conductor_may_drive(session, current.id, driver_id):
+                        await websocket.close(code=1008)
+                        break
+            try:
+                raw = await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+            except asyncio.TimeoutError:
+                continue
+            if monotonic() - window_start >= 10:
+                window_start, received = monotonic(), 0
+            received += 1
+            if received > 30:
+                await websocket.close(code=1008)
+                break
             if len(raw) > MAX_MESSAGE_CHARS:
                 await manager.publish(
                     {"type": "error", "detail": "Mensaje demasiado largo."},
                     driver_id=driver_id,
                 )
                 continue
-            await _on_driver_message(driver_id, raw, bound_vehicle_id)
+            context = _socket_token.set(_access_token(websocket))
+            try:
+                await _on_driver_message(driver_id, raw, bound_vehicle_id, actor_id=actor.id)
+            finally:
+                _socket_token.reset(context)
     except WebSocketDisconnect:
         logger.info("El conductor %s cerró el canal.", driver_id)
     finally:
@@ -125,6 +171,7 @@ async def driver_socket(websocket: WebSocket, driver_id: str) -> None:
 async def tracking_socket(websocket: WebSocket, order_code: str) -> None:
     """Entrega al cliente, o al despacho, la posición y la ETA del pedido."""
     channel_code = order_code
+    public = is_tracking_token(order_code)
     if order_code == ADMIN_CHANNEL:
         if await _staff_socket(websocket, DESK_ROLES) is None:
             await _reject_socket(websocket)
@@ -141,20 +188,33 @@ async def tracking_socket(websocket: WebSocket, order_code: str) -> None:
     elif not _valid_order_code(order_code) or await _staff_socket(websocket, DESK_ROLES) is None:
         await _reject_socket(websocket)
         return
-    await manager.connect_tracker(channel_code, websocket)
+    await manager.connect_tracker(channel_code, websocket, public=public)
     try:
-        snapshot = await _tracking_snapshot(channel_code)
+        snapshot = await _tracking_snapshot(channel_code, public=public)
         if snapshot is not None:
             await websocket.send_json(snapshot)
         while True:
-            await websocket.receive_text()
+            if not public and await _staff_socket(websocket, DESK_ROLES) is None:
+                await websocket.close(code=1008)
+                break
+            if public:
+                async with async_session_factory() as session:
+                    valid = await session.scalar(select(Pedido.id).where(Pedido.token_seguimiento == order_code))
+                if valid is None:
+                    await websocket.close(code=1008)
+                    break
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+            except asyncio.TimeoutError:
+                continue
     except WebSocketDisconnect:
-        logger.info("Seguimiento cerrado para %s.", order_code)
+        # El token público es una capacidad de acceso, no un identificador de log.
+        logger.info("Seguimiento cerrado (canal %s).", 'público' if public else channel_code)
     finally:
-        await manager.disconnect_tracker(order_code, websocket)
+        await manager.disconnect_tracker(channel_code, websocket)
 
 
-async def _on_driver_message(driver_id: str, raw: str, bound_vehicle_id: int | None = None) -> None:
+async def _on_driver_message(driver_id: str, raw: str, bound_vehicle_id: int | None = None, *, actor_id: int | None = None) -> None:
     try:
         message = json.loads(raw)
     except json.JSONDecodeError:
@@ -170,13 +230,13 @@ async def _on_driver_message(driver_id: str, raw: str, bound_vehicle_id: int | N
     kind = message["type"]
     try:
         if kind == "position":
-            await _on_position(driver_id, message, bound_vehicle_id)
+            await _on_position(driver_id, message, bound_vehicle_id, actor_id=actor_id)
         elif kind == "incident":
-            await _on_incident(driver_id, message)
+            await _on_incident(driver_id, message, bound_vehicle_id, actor_id=actor_id)
         elif kind == "cancel_order":
-            await _on_cancel(driver_id, message, bound_vehicle_id)
+            await _on_cancel(driver_id, message, bound_vehicle_id, actor_id=actor_id)
         elif kind == "add_order":
-            await _on_add(driver_id, message, bound_vehicle_id)
+            await _on_add(driver_id, message, bound_vehicle_id, actor_id=actor_id)
         else:
             await manager.publish(
                 {"type": "error", "detail": f"Tipo de mensaje no reconocido: {kind}."},
@@ -196,22 +256,25 @@ async def _on_driver_message(driver_id: str, raw: str, bound_vehicle_id: int | N
         )
 
 
-async def _on_position(driver_id: str, message: dict[str, Any], bound_vehicle_id: int | None = None) -> None:
+async def _on_position(driver_id: str, message: dict[str, Any], bound_vehicle_id: int | None = None, *, actor_id: int | None = None) -> None:
     fix = _fix_from_message(message)
     vehicle_id = bound_vehicle_id if bound_vehicle_id is not None else _optional_int(message.get("vehicle_id"))
     order_code = _optional_code(message.get("order_code"))
-    live = await fleet_state.remember_position(driver_id, fix, vehicle_id, order_code)
     now = fix.recorded_at
     async with async_session_factory() as session:
+        await lock_route_state(session)
+        await _require_actor_assignment(session, actor_id, driver_id, bound_vehicle_id)
         order = await _order_by_code(session, order_code) if order_code else None
         if bound_vehicle_id is not None and order is not None:
             await _require_order_on_vehicle_route(session, order, bound_vehicle_id)
         if order is not None and order.estado in {EstadoPedido.ASSIGNED, EstadoPedido.PENDING}:
-            order.estado = EstadoPedido.IN_TRANSIT
+            transition_order(order, EstadoPedido.IN_TRANSIT)
             await session.commit()
             await _publish_status(order_code, EstadoPedido.IN_TRANSIT.value, driver_id)
         incidents = await fleet_state.snapshot_incidents()
         update = estimate_eta(driver_id, fix, order, incidents, now)
+    # No publicar ni mutar el estado en memoria antes de validar/confirmar.
+    live = await fleet_state.remember_position(driver_id, fix, vehicle_id, order_code)
     payload = {
         "type": "position",
         "driver_id": driver_id,
@@ -230,7 +293,9 @@ async def _on_position(driver_id: str, message: dict[str, Any], bound_vehicle_id
     )
 
 
-async def _on_incident(driver_id: str, message: dict[str, Any]) -> None:
+async def _on_incident(driver_id: str, message: dict[str, Any], bound_vehicle_id: int | None = None, *, actor_id: int | None = None) -> None:
+    async with async_session_factory() as session:
+        await _require_actor_assignment(session, actor_id, driver_id, bound_vehicle_id)
     incident = _incident_from_message(message)
     await fleet_state.add_incident(incident)
     alert = {
@@ -243,19 +308,20 @@ async def _on_incident(driver_id: str, message: dict[str, Any]) -> None:
         "note": incident.note,
     }
     await manager.publish(alert, driver_id=driver_id)
-    await _reroute(driver_id, reason=incident.kind.value)
+    await _reroute(driver_id, reason=incident.kind.value, actor_id=actor_id, bound_vehicle_id=bound_vehicle_id)
 
 
-async def _on_cancel(driver_id: str, message: dict[str, Any], bound_vehicle_id: int | None = None) -> None:
+async def _on_cancel(driver_id: str, message: dict[str, Any], bound_vehicle_id: int | None = None, *, actor_id: int | None = None) -> None:
     code = _required_code(message.get("order_code"))
     async with async_session_factory() as session:
         order = await _require_order(session, code)
+        require_transition(order, EstadoPedido.CANCELLED)
         if bound_vehicle_id is not None:
             await _require_order_on_vehicle_route(session, order, bound_vehicle_id)
-    await _reroute(driver_id, reason="cancel", cancel_codes=(code,))
+    await _reroute(driver_id, reason="cancel", cancel_codes=(code,), actor_id=actor_id, bound_vehicle_id=bound_vehicle_id)
 
 
-async def _on_add(driver_id: str, message: dict[str, Any], bound_vehicle_id: int | None = None) -> None:
+async def _on_add(driver_id: str, message: dict[str, Any], bound_vehicle_id: int | None = None, *, actor_id: int | None = None) -> None:
     code = _required_code(message.get("order_code"))
     async with async_session_factory() as session:
         order = await _require_order(session, code)
@@ -263,7 +329,7 @@ async def _on_add(driver_id: str, message: dict[str, Any], bound_vehicle_id: int
             await _require_order_on_vehicle_route(session, order, bound_vehicle_id)
         if order.estado not in {EstadoPedido.PENDING, EstadoPedido.ASSIGNED}:
             raise ValueError(f"El pedido {code} no se puede insertar en la ruta.")
-    await _reroute(driver_id, reason="priority", add_codes=(code,))
+    await _reroute(driver_id, reason="priority", add_codes=(code,), actor_id=actor_id, bound_vehicle_id=bound_vehicle_id)
 
 
 async def _reroute(
@@ -272,20 +338,32 @@ async def _reroute(
     reason: str,
     cancel_codes: tuple[str, ...] = (),
     add_codes: tuple[str, ...] = (),
+    actor_id: int | None = None,
+    bound_vehicle_id: int | None = None,
 ) -> None:
     live = await fleet_state.driver(driver_id)
     if live.fix is None:
         raise ValueError("Hace falta una posición GPS antes de recalcular la ruta.")
     incidents = await fleet_state.snapshot_incidents()
     async with async_session_factory() as session:
+        await lock_route_state(session)
+        await _require_actor_assignment(session, actor_id, driver_id, bound_vehicle_id)
         depot, vehicle, remaining = await _load_route(session, live)
+        for order in remaining:
+            await _require_order_on_vehicle_route(session, order, vehicle.id)
+            require_transition(order, EstadoPedido.ASSIGNED, allow_same=True)
         by_code = {order.codigo_pedido: order for order in remaining}
         for code in cancel_codes:
             order = by_code.get(code) or await _require_order(session, code)
+            await _require_order_on_vehicle_route(session, order, vehicle.id)
+            require_transition(order, EstadoPedido.CANCELLED)
             by_code[order.codigo_pedido] = order
         added = []
         for code in add_codes:
             order = await _require_order(session, code)
+            if bound_vehicle_id is not None:
+                await _require_order_on_vehicle_route(session, order, vehicle.id)
+            require_transition(order, EstadoPedido.ASSIGNED, allow_same=True)
             added.append(order)
         cancel_ids = [order.id for order in by_code.values() if order.codigo_pedido in cancel_codes]
         required, blocked, removed = select_reroute_orders(list(by_code.values()), incidents, cancel_ids, added)
@@ -342,6 +420,21 @@ async def _reroute(
                 plate_rule_active=regla_aplicable(plate_config),
             )
             await retain_other_vehicles(session, persisted, vehicle.id)
+            from app.services.active_plan import activate_snapshot
+            await activate_snapshot(session, persisted)
+        else:
+            # Snapshot vacío explícito: nunca resucitar la ruta histórica.
+            from app.api.v1.routes import retain_other_vehicles
+            from app.services.active_plan import activate_snapshot
+            day = min((order.ventana_inicio.astimezone(LIMA).date() for order in by_code.values()), default=planning_day)
+            persisted = SolucionRuta(codigo=f'LIVE-{uuid4().hex}', deposito_id=depot.id,
+                fecha_operacion=day, distancia_total_km=0, duracion_total_min=0,
+                co2_estimado_kg=0, co2_referencia_kg=0, co2_evitado_kg=0,
+                arboles_quinual_eq=0, fitness=0, estado=EstadoSolucion.COMPUTED,
+                metadatos_ga={'snapshot_vacio':True, 'vehiculos_validados_publicacion':[]}, detalles=[])
+            session.add(persisted)
+            await retain_other_vehicles(session, persisted, vehicle.id)
+            await activate_snapshot(session, persisted)
         await session.commit()
     await fleet_state.replace_sequence(driver_id, reroute.sequence)
     codes = list(reroute.sequence) + list(reroute.blocked_codes) + list(reroute.removed_codes)
@@ -372,14 +465,19 @@ async def _apply_reroute(
     added: list[Pedido],
 ) -> None:
     catalog = {**by_code, **{order.codigo_pedido: order for order in added}}
+    # Comprobar todo el lote antes de cambiar un solo estado.
+    for codes, target in ((reroute.removed_codes, EstadoPedido.CANCELLED), (reroute.blocked_codes, EstadoPedido.INCIDENT)):
+        for code in codes:
+            if code in catalog:
+                require_transition(catalog[code], target)
     for code in reroute.removed_codes:
         order = catalog.get(code)
         if order is not None:
-            order.estado = EstadoPedido.CANCELLED
+            transition_order(order, EstadoPedido.CANCELLED)
     for code in reroute.blocked_codes:
         order = catalog.get(code)
         if order is not None:
-            order.estado = EstadoPedido.INCIDENT
+            transition_order(order, EstadoPedido.INCIDENT)
     # Los pedidos activos se asignan únicamente al persistir el plan validado.
     await session.flush()
 
@@ -398,27 +496,13 @@ async def _remaining_for_vehicle(
     vehicle: Vehiculo,
     codes: list[str],
 ) -> list[Pedido]:
-    """Usa la secuencia en memoria o, si aún no hay, la última solución de ese vehículo."""
+    """La BD vigente manda; una secuencia en memoria no resucita un plan antiguo."""
     closed = {EstadoPedido.DELIVERED, EstadoPedido.CANCELLED, EstadoPedido.INCIDENT}
-    if codes:
-        result = await session.scalars(select(Pedido).where(Pedido.codigo_pedido.in_(codes)))
-        by_code = {order.codigo_pedido: order for order in result.all()}
-        return [by_code[code] for code in codes if code in by_code and by_code[code].estado not in closed]
-    solution = await session.scalar(
-        select(SolucionRuta)
-        .options(selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.pedido))
-        .order_by(SolucionRuta.id.desc())
-        .limit(1)
-    )
-    if solution is None:
-        return []
-    remaining: list[Pedido] = []
-    for detail in solution.detalles:
-        order = detail.pedido
-        if detail.vehiculo_id != vehicle.id or order is None or order.estado in closed:
-            continue
-        remaining.append(order)
-    return remaining
+    from app.api.v1.routes import _fleet_groups
+    for group in await _fleet_groups(session):
+        if group and group[0].vehiculo_id == vehicle.id:
+            return [detail.pedido for detail in group if detail.pedido is not None and detail.pedido.estado not in closed]
+    return []
 
 
 async def _vehicle_for_driver(session: AsyncSession, driver_id: str, vehicle_id: int | None) -> Vehiculo:
@@ -452,13 +536,24 @@ async def _require_order(session: AsyncSession, code: str) -> Pedido:
 
 async def _require_order_on_vehicle_route(session: AsyncSession, order: Pedido, vehicle_id: int) -> None:
     """Impide que un conductor cambie pedidos de otra unidad (BOLA/IDOR)."""
-    route_detail_id = await session.scalar(
-        select(RutaDetalle.id)
-        .where(RutaDetalle.pedido_id == order.id, RutaDetalle.vehiculo_id == vehicle_id)
-        .limit(1)
-    )
-    if route_detail_id is None:
-        raise ValueError("El pedido no pertenece a la ruta asignada.")
+    await require_current_order_vehicle(session, order, vehicle_id)
+
+
+async def _require_actor_assignment(session, actor_id, driver_id, bound_vehicle_id) -> None:
+    if actor_id is None:  # llamadas internas de pruebas; nunca procede del mensaje WS
+        return
+    actor = await session.scalar(select(Usuario).where(Usuario.id == actor_id).with_for_update())
+    if actor is None or not actor.activo or actor.rol not in FIELD_ROLES:
+        raise ValueError('La sesión ya no permite operar.')
+    token = _socket_token.get()
+    if token is not None:
+        payload = read_access_token(token)
+        if payload is None or not await session_is_current(session, payload, actor):
+            raise ValueError('La sesión ya no está vigente.')
+    if actor.rol == RolUsuario.CONDUCTOR:
+        vehicle = await assigned_vehicle(session, actor.id, lock=True)
+        if vehicle is None or vehicle.id != bound_vehicle_id or vehicle.placa != driver_id or not is_available_for_routing(vehicle):
+            raise ValueError('La asignación del conductor ya no está vigente.')
 
 
 async def _eta_for_code(driver_id: str, origin: GpsFix, code: str, incidents: tuple[RoadIncident, ...]) -> Any:
@@ -469,7 +564,15 @@ async def _eta_for_code(driver_id: str, origin: GpsFix, code: str, incidents: tu
     return estimate_eta(driver_id, origin, order, incidents, origin.recorded_at)
 
 
-async def _tracking_snapshot(order_code: str) -> dict[str, Any] | None:
+async def _tracking_snapshot(order_code: str, *, public: bool = False) -> dict[str, Any] | None:
+    if public:
+        async with async_session_factory() as session:
+            order = await _order_by_code(session, order_code)
+            if order is None:
+                return None
+            detail = await current_order_detail(session, order)
+            return {'type': 'tracking_snapshot', 'estado': order.estado.value,
+                    'eta': detail.eta.isoformat() if detail is not None and detail.eta else None}
     if order_code == ADMIN_CHANNEL:
         return {"type": "hello", "channel": ADMIN_CHANNEL}
     drivers = await fleet_state.drivers_snapshot()

@@ -16,6 +16,8 @@ env/
 !.env.example
 
 .pytest_cache/
+.vitest/
+AUDITORIA/CORRECCIONES_EVIDENCIAS/runtime/
 .mypy_cache/
 .ruff_cache/
 .scannerwork/

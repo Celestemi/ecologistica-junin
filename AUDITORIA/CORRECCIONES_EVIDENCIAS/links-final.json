@@ -1,0 +1,169 @@
+{
+  "scope": "README + Markdown docs, video excluded; occurrences including repeats",
+  "checked": 192,
+  "broken": [
+    {
+      "source": "docs/01 Inicio/00. Directrices y Auditoria V_1_0_3.md",
+      "target": "docs/ESTADO_TECNICO_VIGENTE.md",
+      "exists": false
+    },
+    {
+      "source": "docs/01 Inicio/10. Stack tecnológico V_1_0_3.md",
+      "target": "docs/ESTADO_TECNICO_VIGENTE.md",
+      "exists": false
+    },
+    {
+      "source": "docs/01 Inicio/11. Base de datos V_1_0_3.md",
+      "target": "docs/ESTADO_TECNICO_VIGENTE.md",
+      "exists": false
+    },
+    {
+      "source": "docs/01 Inicio/12. Modelo C4 V_1_0_6.md",
+      "target": "docs/ESTADO_TECNICO_VIGENTE.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 1/01_informe_de_estado_del_proyecto_v_1_0_1.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 1/01_informe_de_estado_del_proyecto_v_1_0_1.md",
+      "target": "Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_1.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 1/03_revision_del_sprint_v_1_0_1.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 1/03_revision_del_sprint_v_1_0_1.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 1/03_revision_del_sprint_v_1_0_1.md",
+      "target": "Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_1.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 1/04_retrospectiva_del_sprint_V_1_0_1.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/01_informe_de_estado_del_proyecto_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/02_registro_de_impedimentos_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/02_registro_de_impedimentos_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/02_registro_de_impedimentos_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/02_registro_de_impedimentos_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/03_revision_del_sprint_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/03_revision_del_sprint_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/03_revision_del_sprint_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/03_revision_del_sprint_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/03_revision_del_sprint_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/04_retrospectiva_del_sprint_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/04_retrospectiva_del_sprint_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md",
+      "exists": false
+    },
+    {
+      "source": "docs/03 Implementación/Sprint 2/04_retrospectiva_del_sprint_v_1_0_0.md",
+      "target": "Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md",
+      "exists": false
+    }
+  ],
+  "missing_destinations": [
+    "Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_1.md",
+    "Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md",
+    "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md",
+    "Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md",
+    "Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md",
+    "docs/ESTADO_TECNICO_VIGENTE.md"
+  ]
+}

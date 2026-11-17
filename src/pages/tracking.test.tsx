@@ -67,7 +67,7 @@ describe("public tracking", () => {
 
   afterEach(() => cleanup());
 
-  it("loads the order and reacts to live location and arrival messages", async () => {
+  it("loads the approximate destination and reacts only to safe tracking messages", async () => {
     render(<Tracking />);
 
     expect(await screen.findByText("El Tambo")).toBeTruthy();
@@ -80,9 +80,10 @@ describe("public tracking", () => {
     socket.onopen?.();
     socket.onmessage?.({
       data: JSON.stringify({
+        type: 'eta',
         lat: -12.04,
         lon: -75.2,
-        eta: "2026-10-27T14:50:00-05:00",
+        eta: new Date(Date.now() + 4.4 * 60000).toISOString(),
         minutes: 4.4,
         paradas_previas: 0,
       }),
@@ -90,7 +91,8 @@ describe("public tracking", () => {
 
     await waitFor(() => expect(screen.getByText("En vivo")).toBeTruthy());
     expect(screen.getByText("En 4 minutos")).toBeTruthy();
-    expect(screen.getByText(/siguiente entrega/)).toBeTruthy();
+    // Un evento público no cambia coordenadas ni revela secuencias de terceros.
+    expect(screen.getByText(/2 paradas previas/)).toBeTruthy();
     expect(screen.getAllByRole("status")).toHaveLength(2);
     expect(screen.queryByTestId("route")).toBeNull();
     expect(screen.getByText(/no representa un recorrido vial/i)).toBeTruthy();

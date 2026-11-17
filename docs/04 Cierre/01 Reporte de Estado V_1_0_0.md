@@ -2,24 +2,26 @@
 
 # Reporte de Estado del Proyecto (Status Report)
 
+> **Revisión técnica r2 — 17/11/2026, America/Lima.** Se conserva versión base 1.0.0 y nombre exigido por la plantilla. Referencia vigente: main / b47d5eb7cda26444c56460ea74591cc5f973e0b3 + correcciones sin commit. [Control de implementación](../../AUDITORIA/CONTROL_CORRECCIONES_SPRINT4.md) y [resultados actuales](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md). El estado es borrador, sin aceptación administrativa. Los resultados previos se conservan en sus fuentes y en el historial al final.
+
 - **Proyecto:** EcoLogística Junín — adaptación documentada como EcoLogística Huancayo.
 - **Fecha de Corte:** 17/11/2026, America/Lima.
 - **Versión:** 1.0.0.
 
-**Borrador verificable; cierre pendiente de aprobación.** Plantilla 5.1 del HTML final. Referencia: HEAD `61f0e1e` con B-08 preexistente sin commit. El periodo de gestión anterior no está delimitado en los registros revisados; no se simula una comparación económica.
+**Borrador verificable; cierre pendiente de aprobación.** Plantilla 5.1 del HTML final. Este corte incorpora correcciones autorizadas y pruebas actuales; no delimita retrospectivamente periodos financieros inexistentes.
 
 ## 1. Información de Alcance
 
-- **Logros completados:** validación actual de 185 pruebas backend, incluidas 14 B-08 con PostGIS aislado; frontend 68 de 69 y SW 4 de 4 aprobadas. B-08 demuestra publicación/rechazo y rollback en casos seleccionados. Ningún RF integral se declara aceptado por esos conteos. [Resultados, 17/11](../../AUDITORIA/SPRINT4_RESULTADOS_PRUEBAS.md).
-- **Cambios al alcance (adiciones, eliminaciones o modificaciones):** no se dispone de registro aprobado de cambios. Esta ejecución valida y documenta; no modifica producto. La adaptación Lima→Huancayo/El Tambo/Chilca está documentada en el enfoque y acta históricos, sin atribuirla a la consigna inicial original no localizada.
-- **Información de calidad (defectos o incidentes detectados):** una prueba de flota falla por argumentos esperados del historial; siguen brechas de autorización, terminalidad, privacidad WS y coherencia de versiones. [Defectos DEF-01…16](../../AUDITORIA/SPRINT4_DEFECTOS_PENDIENTES.md).
+- **Logros completados:** 210 backend aprobadas; 70/70 frontend y 4/4 SW. Backend 84,37 % líneas / 63,83 % ramas / 80,22 % combinado; frontend 80,47 % líneas / 71,55 % ramas. AF-01/02/03 corregidos y probados en REST/WS; AF-24 resuelto con paginación/cursor. B-08 conserva 28 unidades y 14 integraciones. Flujo TCP HTTP/WS + PostGIS real pasó 10 pasos con datos sintéticos, sin navegador. No equivale a RF íntegro aceptado. [Resultados vigentes](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md).
+- **Cambios al alcance (adiciones, eliminaciones o modificaciones):** no hay rebaseline ni exenciones aprobadas. Se corrigieron defectos dentro del alcance autorizado, sin cambiar stack. La importación CSV ya existía; se rectifica su falsa ausencia en la auditoría. La adaptación geográfica sigue sustentada por acta/enfoque, no por una consigna inicial no localizada.
+- **Información de calidad (defectos o incidentes detectados):** suites actuales verdes; P0 originales de autorización/terminalidad/privacidad corregidos. Persisten condiciones parciales de factores/versiones, comprobantes, dinámica durable, alcance, infraestructura y aceptación. Dependencia opentelemetry-api parcheada 1.45.1→1.45.2; SCA actual sin avisos. [Matriz vigente](../../AUDITORIA/MATRIZ_PRUEBAS_ACTUALIZADA.md).
 
 ## 2. Información de Cronograma
 
-- **Actividades/Hitos planificados pero no completados:** aceptación integral, SLA HTTP válido, manuales/operación, cierre y video. El acta prevé cierre en semana 14; no hay cronograma detallado aprobado con fechas reales para calcular atraso.
+- **Actividades/Hitos planificados pero no completados:** aceptación integral, SLA representativo con proveedor, evidencia económica, radiadores y ensayo real de diez minutos. Acta: semana 14; sin calendario aprobado y fechas reales no se calcula atraso.
 - **Causa raíz de las desviaciones:** infraestructura impedía verificar B-08 en el corte anterior y hoy se superó con servidor descartable; persisten reglas/cobertura incompletas y datos de gestión ausentes. No se imputa una causa o duración económica no registrada.
-- **Impacto en próximos hitos o en la ruta crítica:** bloquea aceptar técnicamente y grabar una demo presentada como aprobada. Ruta crítica y días de impacto: no disponibles en los registros revisados; faltan dependencias/fechas base y reales.
-- **Acciones correctivas o preventivas planificadas:** revisión de B-08 con evidencia nueva, corregir desalineación de prueba de flota y priorizar B-09/10/11 en futuro ciclo autorizado; registrar baseline y aceptación. Son propuestas, no compromisos aprobados.
+- **Impacto en próximos hitos o en la ruta crítica:** impide declarar aceptación integral y demo en vivo verificada. Ruta crítica/días no disponibles; faltan dependencias y fechas base/reales.
+- **Acciones correctivas o preventivas planificadas:** revisar incremento corregido y evidencias; completar condiciones parciales de RF, ensayo, revisión humana y fuentes económicas. AF-01/02/03/24 ya tienen corrección probada, no se presentan como tareas futuras sin ejecutar.
 
 ## 3. Información de Costos
 
@@ -36,5 +38,15 @@
 ## 5. Riesgos, Incidentes y Comentarios
 
 - **Nuevos riesgos identificados:** aprobar por suites verdes sin cubrir brechas, mezclar coberturas de alcances distintos y presentar EVM sin fuentes.
-- **Nuevos incidentes (Issues) surgidos:** DEF-01 reproducido en frontend. El puerto 55434 reservado se resolvió usando 25435 en entorno descartable, sin cambiar SO ni datos operativos.
-- **Comentarios relevantes:** se conserva la historia anterior; 185 pruebas aprobadas no certifican SLA, normas, ahorros mensuales ni cierre. No hay acta de aceptación/cierre. [Matriz actual](../../AUDITORIA/SPRINT4_MATRIZ_ACEPTACION.md).
+- **Nuevos incidentes (Issues) surgidos:** AF-24 corregido; nuevas regresiones encontraron riesgo de sustitución de entregas activas y se agregó rechazo 409 probado. SCA detectó aviso moderado transitivo y se parcheó un único paquete. Fallo inicial de caché uv se resolvió sin elevar permisos ni cambiar protecciones.
+- **Comentarios relevantes:** pruebas técnicas y smoke/restore descartable no certifican normas, disponibilidad, ahorros mensuales, satisfacción o cierre. [Datos EVM requeridos](../../AUDITORIA/SOLICITUD_DATOS_EVM.md) y [evidencias humanas](../../AUDITORIA/SOLICITUD_EVIDENCIAS_HUMANAS.md).
+
+## Historial de revisiones del borrador
+
+| Versión base / revisión | Fecha | Cambio y fuente |
+|---|---|---|
+|1.0.0 / r0 |17/11/2026, corte previo |Contenido previo conservado en Git b47d5eb y snapshot de bytes/hash [docs_cierre_antes_r1.json](../../AUDITORIA/CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r1.json); auditorías originales sin editar. |
+|1.0.0 / r1 técnica |17/11/2026, post auditoría |Actualización autorizada con evidencia nueva, corrección de referencias corruptas y límites explícitos. No cambia baseline aprobada ni constituye aceptación/cierre. |
+|1.0.0 / r2 técnica |17/11/2026, validación final |210 backend/70 frontend/4 SW; cobertura final y escape literal en PDF. Evidencia r1 preservada en CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r2.json. Sin aceptación administrativa. |
+
+Audiovisual: **EXCLUIDO TEMPORALMENTE — NO EVALUADO**. El ensayo técnico en vivo de diez minutos continúa pendiente de observación real.

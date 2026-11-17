@@ -446,6 +446,36 @@ async def sustainability_pdf(
     )
 
 
+@router.get('/reportes/sostenibilidad/csv', tags=['reportes'])
+async def sustainability_csv(
+    fecha_inicio: date | None = None, fecha_fin: date | None = None,
+    session: AsyncSession = Depends(get_db),
+    _: Usuario = Depends(require_roles(RolUsuario.ADMIN, RolUsuario.OPERADOR, RolUsuario.GERENTE,
+        RolUsuario.AUDITOR, accion=REPORTE_DENEGADO, detail='Tu rol no puede descargar el informe.')),
+) -> StreamingResponse:
+    import csv
+    from app.services.energy_accounting import FACTOR_VERSION
+    try:
+        report = await load_sustainability_report(session, fecha_inicio, fecha_fin)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    buffer = io.StringIO(newline='')
+    writer = csv.writer(buffer)
+    writer.writerow(['pedido','fecha_entrega','placa','distancia_estimada_km','co2_estimado_g',
+                     'version_plan','version_factores','base'])
+    def cell(value):
+        text = str(value)
+        return "'" + text if text.lstrip().startswith(('=', '+', '-', '@')) or text.startswith(('\t','\r')) else text
+    for row in report.deliveries:
+        writer.writerow([cell(row.code), row.completed_on.isoformat(), cell(row.plate),
+                         row.distance_km, row.co2_g, row.version_plan, FACTOR_VERSION,
+                         'estimacion_del_plan_al_confirmar_entrega'])
+    content = buffer.getvalue().encode('utf-8-sig')
+    return StreamingResponse(io.BytesIO(content), media_type='text/csv; charset=utf-8',
+        headers={'Content-Disposition':f'attachment; filename="sostenibilidad-{report.period_start}-{report.period_end}.csv"',
+                 'X-Records':str(len(report.deliveries))})
+
+
 @router.get(
     "/rutas/activas",
     response_model=ActiveRouteRead,
@@ -497,25 +527,52 @@ async def confirm_delivery(
     (por ejemplo, después de perder la respuesta móvil) devuelve el pedido ya
     entregado y nunca crea una segunda entrega.
     """
-    vehicle = await assigned_vehicle(session, actor.id)
+    from app.services.active_plan import lock_route_state, require_current_order_vehicle
+    from app.services.order_lifecycle import require_transition
+
+    await lock_route_state(session)
+    from app.services.tokens import session_is_current
+    current_actor = await session.scalar(select(Usuario).where(Usuario.id == actor.id).with_for_update().execution_options(populate_existing=True))
+    if current_actor is None or current_actor.rol != RolUsuario.CONDUCTOR or not await session_is_current(session, session.info['access_payload'], current_actor):
+        raise HTTPException(status_code=403, detail='La sesión ya no permite confirmar entregas.')
+    vehicle = await assigned_vehicle(session, actor.id, lock=True)
     if vehicle is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes un vehículo asignado.")
-    order = await session.scalar(select(Pedido).where(Pedido.codigo_pedido == codigo_pedido))
+    order = await session.scalar(select(Pedido).where(Pedido.codigo_pedido == codigo_pedido).with_for_update())
     if order is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No existe el pedido.")
-    assigned = await session.scalar(
-        select(RutaDetalle.id).where(RutaDetalle.pedido_id == order.id, RutaDetalle.vehiculo_id == vehicle.id).limit(1)
-    )
-    if assigned is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El pedido no pertenece a tu ruta asignada.")
+    from app.services.delivery_events import delivery_events, event_payload
+    events = await delivery_events(session)
+    event = events.get(order.id)
+    if any(item['op'] == body.operation_id and identifier != order.id for identifier, item in events.items()):
+        raise HTTPException(status_code=409, detail='El identificador de operación ya pertenece a otra entrega.')
+    if event is not None and order.estado == EstadoPedido.DELIVERED:
+        if event['actor_id'] != actor.id or event['op'] != body.operation_id:
+            raise HTTPException(status_code=409, detail='La entrega ya fue confirmada con otra operación.')
+        return order  # mismo actor/operación: sin nueva mutación incluso tras un recálculo
+    try:
+        await require_current_order_vehicle(session, order, vehicle.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     if order.estado == EstadoPedido.DELIVERED:
         return order
-    if order.estado in {EstadoPedido.CANCELLED, EstadoPedido.INCIDENT}:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El pedido ya no puede entregarse.")
+    try:
+        require_transition(order, EstadoPedido.DELIVERED)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     order.estado = EstadoPedido.DELIVERED
-    await record(session, correo=actor.correo, accion="entrega_confirmada", detalle=f"{codigo_pedido}:{body.operation_id}", usuario=actor)
+    from app.services.active_plan import current_order_detail
+    detail = await current_order_detail(session, order, vehicle.id)
+    received = datetime.now(LIMA)
+    if body.delivered_at > received + timedelta(minutes=5):
+        raise HTTPException(status_code=400, detail='La hora de entrega está en el futuro; revisa el reloj del dispositivo.')
+    evidence = event_payload(order, body, vehicle.id, detail.solucion_id, received)
+    await record(session, correo=actor.correo, accion="entrega_confirmada", detalle=evidence, usuario=actor)
     await session.commit()
     await session.refresh(order)
+    from app.services.realtime_router import manager
+    await manager.publish({'type':'order_status','order_code':order.codigo_pedido,
+        'estado':EstadoPedido.DELIVERED.value}, driver_id=vehicle.placa, order_codes=[order.codigo_pedido])
     return order
 
 
@@ -585,6 +642,7 @@ async def operational_indicators(
         .options(
             load_only(
                 SolucionRuta.id,
+                SolucionRuta.estado,
                 SolucionRuta.fecha_operacion,
                 SolucionRuta.distancia_total_km,
                 SolucionRuta.duracion_total_min,
@@ -594,9 +652,9 @@ async def operational_indicators(
             ),
             selectinload(SolucionRuta.detalles)
             .load_only(RutaDetalle.id, RutaDetalle.solucion_id, RutaDetalle.vehiculo_id,
-                       RutaDetalle.tipo_parada, RutaDetalle.distancia_tramo_km)
+                       RutaDetalle.tipo_parada, RutaDetalle.distancia_tramo_km, RutaDetalle.co2_tramo_g)
             .selectinload(RutaDetalle.vehiculo)
-            .load_only(Vehiculo.id, Vehiculo.rendimiento_km_gal),
+            .load_only(Vehiculo.id, Vehiculo.rendimiento_km_gal, Vehiculo.tipo_combustible),
         )
         .order_by(SolucionRuta.fecha_operacion, SolucionRuta.id)
     )
@@ -677,10 +735,21 @@ async def optimize_routes(
     ),
 ) -> RouteOptimizationGeoJSON:
     """Corre el GA, guarda la solución y responde con el mapa y los KPIs."""
+    from app.services.active_plan import lock_route_state
+    await lock_route_state(session)
     depot = await _require_depot(session)
     vehicles = await _require_vehicles(session, depot.id)
     orders = await _require_pending_orders(session, operation_day=fecha)
     planning_day = min(_as_lima(order.ventana_inicio) for order in orders).date()
+    # Una optimización inicial no puede sustituir silenciosamente entregas activas.
+    # Los pedidos nuevos de una ruta en marcha entran por inserción/reoptimización.
+    from app.services.active_plan import ACTIVE_STATES
+    latest = select(func.max(SolucionRuta.id)).where(SolucionRuta.fecha_operacion == planning_day,
+        SolucionRuta.estado.in_(ACTIVE_STATES)).scalar_subquery()
+    active_count = await session.scalar(select(func.count()).select_from(RutaDetalle).join(Pedido).where(
+        RutaDetalle.solucion_id == latest, Pedido.estado.in_((EstadoPedido.ASSIGNED, EstadoPedido.IN_TRANSIT))))
+    if active_count:
+        raise HTTPException(status_code=409, detail='Ya existe una ruta activa para esta jornada. Usa inserción/reoptimización para conservar sus entregas.')
     await ensure_jornada(session, planning_day)
     plate_config = await load_config(session)
     vehicles, plate_exclusions = filter_vehicles_for_planning(vehicles, planning_day, plate_config)
@@ -752,6 +821,8 @@ async def optimize_routes(
         plate_exclusions=plate_exclusions,
         plate_rule_active=regla_aplicable(plate_config),
     )
+    from app.services.active_plan import activate_snapshot
+    await activate_snapshot(session, solution)
     await record(
         session,
         correo=actor.correo,
@@ -919,7 +990,8 @@ async def _fleet_groups(session: AsyncSession) -> list[list[RutaDetalle]]:
         ).all()
     )
     chosen: dict[int, list[RutaDetalle]] = {}
-    for solution in solutions:
+    from app.services.active_plan import latest_snapshots
+    for solution in sorted(latest_snapshots(solutions), key=lambda plan: plan.id, reverse=True):
         grouped: dict[int, list[RutaDetalle]] = {}
         for detail in solution.detalles:
             detail.solucion = solution
@@ -939,6 +1011,7 @@ async def retain_other_vehicles(session: AsyncSession, new_solution: SolucionRut
     previous = await session.scalar(
         select(SolucionRuta)
         .where(SolucionRuta.id != new_solution.id)
+        .where(SolucionRuta.fecha_operacion == new_solution.fecha_operacion)
         .options(selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.pedido))
         .order_by(SolucionRuta.id.desc())
         .limit(1)
@@ -967,6 +1040,12 @@ async def retain_other_vehicles(session: AsyncSession, new_solution: SolucionRut
                 pendiente_pct=detail.pendiente_pct,
                 tiempo_viaje_min=detail.tiempo_viaje_min,
                 eta=detail.eta,
+                estado_eta=detail.estado_eta,
+                minutos_espera_ventana=detail.minutos_espera_ventana,
+                minutos_tarde_ventana=detail.minutos_tarde_ventana,
+                secuencia_entrega=detail.secuencia_entrega,
+                modelo_distancia=detail.modelo_distancia,
+                geometria_tramo=detail.geometria_tramo,
                 co2_tramo_g=detail.co2_tramo_g,
             )
         )
@@ -974,9 +1053,16 @@ async def retain_other_vehicles(session: AsyncSession, new_solution: SolucionRut
         extra_min += detail.tiempo_viaje_min
         if detail.vehiculo_id in previous_validated:
             validated.add(detail.vehiculo_id)
-    new_solution.metadatos_ga = {**(new_solution.metadatos_ga or {}), PUBLICATION_VEHICLE_IDS: sorted(validated)}
+    new_solution.metadatos_ga = {**(new_solution.metadatos_ga or {}), PUBLICATION_VEHICLE_IDS: sorted(validated),
+        'factores_vehiculos': {**(previous.metadatos_ga or {}).get('factores_vehiculos', {}),
+            **(new_solution.metadatos_ga or {}).get('factores_vehiculos', {})},
+        # Falta una referencia independiente por vehículo para conciliar el ahorro.
+        'referencia_comparable': False if extra_km > 0 else (new_solution.metadatos_ga or {}).get('referencia_comparable', True),
+    }
     new_solution.distancia_total_km += extra_km
     new_solution.duracion_total_min += extra_min
+    new_solution.co2_estimado_kg += sum(detail.co2_tramo_g for detail in previous.detalles
+        if detail.vehiculo_id != vehicle_id and _open_stop(detail)) / 1000.0
     new_solution.co2_referencia_kg = max(new_solution.co2_referencia_kg, previous.co2_referencia_kg)
     new_solution.co2_evitado_kg = max(new_solution.co2_evitado_kg, previous.co2_evitado_kg)
     new_solution.arboles_quinual_eq = max(new_solution.arboles_quinual_eq, previous.arboles_quinual_eq)
@@ -1050,6 +1136,13 @@ def _persist_solution(
         estado=EstadoSolucion.COMPUTED,
         metadatos_ga={
             **solved.metadata(),
+            'factores_vehiculos': {str(vehicle.id): {
+                'tipo_combustible': vehicle.tipo_combustible.value,
+                'rendimiento_km_gal': vehicle.rendimiento_km_gal,
+                'emision_base_co2_g_km': vehicle.emision_base_co2_g_km,
+                'factor_penalizacion_pendiente': vehicle.factor_penalizacion_pendiente,
+            } for vehicle in vehicles if vehicle.tipo_combustible is not None},
+            'version_factores_energia': 'supuestos-pdf-legacy-v1',
             PUBLICATION_VEHICLE_IDS: [itinerary.vehicle_id for itinerary in solved.itineraries if itinerary.stops],
             "quinual_kg_co2_por_ano": factor,
             "jornada_max_min": get_settings().max_shift_minutes,
@@ -1075,6 +1168,8 @@ def _persist_solution(
             detail.vehiculo = vehicles_by_id[itinerary.vehicle_id]
             if stop.order_id is not None:
                 order = orders_by_id[stop.order_id]
+                from app.services.order_lifecycle import require_transition
+                require_transition(order, EstadoPedido.ASSIGNED, allow_same=True)
                 detail.pedido = order
                 order.estado = EstadoPedido.ASSIGNED
             solution.detalles.append(detail)
@@ -1083,9 +1178,16 @@ def _persist_solution(
 
 
 async def _latest_solution_for_order(session: AsyncSession, order_id: int) -> SolucionRuta | None:
+    from app.services.active_plan import current_order_detail
+    order = await session.get(Pedido, order_id)
+    if order is None:
+        return None
+    detail = await current_order_detail(session, order)
+    if detail is None:
+        return None
     return await session.scalar(
         select(SolucionRuta)
-        .where(SolucionRuta.detalles.any(RutaDetalle.pedido_id == order_id))
+        .where(SolucionRuta.id == detail.solucion_id)
         .options(
             selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.vehiculo),
             selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.pedido),

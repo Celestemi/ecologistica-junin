@@ -62,7 +62,7 @@ export function App() {
     }
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const socket = new WebSocket(
-      `${protocol}//${window.location.host}/ws/tracking/despacho?token=${encodeURIComponent(token)}`,
+      `${protocol}//${window.location.host}/ws/tracking/despacho`, [`bearer.${token}`],
     );
     socket.onmessage = (event) => {
       try {

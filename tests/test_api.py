@@ -108,7 +108,8 @@ async def test_optimize_routes_returns_geojson_and_then_404(client: AsyncClient)
     consolidated = indicators.json()
     assert consolidated["rutas"] == 1
     assert consolidated["distancia_total_km"] == pytest.approx(metadata["distancia_total_km"])
-    assert consolidated["consumo_estimado_gal"] is not None
+    assert consolidated['consumo_estimado_gal'] is not None or consolidated['consumo_estimado_kwh'] is not None
+    assert all(value >= 0 for value in (consolidated['consumo_estimado_gal'], consolidated['consumo_estimado_kwh']) if value is not None)
     assert consolidated["arboles_quinual_eq"] == pytest.approx(consolidated["co2_evitado_kg"] / 12.0)
 
     pending = await client.get("/api/v1/pedidos", headers=headers)

@@ -455,6 +455,7 @@ def solve_vrptw(
     distance_adjuster: Callable[[float, float, float, float, float], float | None] | None = None,
     routing_cache: Any | None = None,
     time_budget_seconds: float | None = None,
+    departure_not_before: datetime | None = None,
 ) -> RouteSolution:
     """Resuelve el VRPTW y devuelve el itinerario, el CO2 y el ahorro frente al FIFO.
 
@@ -483,6 +484,9 @@ def solve_vrptw(
         routing_cache=routing_cache,
         matrix_deadline=started + budget if budget is not None else None,
     )
+    if departure_not_before is not None and departure_not_before.tzinfo is None:
+        raise ValueError('El inicio operativo debe incluir zona horaria.')
+    problem.departure_not_before = departure_not_before
     if not problem.orders:
         return _empty_solution(generations, population_size, seed)
 
@@ -1022,6 +1026,8 @@ def _schedule_vehicle(
     first = orders_by_id[order_ids[0]]
     first_travel = problem.leg_travel_minutes(0, problem.node_index(first.id))
     departure = first.window_start - timedelta(minutes=first_travel)
+    if getattr(problem, 'departure_not_before', None) is not None:
+        departure = max(departure, problem.departure_not_before)
     clock = departure
     previous = 0
     stops: list[StopItinerary] = [

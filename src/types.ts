@@ -109,6 +109,8 @@ export type RouteOptimization = {
 };
 
 export type OperationalIndicators = {
+  consumo_estimado_kwh?: number | null; costo_estimado_pen?: number | null; base_metricas?: string;
+  referencia_comparable?: boolean;
   fecha_inicio: string; fecha_fin: string; rutas: number; distancia_total_km: number; duracion_total_min: number;
   consumo_estimado_gal: number | null; co2_estimado_kg: number; co2_evitado_kg: number;
   arboles_quinual_eq: number | null; quinual_kg_co2_por_ano: number | null;

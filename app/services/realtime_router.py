@@ -170,6 +170,7 @@ class ConnectionManager:
         self._lock = asyncio.Lock()
         self._drivers: dict[str, WebSocket] = {}
         self._trackers: dict[str, set[WebSocket]] = {}
+        self._public_trackers: dict[str, set[WebSocket]] = {}
         self._admins: set[WebSocket] = set()
 
     async def connect_driver(self, driver_id: str, websocket: WebSocket) -> None:
@@ -185,23 +186,24 @@ class ConnectionManager:
             if self._drivers.get(driver_id) is websocket:
                 self._drivers.pop(driver_id, None)
 
-    async def connect_tracker(self, order_code: str, websocket: WebSocket) -> None:
+    async def connect_tracker(self, order_code: str, websocket: WebSocket, *, public: bool = False) -> None:
         await websocket.accept()
         async with self._lock:
             if order_code == ADMIN_CHANNEL:
                 self._admins.add(websocket)
                 return
-            self._trackers.setdefault(order_code, set()).add(websocket)
+            rooms = self._public_trackers if public else self._trackers
+            rooms.setdefault(order_code, set()).add(websocket)
 
     async def disconnect_tracker(self, order_code: str, websocket: WebSocket) -> None:
         async with self._lock:
             self._admins.discard(websocket)
-            room = self._trackers.get(order_code)
-            if room is None:
-                return
-            room.discard(websocket)
-            if not room:
-                self._trackers.pop(order_code, None)
+            for rooms in (self._trackers, self._public_trackers):
+                room = rooms.get(order_code)
+                if room is not None:
+                    room.discard(websocket)
+                    if not room:
+                        rooms.pop(order_code, None)
 
     async def publish(
         self,
@@ -211,23 +213,28 @@ class ConnectionManager:
         order_codes: Iterable[str] = (),
     ) -> None:
         """Envía fuera del candado. Un socket muerto se retira al terminar."""
+        codes = tuple(dict.fromkeys(order_codes))
+        public_targets: list[tuple[WebSocket, dict[str, Any]]] = []
         async with self._lock:
             targets: list[WebSocket] = list(self._admins)
             if driver_id is not None:
                 driver_socket = self._drivers.get(driver_id)
                 if driver_socket is not None:
                     targets.append(driver_socket)
-            for code in order_codes:
+            for code in codes:
                 targets.extend(self._trackers.get(code, ()))
+                safe = public_tracking_event(payload, code)
+                if safe is not None:
+                    public_targets.extend((socket, safe) for socket in self._public_trackers.get(code, ()))
         seen: set[int] = set()
         dead: list[WebSocket] = []
-        for socket in targets:
+        for socket, outgoing in [(socket, payload) for socket in targets] + public_targets:
             identity = id(socket)
             if identity in seen:
                 continue
             seen.add(identity)
             try:
-                await socket.send_json(payload)
+                await socket.send_json(outgoing)
             except Exception:
                 logger.info("Socket cerrado durante un envío de %s.", payload.get("type"))
                 dead.append(socket)
@@ -248,6 +255,25 @@ class ConnectionManager:
                 empty.append(code)
         for code in empty:
             self._trackers.pop(code, None)
+        for code, room in list(self._public_trackers.items()):
+            room.discard(websocket)
+            if not room:
+                self._public_trackers.pop(code, None)
+
+
+def public_tracking_event(payload: dict[str, Any], order_code: str) -> dict[str, Any] | None:
+    """Whitelist por pedido. Nunca reenviar GPS, rutas, IDs o incidentes."""
+    if payload.get('order_code') != order_code:
+        return None
+    if payload.get('type') == 'eta':
+        eta = payload.get('eta')
+        if eta is None or isinstance(eta, str):
+            return {'type': 'eta', 'eta': eta}
+    if payload.get('type') == 'order_status' and payload.get('estado') in {
+        'pending', 'assigned', 'in_transit', 'delivered', 'incident', 'cancelled'
+    }:
+        return {'type': 'order_status', 'estado': payload['estado']}
+    return None
 
 
 def coordinates_in_valley(latitude: float, longitude: float) -> bool:
@@ -408,6 +434,7 @@ def reoptimize_live_route(
             population_size=population_size,
             seed=seed,
             distance_adjuster=adjust if incidents else None,
+            departure_not_before=origin.recorded_at,
         )
         sequence = _sequence_of(solution, int(vehicle.id))
 

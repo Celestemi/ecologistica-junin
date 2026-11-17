@@ -2,6 +2,8 @@
 
 # Reporte de Análisis de Valor Ganado - EVM (Earned Value Analysis Report)
 
+> **Revisión técnica r2 — 17/11/2026, America/Lima.** Se conserva versión base 1.0.0 y nombre exigido por la plantilla. Referencia vigente: main / b47d5eb7cda26444c56460ea74591cc5f973e0b3 + correcciones sin commit. [Control de implementación](../../AUDITORIA/CONTROL_CORRECCIONES_SPRINT4.md) y [resultados actuales](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md). El estado es borrador, sin aceptación administrativa. Los resultados previos se conservan en sus fuentes y en el historial al final.
+
 **Proyecto:** EcoLogística Junín / Huancayo. **Presupuesto hasta la Conclusión (BAC):** No disponible en los registros revisados como presupuesto aprobado. **Estado General:** borrador; no calculable con evidencia actual, cierre pendiente de aprobación. **Versión:** 1.0.0.
 
 Plantilla 5.3 del HTML final. Corte 17/11/2026, America/Lima. Periodo actual de gestión y corte económico anterior no delimitados; no hay libro económico comparable. Fuente estimada: [presupuesto 15/09/2026](../02%20Planificacion/04_presupuesto_del_proyecto_v_1_0_0.md), USD 134.400 y3000 h planificadas; el acta mantiene montos referenciales pendientes de validación. No equivalen a aprobación BAC ni AC. [Inventario económico y registros faltantes](../../AUDITORIA/EVIDENCIAS_DISPONIBLES_Y_FALTANTES.md).
@@ -18,7 +20,7 @@ Plantilla 5.3 del HTML final. Corte 17/11/2026, America/Lima. Periodo actual de 
 | Índice de Desempeño del Cronograma (SPI = EV / PV) | No calculable con evidencia actual. | No calculable con evidencia actual. | No calculable con evidencia actual. |
 | Índice de Desempeño del Costo (CPI = EV / AC) | No calculable con evidencia actual. | No calculable con evidencia actual. | No calculable con evidencia actual. |
 
-PV/EV/AC/SV/CV requieren misma moneda, baseline/corte y alcance; SPI/CPI son adimensionales. Un denominador cero se reportaría no definido, no se reemplaza por 0 o 1. No se suman ni promedian índices entre periodos. Ausencia de EV/AC no significa cero. Los 185 tests o53,5%/67,1% de implementación histórica no son EV.
+PV/EV/AC/SV/CV requieren misma moneda, baseline/corte y alcance; SPI/CPI son adimensionales. Un denominador cero se reportaría no definido, no se reemplaza por 0 o 1. No se suman ni promedian índices entre periodos. Ausencia de EV/AC no significa cero. Ni los 185 tests anteriores ni los 210 actuales, ni porcentajes de implementación histórica, son EV.
 
 ## 2. Porcentajes de Avance Acumulado (Respecto al BAC)
 
@@ -43,3 +45,17 @@ El modelo suma USD 120.000+12% contingencia(14.400)=USD 134.400 y usa conversió
 - **EAC Seleccionado, Justificación y Explicación:** No se selecciona numéricamente ningún escenario sin datos. Debe elegirse por causas reales y comportamiento esperado del trabajo restante, no por el resultado más bajo.
 
 Este documento preserva campos y fórmulas, pero **no satisface la exigencia de cálculos reales de la rúbrica**. Requiere intervención del responsable económico/autoridad de aprobación; no se inventan costos, horas o aceptación histórica.
+
+## Recolección pendiente, revisión r2
+
+No se recibieron datos financieros nuevos. Se mantiene NO CALCULABLE en los tres cortes y las tres EAC, sin inventar aprobación o gasto. [Solicitud concreta de BAC/PV/EV/AC, periodos y soportes](../../AUDITORIA/SOLICITUD_DATOS_EVM.md). La corrección del software y los costos logísticos estimados no modifican el BAC ni prueban AC.
+
+## Historial de revisiones del borrador
+
+| Versión base / revisión | Fecha | Cambio y fuente |
+|---|---|---|
+|1.0.0 / r0 |17/11/2026, corte previo |Contenido previo conservado en Git b47d5eb y snapshot de bytes/hash [docs_cierre_antes_r1.json](../../AUDITORIA/CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r1.json); auditorías originales sin editar. |
+|1.0.0 / r1 técnica |17/11/2026, post auditoría |Actualización autorizada con evidencia nueva, corrección de referencias corruptas y límites explícitos. No cambia baseline aprobada ni constituye aceptación/cierre. |
+|1.0.0 / r2 técnica |17/11/2026, validación final |210 backend/70 frontend/4 SW; cobertura final y escape literal en PDF. Evidencia r1 preservada en CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r2.json. Sin aceptación administrativa. |
+
+Audiovisual: **EXCLUIDO TEMPORALMENTE — NO EVALUADO**. El ensayo técnico en vivo de diez minutos continúa pendiente de observación real.

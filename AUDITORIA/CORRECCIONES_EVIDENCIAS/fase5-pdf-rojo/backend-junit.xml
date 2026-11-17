@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="4" time="1.032" timestamp="2026-11-17T11:22:08.987881-05:00" hostname="DESKTOP-OAU4B62"><testcase classname="tests.test_pdf" name="test_leg_cost_splits_fuel_and_electricity" file="tests\test_pdf.py" line="45" time="0.001" /><testcase classname="tests.test_pdf" name="test_pdf_bytes_include_the_iso_frame_and_tco" file="tests\test_pdf.py" line="54" time="0.010" /><testcase classname="tests.test_pdf" name="test_pdf_treats_customer_supplied_markup_as_literal_text" file="tests\test_pdf.py" line="71" time="0.002"><failure message="IndexError: &#10;paragraph text '&lt;para&gt;PED-&lt;/para&gt;&lt;/para&gt;' caused exception pop from empty list">.venv\Lib\site-packages\reportlab\platypus\paraparser.py:3218: in parse
+    self.feed(text)
+..\..\..\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\html\parser.py:167: in feed
+    self.goahead(0)
+..\..\..\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\html\parser.py:261: in goahead
+    k = self.parse_endtag(i)
+        ^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\html\parser.py:520: in parse_endtag
+    self.handle_endtag(tag)
+.venv\Lib\site-packages\reportlab\platypus\paraparser.py:3254: in handle_endtag
+    end()
+.venv\Lib\site-packages\reportlab\platypus\paraparser.py:2910: in end_para
+    self._pop('para')
+.venv\Lib\site-packages\reportlab\platypus\paraparser.py:3064: in _pop
+    frag = self._stack.pop()
+           ^^^^^^^^^^^^^^^^^
+E   IndexError: pop from empty list
+
+During handling of the above exception, another exception occurred:
+tests\test_pdf.py:78: in test_pdf_treats_customer_supplied_markup_as_literal_text
+    pdf = build_sustainability_pdf(replace(report, deliveries=(hostile,)))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\services\pdf_generator.py:282: in build_sustainability_pdf
+    _delivery_table(report.deliveries, styles),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\services\pdf_generator.py:413: in _delivery_table
+    Paragraph(row.code, styles["td"]),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\reportlab\platypus\paragraph.py:1861: in __init__
+    self._setup(text, style, bulletText or getattr(style,'bulletText',None), frags, cleanBlockQuotedText)
+.venv\Lib\site-packages\reportlab\platypus\paragraph.py:1882: in _setup
+    style, frags, bulletTextFrags = _parser.parse(text,style)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\reportlab\platypus\paraparser.py:3220: in parse
+    annotateException('\nparagraph text %s caused exception' % ascii(text))
+.venv\Lib\site-packages\reportlab\lib\utils.py:1216: in annotateException
+    rl_reraise(t,t(sep.join((_ for _ in (msg,str(v),postMsg) if _))),b)
+.venv\Lib\site-packages\reportlab\lib\utils.py:138: in rl_reraise
+    raise v.with_traceback(b)
+.venv\Lib\site-packages\reportlab\platypus\paraparser.py:3218: in parse
+    self.feed(text)
+..\..\..\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\html\parser.py:167: in feed
+    self.goahead(0)
+..\..\..\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\html\parser.py:261: in goahead
+    k = self.parse_endtag(i)
+        ^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\Lib\html\parser.py:520: in parse_endtag
+    self.handle_endtag(tag)
+.venv\Lib\site-packages\reportlab\platypus\paraparser.py:3254: in handle_endtag
+    end()
+.venv\Lib\site-packages\reportlab\platypus\paraparser.py:2910: in end_para
+    self._pop('para')
+.venv\Lib\site-packages\reportlab\platypus\paraparser.py:3064: in _pop
+    frag = self._stack.pop()
+           ^^^^^^^^^^^^^^^^^
+E   IndexError: 
+E   paragraph text '&lt;para&gt;PED-&lt;/para&gt;&lt;/para&gt;' caused exception pop from empty list</failure></testcase><testcase classname="tests.test_pdf" name="test_sustainability_pdf_endpoint" file="tests\test_pdf.py" line="81" time="0.475" /></testsuite></testsuites>
