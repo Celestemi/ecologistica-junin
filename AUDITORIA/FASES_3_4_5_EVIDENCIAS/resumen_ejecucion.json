@@ -1,0 +1,24 @@
+{
+  "fecha_corte": "2026-11-17 America/Lima",
+  "head": "61f0e1e9b0d71c1a0ea3c971fb77e93d0ea977b1",
+  "working_tree": "B08 preexistente sin commit; no codigo cambiado en fases 3-5",
+  "backend": {
+    "passed": 185,
+    "failed": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "passed": 68,
+    "failed": 1,
+    "total": 69
+  },
+  "html_final": {
+    "path": "C:\\Users\\Baguette\\Downloads\\Consigna de evaluación final y cierre del proyecto.html",
+    "sha256": "098e994680f3a923a7b339a655ddf876a5b3ca712357884ef5c8697a4186a6a2"
+  },
+  "postgis_container": "7ce9d5f3a2b7f98b11ce8c691cd8221cbd829d484964fb552d49d328576e09a7",
+  "database": "ecologistica_test",
+  "host_port": "127.0.0.1:25435",
+  "storage": "tmpfs; sin volumen persistente; log-driver none",
+  "original_consigna": "No localizada"
+}

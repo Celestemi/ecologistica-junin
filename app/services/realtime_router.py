@@ -28,6 +28,7 @@ from app.services.genetic_solver import (
     solve_vrptw,
     travel_minutes,
 )
+from app.services.route_constraints import PublicationValidation
 
 logger = logging.getLogger("ecologistica.realtime")
 
@@ -351,6 +352,22 @@ def estimate_eta(
     )
 
 
+def select_reroute_orders(
+    remaining_orders: Sequence[Pedido],
+    incidents: Sequence[RoadIncident],
+    cancel_ids: Iterable[int],
+    added_orders: Sequence[Pedido],
+) -> tuple[list[Pedido], list[Pedido], list[Pedido]]:
+    """Única selección del lote dinámico: activos, bloqueados y cancelados."""
+    cancelled = set(cancel_ids)
+    catalog = {order.id: order for order in (*remaining_orders, *added_orders)}
+    removed = [order for order in catalog.values() if order.id in cancelled]
+    pool = [order for order in catalog.values() if order.id not in cancelled]
+    blocked = orders_blocked_by(pool, incidents)
+    blocked_ids = {order.id for order in blocked}
+    return [order for order in pool if order.id not in blocked_ids], blocked, removed
+
+
 def reoptimize_live_route(
     *,
     vehicle: Vehiculo,
@@ -372,18 +389,7 @@ def reoptimize_live_route(
     prioritario se suma a los que siguen pendientes y el algoritmo lo inserta
     donde menos alarga la ruta.
     """
-    cancelled = {int(order_id) for order_id in cancel_ids}
-    removed = [order for order in remaining_orders if int(order.id) in cancelled]
-    pool = [order for order in remaining_orders if int(order.id) not in cancelled]
-    known = {int(order.id) for order in pool}
-    for order in added_orders:
-        if int(order.id) not in known:
-            pool.append(order)
-            known.add(int(order.id))
-
-    blocked = orders_blocked_by(pool, incidents)
-    blocked_ids = {int(order.id) for order in blocked}
-    active = [order for order in pool if int(order.id) not in blocked_ids]
+    active, blocked, removed = select_reroute_orders(remaining_orders, incidents, cancel_ids, added_orders)
     moving_depot = _depot_at(depot, origin)
 
     def adjust(lat1: float, lon1: float, lat2: float, lon2: float, distance_km: float) -> float:
@@ -426,7 +432,9 @@ def eta_payload(update: EtaUpdate) -> dict[str, Any]:
     }
 
 
-def route_payload(driver_id: str, reroute: LiveReroute) -> dict[str, Any]:
+def route_payload(
+    driver_id: str, reroute: LiveReroute, *, publication: PublicationValidation,
+) -> dict[str, Any]:
     """Cuerpo JSON del itinerario recalculado."""
     solution = reroute.solution
     return {
@@ -436,7 +444,7 @@ def route_payload(driver_id: str, reroute: LiveReroute) -> dict[str, Any]:
         "sequence": list(reroute.sequence),
         "blocked": list(reroute.blocked_codes),
         "removed": list(reroute.removed_codes),
-        "feasible": True if solution is None else solution.feasible,
+        "feasible": publication.ok,
         "distance_km": 0.0 if solution is None else round(solution.distance_km, 3),
         "co2_kg": 0.0 if solution is None else round(solution.co2_kg, 3),
         "late_minutes": 0.0 if solution is None else round(solution.late_minutes, 2),

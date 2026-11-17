@@ -1,0 +1,52 @@
+{
+  "measured_at_utc": "2026-11-17T08:56:59.419618+00:00",
+  "python": "3.11.17",
+  "os": "Windows-10-10.0.26200-SP0",
+  "dataset": "synthetic_orders(150,seed=901001); synthetic_vehicles(15,seed=901001)",
+  "matrix": "geodesic; OSRM disabled",
+  "scope": "solver only; NOT HTTP/database/end-to-end; no independent feasible witness supplied",
+  "results": [
+    {
+      "seed": 901001,
+      "generations_cap": 32,
+      "population": 24,
+      "elapsed_call_seconds": 0.9722900000001573,
+      "solver_seconds": 0.960031699999945,
+      "assigned": 150,
+      "unassigned": [],
+      "feasible": false,
+      "late_minutes": 1974.5511583166667,
+      "weight_excess_kg": 0.0,
+      "volume_excess_m3": 0.0,
+      "shift_excess_minutes": 0.0
+    },
+    {
+      "seed": 901002,
+      "generations_cap": 32,
+      "population": 24,
+      "elapsed_call_seconds": 0.9823270000001685,
+      "solver_seconds": 0.9687002000000575,
+      "assigned": 150,
+      "unassigned": [],
+      "feasible": false,
+      "late_minutes": 1904.0147623833332,
+      "weight_excess_kg": 0.0,
+      "volume_excess_m3": 0.0,
+      "shift_excess_minutes": 0.0
+    },
+    {
+      "seed": 901003,
+      "generations_cap": 32,
+      "population": 24,
+      "elapsed_call_seconds": 0.9037643000001481,
+      "solver_seconds": 0.8906638999997085,
+      "assigned": 150,
+      "unassigned": [],
+      "feasible": false,
+      "late_minutes": 2258.4983758,
+      "weight_excess_kg": 0.0,
+      "volume_excess_m3": 0.0,
+      "shift_excess_minutes": 0.0
+    }
+  ]
+}

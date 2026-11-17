@@ -13,7 +13,19 @@ from typing import Any
 from app.core.config import get_settings
 from app.models.domain import Pedido, Vehiculo
 from app.models.enums import TipoParada
+from app.services.eta_schedule import late_minutes_after_window
 from app.services.genetic_solver import RouteSolution, VehicleItinerary
+from app.services.vehicle_state import is_available_for_routing
+
+PUBLICATION_VEHICLE_IDS = "vehiculos_validados_publicacion"
+
+
+class PublicationRejected(ValueError):
+    """Rechazo de dominio, transportable por HTTP o WebSocket."""
+
+    def __init__(self, detail: dict[str, Any]) -> None:
+        self.detail = detail
+        super().__init__(detail["mensaje"])
 
 
 @dataclass(frozen=True)
@@ -149,44 +161,74 @@ def precheck_fleet_capacity(orders: list[Pedido], vehicles: list[Vehiculo]) -> F
 
 
 def validate_for_publication(
-    solution: RouteSolution,
+    solution: RouteSolution | None,
     orders: list[Pedido],
     vehicles: list[Vehiculo],
     *,
     service_minutes: float,
 ) -> PublicationValidation:
+    """Valida el lote requerido, no solo las banderas producidas por el GA.
+
+    Volumen desconocido conserva la política vigente: se suma solo el declarado.
+    Una ruta vacía solo es válida si no queda ningún pedido obligatorio.
+    """
     orders_by_id = {order.id: order for order in orders}
     vehicles_by_id = {vehicle.id: vehicle for vehicle in vehicles}
     codes_by_id = {order.id: order.codigo_pedido for order in orders}
     violations: list[ConstraintViolation] = []
     max_shift = shift_limit_minutes()
+    assigned: set[int] = set()
+    seen_vehicles: set[int] = set()
 
-    for itinerary in solution.itineraries:
+    if solution is not None and (not solution.feasible or not hard_feasible(solution)):
+        violations.append(ConstraintViolation(
+            code="SOLUCION_INFACTIBLE", message="El solver no acredita una solución factible completa.",
+        ))
+
+    for itinerary in solution.itineraries if solution is not None else ():
         vehicle = vehicles_by_id.get(itinerary.vehicle_id)
         plate = itinerary.plate
+        if vehicle is None or not is_available_for_routing(vehicle) or not vehicle.activo:
+            violations.append(ConstraintViolation(
+                code="VEHICULO_NO_ELEGIBLE", message=f"El vehículo {plate} no pertenece a la flota apta.",
+                vehicle_plate=plate,
+            ))
+        if itinerary.vehicle_id in seen_vehicles:
+            violations.append(ConstraintViolation(
+                code="VEHICULO_REPETIDO", message=f"El vehículo {plate} tiene más de un itinerario.",
+                vehicle_plate=plate,
+            ))
+        seen_vehicles.add(itinerary.vehicle_id)
+        deliveries = [stop for stop in itinerary.stops if stop.stop_type == TipoParada.DELIVERY]
+        carried = [orders_by_id[stop.order_id] for stop in deliveries if stop.order_id in orders_by_id]
+        load_kg = sum(float(order.peso_kg) for order in carried)
+        load_m3 = sum(float(order.volumen_m3) for order in carried if order.volumen_m3 is not None)
+        capacity_kg = float(vehicle.capacidad_kg) if vehicle else itinerary.capacity_kg
         capacity_m3 = float(vehicle.capacidad_m3) if vehicle else itinerary.capacity_m3
-        if itinerary.capacity_excess_kg > 0:
+        excess_kg = max(itinerary.capacity_excess_kg, load_kg - capacity_kg)
+        excess_m3 = max(itinerary.capacity_excess_m3, load_m3 - capacity_m3)
+        if excess_kg > 0:
             violations.append(
                 ConstraintViolation(
                     code="CAPACIDAD_PESO",
                     message=(
                         f"El vehículo {plate} supera el 100 % de capacidad de peso "
-                        f"({itinerary.load_kg:.1f} kg / {itinerary.capacity_kg:.1f} kg)."
+                        f"({load_kg:.1f} kg / {capacity_kg:.1f} kg)."
                     ),
                     vehicle_plate=plate,
-                    excess_kg=itinerary.capacity_excess_kg,
+                    excess_kg=excess_kg,
                 )
             )
-        if itinerary.capacity_excess_m3 > 0:
+        if excess_m3 > 0:
             violations.append(
                 ConstraintViolation(
                     code="CAPACIDAD_VOLUMEN",
                     message=(
                         f"El vehículo {plate} supera el 100 % de capacidad volumétrica "
-                        f"({itinerary.load_m3:.2f} m³ / {capacity_m3:.2f} m³)."
+                        f"({load_m3:.2f} m³ / {capacity_m3:.2f} m³)."
                     ),
                     vehicle_plate=plate,
-                    excess_m3=itinerary.capacity_excess_m3,
+                    excess_m3=excess_m3,
                 )
             )
         shift_min = compute_shift_minutes(itinerary, service_minutes)
@@ -203,15 +245,34 @@ def validate_for_publication(
                     excess_minutes=excess,
                 )
             )
-        for stop in itinerary.stops:
-            if stop.late_minutes > 0 and stop.order_id is not None:
-                order = orders_by_id.get(stop.order_id)
-                code = order.codigo_pedido if order else stop.order_code
+        for stop in deliveries:
+            order = orders_by_id.get(stop.order_id)
+            if order is None:
+                violations.append(ConstraintViolation(
+                    code="PEDIDO_NO_REQUERIDO", message="La ruta contiene un pedido ajeno al lote requerido.",
+                    vehicle_plate=plate, order_code=stop.order_code,
+                ))
+                continue
+            code = order.codigo_pedido
+            if order.id in assigned or code != stop.order_code:
+                violations.append(ConstraintViolation(
+                    code="ASIGNACION_INCONSISTENTE", message=f"Asignación repetida o código incorrecto de {code}.",
+                    vehicle_plate=plate, order_code=code,
+                ))
+            assigned.add(order.id)
+            if stop.eta is None or not stop.matrix_trusted:
+                violations.append(ConstraintViolation(
+                    code="VENTANA_NO_VERIFICABLE", message=f"El pedido {code} no tiene ETA confiable.",
+                    vehicle_plate=plate, order_code=code,
+                ))
+                continue
+            late = max(stop.late_minutes, late_minutes_after_window(stop.eta, order.ventana_fin))
+            if late > 0:
                 violations.append(
                     ConstraintViolation(
                         code="VENTANA_ENTREGA",
                         message=(
-                            f"El pedido {code} llegaría {stop.late_minutes:.1f} min "
+                            f"El pedido {code} llegaría {late:.1f} min "
                             f"después de su ventana."
                         ),
                         vehicle_plate=plate,
@@ -219,7 +280,10 @@ def validate_for_publication(
                     )
                 )
 
-    unassigned = [codes_by_id[oid] for oid in solution.unassigned_order_ids if oid in codes_by_id]
+    missing = set(orders_by_id) - assigned
+    if solution is not None:
+        missing.update(oid for oid in solution.unassigned_order_ids if oid in codes_by_id)
+    unassigned = [code for oid, code in codes_by_id.items() if oid in missing]
     if unassigned:
         violations.append(
             ConstraintViolation(

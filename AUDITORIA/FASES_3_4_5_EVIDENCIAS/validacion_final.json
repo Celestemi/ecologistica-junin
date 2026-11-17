@@ -1,0 +1,75 @@
+{
+  "fecha_corte": "2026-11-17 America/Lima",
+  "modified_preexisting": [
+    "README.md"
+  ],
+  "deleted": [],
+  "outside_authorized": [],
+  "code_tests_configs_preserved": true,
+  "readme_original_prefix_preserved": true,
+  "readme_closure_links": 7,
+  "official_document_count": 7,
+  "new_markdown_count": 17,
+  "broken_links_new_documents_and_readme": [],
+  "templates": [
+    {
+      "file": "01 Reporte de Estado V_1_0_0.md",
+      "expected_name": "01 Reporte de Estado V_1_0_0.md",
+      "checked_fields": 24,
+      "missing": [],
+      "template_markers": false,
+      "backlink": true
+    },
+    {
+      "file": "02 Reporte de Variación V_1_0_0.md",
+      "expected_name": "02 Reporte de Variación V_1_0_0.md",
+      "checked_fields": 14,
+      "missing": [],
+      "template_markers": false,
+      "backlink": true
+    },
+    {
+      "file": "03 Reporte de Análisis de Valor Ganado - EVM V_1_0_0.md",
+      "expected_name": "03 Reporte de Análisis de Valor Ganado - EVM V_1_0_0.md",
+      "checked_fields": 31,
+      "missing": [],
+      "template_markers": false,
+      "backlink": true
+    },
+    {
+      "file": "04 Tableros de Control - Híbridos V_1_0_0.md",
+      "expected_name": "04 Tableros de Control - Híbridos V_1_0_0.md",
+      "checked_fields": 16,
+      "missing": [],
+      "template_markers": false,
+      "backlink": true
+    },
+    {
+      "file": "05 Radiadores de Información V_1_0_0.md",
+      "expected_name": "05 Radiadores de Información V_1_0_0.md",
+      "checked_fields": 19,
+      "missing": [],
+      "template_markers": false,
+      "backlink": true
+    },
+    {
+      "file": "06 Reporte Final del Proyecto V_1_0_0.md",
+      "expected_name": "06 Reporte Final del Proyecto V_1_0_0.md",
+      "checked_fields": 30,
+      "missing": [],
+      "template_markers": false,
+      "backlink": true
+    },
+    {
+      "file": "07 Reporte Final de Lecciones Aprendidas V_1_0_0.md",
+      "expected_name": "07 Reporte Final de Lecciones Aprendidas V_1_0_0.md",
+      "checked_fields": 18,
+      "missing": [],
+      "template_markers": false,
+      "backlink": true
+    }
+  ],
+  "content_status": "Borradores: faltan EVM, radiadores autenticos y aceptacion; no cierre aprobado",
+  "mp4": "No creado; pendiente",
+  "structural_validation_passed": true
+}

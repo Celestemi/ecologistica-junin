@@ -21,13 +21,16 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import async_session_factory
 from app.models.domain import Deposito, Pedido, RutaDetalle, SolucionRuta, Vehiculo
-from app.models.enums import EstadoPedido, RolUsuario
+from app.models.enums import EstadoPedido, RolUsuario, TipoParada
 from app.models.identity import Usuario
 from app.services.driver_assignment import assigned_vehicle, conductor_may_drive
 from app.services.vehicle_state import is_available_for_routing
 from app.services.tokens import read_access_token
 from app.services.tracking_tokens import is_tracking_token
 from app.services.optimizer_runtime import run_optimizer_in_worker
+from app.services.genetic_solver import SERVICE_MINUTES
+from app.services.plate_restriction import filter_vehicles_for_planning, load_config, regla_aplicable
+from app.services.route_constraints import PublicationRejected, precheck_fleet_capacity, validate_for_publication
 from app.services.realtime_router import (
     ADMIN_CHANNEL,
     GpsFix,
@@ -41,6 +44,7 @@ from app.services.realtime_router import (
     manager,
     reoptimize_live_route,
     route_payload,
+    select_reroute_orders,
 )
 
 logger = logging.getLogger("ecologistica.realtime")
@@ -178,6 +182,10 @@ async def _on_driver_message(driver_id: str, raw: str, bound_vehicle_id: int | N
                 {"type": "error", "detail": f"Tipo de mensaje no reconocido: {kind}."},
                 driver_id=driver_id,
             )
+    except PublicationRejected as exc:
+        await manager.publish(
+            {"type": "error", "detail": str(exc), "validation": exc.detail}, driver_id=driver_id,
+        )
     except ValueError as exc:
         await manager.publish({"type": "error", "detail": str(exc)}, driver_id=driver_id)
     except Exception:
@@ -244,9 +252,6 @@ async def _on_cancel(driver_id: str, message: dict[str, Any], bound_vehicle_id: 
         order = await _require_order(session, code)
         if bound_vehicle_id is not None:
             await _require_order_on_vehicle_route(session, order, bound_vehicle_id)
-        order.estado = EstadoPedido.CANCELLED
-        await session.commit()
-    await _publish_status(code, EstadoPedido.CANCELLED.value, driver_id)
     await _reroute(driver_id, reason="cancel", cancel_codes=(code,))
 
 
@@ -283,6 +288,18 @@ async def _reroute(
             order = await _require_order(session, code)
             added.append(order)
         cancel_ids = [order.id for order in by_code.values() if order.codigo_pedido in cancel_codes]
+        required, blocked, removed = select_reroute_orders(list(by_code.values()), incidents, cancel_ids, added)
+        planning_day = min((order.ventana_inicio.astimezone(LIMA) for order in required),
+                           default=live.fix.recorded_at.astimezone(LIMA)).date()
+        plate_config = await load_config(session)
+        eligible, plate_exclusions = filter_vehicles_for_planning([vehicle], planning_day, plate_config)
+        if required and not eligible:
+            raise PublicationRejected({
+                "codigo": "VEHICULO_NO_ELEGIBLE", "mensaje": plate_exclusions[0].motivo,
+            })
+        fleet_check = precheck_fleet_capacity(required, eligible)
+        if not fleet_check.feasible:
+            raise PublicationRejected(fleet_check.as_detail())
         reroute = await run_optimizer_in_worker(
             reoptimize_live_route,
             vehicle=vehicle,
@@ -294,6 +311,22 @@ async def _reroute(
             added_orders=added,
             reason=reason,
         )
+        publication = validate_for_publication(
+            reroute.solution, required, eligible, service_minutes=SERVICE_MINUTES,
+        )
+        if not publication.ok:
+            raise PublicationRejected(publication.as_detail())
+        expected_sequence = tuple(
+            stop.order_code for itinerary in reroute.solution.itineraries for stop in itinerary.stops
+            if stop.stop_type == TipoParada.DELIVERY
+        ) if reroute.solution is not None else ()
+        if (reroute.sequence != expected_sequence
+                or set(reroute.blocked_codes) != {order.codigo_pedido for order in blocked}
+                or set(reroute.removed_codes) != {order.codigo_pedido for order in removed}):
+            raise PublicationRejected({
+                "codigo": "RESULTADO_DINAMICO_INCONSISTENTE",
+                "mensaje": "La secuencia o las exclusiones no coinciden con el lote validado.",
+            })
         await _apply_reroute(session, reroute, by_code, added)
         if reroute.solution is not None and reroute.solution.itineraries:
             from app.api.v1.routes import _persist_solution, retain_other_vehicles
@@ -301,15 +334,22 @@ async def _reroute(
             persisted = _persist_solution(
                 session,
                 depot,
-                _orders_in_solution(reroute, by_code, added),
+                required,
                 [vehicle],
                 reroute.solution,
+                publication=publication,
+                plate_exclusions=plate_exclusions,
+                plate_rule_active=regla_aplicable(plate_config),
             )
             await retain_other_vehicles(session, persisted, vehicle.id)
         await session.commit()
     await fleet_state.replace_sequence(driver_id, reroute.sequence)
     codes = list(reroute.sequence) + list(reroute.blocked_codes) + list(reroute.removed_codes)
-    await manager.publish(route_payload(driver_id, reroute), driver_id=driver_id, order_codes=codes)
+    await manager.publish(
+        route_payload(driver_id, reroute, publication=publication), driver_id=driver_id, order_codes=codes,
+    )
+    for code in reroute.removed_codes:
+        await _publish_status(code, EstadoPedido.CANCELLED.value, driver_id)
     for code in reroute.blocked_codes:
         await _publish_status(code, EstadoPedido.INCIDENT.value, driver_id)
     for code in add_codes:
@@ -331,21 +371,17 @@ async def _apply_reroute(
     by_code: dict[str, Pedido],
     added: list[Pedido],
 ) -> None:
+    catalog = {**by_code, **{order.codigo_pedido: order for order in added}}
+    for code in reroute.removed_codes:
+        order = catalog.get(code)
+        if order is not None:
+            order.estado = EstadoPedido.CANCELLED
     for code in reroute.blocked_codes:
-        order = by_code.get(code)
+        order = catalog.get(code)
         if order is not None:
             order.estado = EstadoPedido.INCIDENT
-    for order in added:
-        if order.codigo_pedido not in reroute.blocked_codes:
-            order.estado = EstadoPedido.ASSIGNED
+    # Los pedidos activos se asignan únicamente al persistir el plan validado.
     await session.flush()
-
-
-def _orders_in_solution(reroute: LiveReroute, by_code: dict[str, Pedido], added: list[Pedido]) -> list[Pedido]:
-    catalog = dict(by_code)
-    for order in added:
-        catalog[order.codigo_pedido] = order
-    return [catalog[code] for code in reroute.sequence if code in catalog]
 
 
 async def _load_route(session: AsyncSession, live: Any) -> tuple[Deposito, Vehiculo, list[Pedido]]:

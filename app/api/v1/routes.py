@@ -84,6 +84,9 @@ from app.services.genetic_solver import (
     solve_vrptw,
 )
 from app.services.route_constraints import (
+    PUBLICATION_VEHICLE_IDS,
+    PublicationRejected,
+    PublicationValidation,
     precheck_fleet_capacity,
     validate_for_publication,
 )
@@ -556,7 +559,10 @@ async def fleet_map(
         quinual_kg_co2_por_ano=get_settings().quinual_kg_co2_per_year,
         fitness=anchor.fitness,
         estado=anchor.estado,
-        feasible=True,
+        feasible=all(
+            group[0].vehiculo_id in (group[0].solucion.metadatos_ga or {}).get(PUBLICATION_VEHICLE_IDS, [])
+            for group in grouped
+        ),
         pedidos=len(deliveries),
         vehiculos_usados=len(plates),
         geometria_vial_disponible=road_geometry,
@@ -742,6 +748,7 @@ async def optimize_routes(
         orders,
         vehicles,
         solved,
+        publication=publication,
         plate_exclusions=plate_exclusions,
         plate_rule_active=regla_aplicable(plate_config),
     )
@@ -811,6 +818,9 @@ async def recalculate_route_etas(
         ) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    # El recálculo de ETA no pasa por la política de publicación de un plan nuevo.
+    # No conservar una acreditación anterior sobre tiempos que acaban de cambiar.
+    solution.metadatos_ga = {**(solution.metadatos_ga or {}), PUBLICATION_VEHICLE_IDS: []}
     await session.commit()
     loaded = await session.scalar(
         select(SolucionRuta)
@@ -937,6 +947,8 @@ async def retain_other_vehicles(session: AsyncSession, new_solution: SolucionRut
         return
     extra_km = 0.0
     extra_min = 0.0
+    validated = set((new_solution.metadatos_ga or {}).get(PUBLICATION_VEHICLE_IDS, []))
+    previous_validated = set((previous.metadatos_ga or {}).get(PUBLICATION_VEHICLE_IDS, []))
     for detail in previous.detalles:
         if detail.vehiculo_id == vehicle_id or not _open_stop(detail):
             continue
@@ -960,6 +972,9 @@ async def retain_other_vehicles(session: AsyncSession, new_solution: SolucionRut
         )
         extra_km += detail.distancia_tramo_km
         extra_min += detail.tiempo_viaje_min
+        if detail.vehiculo_id in previous_validated:
+            validated.add(detail.vehiculo_id)
+    new_solution.metadatos_ga = {**(new_solution.metadatos_ga or {}), PUBLICATION_VEHICLE_IDS: sorted(validated)}
     new_solution.distancia_total_km += extra_km
     new_solution.duracion_total_min += extra_min
     new_solution.co2_referencia_kg = max(new_solution.co2_referencia_kg, previous.co2_referencia_kg)
@@ -1012,9 +1027,12 @@ def _persist_solution(
     vehicles: list[Vehiculo],
     solved: RouteSolution,
     *,
+    publication: PublicationValidation,
     plate_exclusions: list[ExclusionPlaca] | None = None,
     plate_rule_active: bool = False,
 ) -> SolucionRuta:
+    if not publication.ok:
+        raise PublicationRejected(publication.as_detail())
     avoided_kg = max(0.0, solved.co2_saved_kg)
     factor = get_settings().quinual_kg_co2_per_year
     operation_day = min(_as_lima(order.ventana_inicio) for order in orders).date()
@@ -1032,6 +1050,7 @@ def _persist_solution(
         estado=EstadoSolucion.COMPUTED,
         metadatos_ga={
             **solved.metadata(),
+            PUBLICATION_VEHICLE_IDS: [itinerary.vehicle_id for itinerary in solved.itineraries if itinerary.stops],
             "quinual_kg_co2_por_ano": factor,
             "jornada_max_min": get_settings().max_shift_minutes,
             "jornada_normativa_validada": get_settings().shift_limit_normative_validated,

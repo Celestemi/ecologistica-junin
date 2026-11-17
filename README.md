@@ -144,3 +144,18 @@ Los cinco documentos usan la versión documental inicial `V_1_0_0`. Este cierre 
 * **DevOps & Data Engineer**: Hernan Anibal Osorio Diaz
 * **Calidad y desarrollo backend**: Geraldine Paola Gómez Toribio
 * **Frontend Developer**: BryanY29
+
+
+---
+
+## Documentos de gestión y cierre ? corte 17/11/2026
+
+Estado: **borradores verificables; cierre pendiente de aprobación**. Hay un caso frontend fallido, brechas técnicas abiertas y datos económicos/aceptación no disponibles. Consulte las limitaciones de cada documento y los informes de fase 3 en AUDITORIA. Estos archivos no constituyen un acta de cierre.
+
+* [01 Reporte de Estado V_1_0_0.md](docs/04%20Cierre/01%20Reporte%20de%20Estado%20V_1_0_0.md)
+* [02 Reporte de Variación V_1_0_0.md](docs/04%20Cierre/02%20Reporte%20de%20Variaci%C3%B3n%20V_1_0_0.md)
+* [03 Reporte de Análisis de Valor Ganado - EVM V_1_0_0.md](docs/04%20Cierre/03%20Reporte%20de%20An%C3%A1lisis%20de%20Valor%20Ganado%20-%20EVM%20V_1_0_0.md)
+* [04 Tableros de Control - Híbridos V_1_0_0.md](docs/04%20Cierre/04%20Tableros%20de%20Control%20-%20H%C3%ADbridos%20V_1_0_0.md)
+* [05 Radiadores de Información V_1_0_0.md](docs/04%20Cierre/05%20Radiadores%20de%20Informaci%C3%B3n%20V_1_0_0.md)
+* [06 Reporte Final del Proyecto V_1_0_0.md](docs/04%20Cierre/06%20Reporte%20Final%20del%20Proyecto%20V_1_0_0.md)
+* [07 Reporte Final de Lecciones Aprendidas V_1_0_0.md](docs/04%20Cierre/07%20Reporte%20Final%20de%20Lecciones%20Aprendidas%20V_1_0_0.md)

@@ -13,7 +13,7 @@ from sqlalchemy import func, select, text
 from app.core.database import engine
 
 from app.models.domain import SolucionRuta
-from app.models.enums import TipoCombustible, TipoParada
+from app.models.enums import EstadoOperativoVehiculo, TipoCombustible, TipoParada
 from app.services.genetic_solver import (
     SERVICE_MINUTES,
     RouteSolution,
@@ -92,11 +92,14 @@ def _pedido(order_id: int, code: str, kg: float, m3: float | None = None) -> Sim
         codigo_pedido=code,
         peso_kg=kg,
         volumen_m3=m3,
+        ventana_inicio=DAY.replace(hour=8),
+        ventana_fin=DAY.replace(hour=18),
     )
 
 
 def _veh_entity(vid: int, plate: str, kg: float, m3: float) -> SimpleNamespace:
-    return SimpleNamespace(id=vid, placa=plate, capacidad_kg=kg, capacidad_m3=m3)
+    return SimpleNamespace(id=vid, placa=plate, capacidad_kg=kg, capacidad_m3=m3,
+                           activo=True, estado_operativo=EstadoOperativoVehiculo.ACTIVO)
 
 
 def _delivery_stop(*, travel_minutes: float = 10.0, late: float = 0.0) -> StopItinerary:
@@ -160,7 +163,7 @@ def _route_solution(*itineraries: VehicleItinerary, unassigned: tuple[int, ...] 
         co2_saved_kg=0.0,
         arboles_quinual_eq=0.0,
         fitness=0.0,
-        feasible=False,
+        feasible=True,
         late_minutes=0.0,
         capacity_excess_kg=sum(item.capacity_excess_kg for item in itineraries),
         capacity_excess_m3=sum(item.capacity_excess_m3 for item in itineraries),
