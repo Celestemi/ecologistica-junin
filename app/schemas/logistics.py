@@ -150,12 +150,17 @@ class PedidoWindowUpdate(BaseModel):
     ventana_fin: datetime
 
 
+class PedidoVehicleUpdate(BaseModel):
+    vehiculo_asignado_id: int | None = Field(gt=0)
+
+
 class PedidoRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     codigo_pedido: str
     token_seguimiento: str | None = None
+    vehiculo_asignado_id: int | None = None
     cliente_nombre: str
     direccion_referencia: str
     ubicacion: GeoJSONPoint | None = None

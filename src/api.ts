@@ -43,6 +43,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       const body = (await response.json()) as { detail?: unknown };
       if (typeof body.detail === "string") {
         detail = body.detail;
+      } else if (body.detail && typeof body.detail === "object") {
+        const issue = body.detail as { mensaje?: string; detalle?: unknown[]; violaciones?: { mensaje?: string }[] };
+        const messages = [issue.mensaje, ...(issue.detalle ?? []).filter((item): item is string => typeof item === "string"),
+          ...(issue.violaciones ?? []).map((item) => item.mensaje)].filter(Boolean);
+        if (messages.length) detail = [...new Set(messages)].join(" ");
       }
     } catch {
       detail = response.statusText;
@@ -55,12 +60,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function fetchOrders(): Promise<Order[]> {
-  return request<Order[]>("/api/v1/pedidos");
+export function fetchOrders(fecha?: string): Promise<Order[]> {
+  return request<Order[]>(`/api/v1/pedidos${fecha ? `?fecha=${encodeURIComponent(fecha)}` : ""}`);
 }
 
-export function fetchVehicles(): Promise<Vehicle[]> {
-  return request<Vehicle[]>("/api/v1/vehiculos");
+export function fetchVehicles(todos = false): Promise<Vehicle[]> {
+  return request<Vehicle[]>(`/api/v1/vehiculos${todos ? "?todos=true" : ""}`);
+}
+
+export function assignOrderVehicle(pedidoId: number, vehicleId: number | null): Promise<Order> {
+  return request<Order>(`/api/v1/pedidos/${pedidoId}/vehiculo`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ vehiculo_asignado_id: vehicleId }),
+  });
 }
 
 export type VehicleHistory = {
@@ -255,9 +268,9 @@ export function fetchPublicTracking(token: string): Promise<PublicOrderTracking>
   });
 }
 
-export async function fetchPublishedRoute(): Promise<RouteOptimization | null> {
+export async function fetchPublishedRoute(fecha?: string): Promise<RouteOptimization | null> {
   try {
-    return await request<RouteOptimization>("/api/v1/rutas/mapa");
+    return await request<RouteOptimization>(`/api/v1/rutas/mapa${fecha ? `?fecha=${encodeURIComponent(fecha)}` : ""}`);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return null;
@@ -286,8 +299,8 @@ export function confirmDelivery(
   });
 }
 
-export function optimizeRoutes(): Promise<RouteOptimization> {
-  return request<RouteOptimization>("/api/v1/optimizar-rutas", { method: "POST" });
+export function optimizeRoutes(fecha?: string): Promise<RouteOptimization> {
+  return request<RouteOptimization>(`/api/v1/optimizar-rutas${fecha ? `?fecha=${encodeURIComponent(fecha)}` : ""}`, { method: "POST" });
 }
 
 export type LoginResult = {

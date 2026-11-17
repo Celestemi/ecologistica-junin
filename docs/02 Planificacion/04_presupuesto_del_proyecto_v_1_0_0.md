@@ -1,5 +1,30 @@
 # 04. Presupuesto del Proyecto V_1_0_0.md
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: presupuesto temporal y operación del caso
+
+Se adopta **solo para el ejercicio** BAC = USD 134 400 con contingencia incluida y distribuida entre los cinco paquetes del complemento. Personal: USD 105 000/3 000 h = USD 35/h de promedio ponderado; no es una tarifa de todos los integrantes ni un registro de horas ejecutadas.
+
+| Corte del ejercicio | Presupuesto acumulado PV USD | Incremento desde corte anterior USD |
+|---|---:|---:|
+| Semana 3: 14/09/2026 | 13 440 | 13 440 |
+| Semana 7: 12/10/2026 | 53 760 | 40 320 |
+| Semana 11: 09/11/2026 | 100 000 | 46 240 |
+| Semana 12: 16/11/2026 | 112 000 | 12 000 |
+| Fin semana 14: 30/11/2026 | 134 400 | 22 400 |
+
+La operación anual referencial de S/120 000 se reparte en infraestructura 36 000, mantenimiento 60 000, calidad/respaldos 12 000 y capacitación/continuidad 12 000. El LCC nominal a tres años es S/859 968. Se propone tolerancia de control de ±5 % sobre el BAC y alerta CPI o SPI menor que 0,95; son umbrales internos del ejercicio, sin aprobación institucional atribuida.
+
+Las referencias bibliográficas numéricas no recuperadas no se sustituyen por cotizaciones inventadas. Los montos cloud, dominios y herramientas se tratan como asignaciones de planificación; los precios reales requieren proveedor, configuración, moneda, fecha e impuestos identificados.
+<!-- complemento-r4:fin -->
+
+---
+
+
+> **Clasificación de cifras — 17/11/2026:** modelo presupuestario referencial, no costos ejecutados ni cotizaciones verificadas en este corte. Los importes de proveedores y el tipo de cambio 3,72 no acreditan precios vigentes; referencias numéricas [31, 36, 44] sin bibliografía recuperada no se usan como soporte verificado. OR-Tools, Celery, Redis y OSRM local son alternativas previstas, no componentes activos acreditados por este presupuesto. [Revisión de datos](../REVISION_DATOS_Y_MEJORAS.md).
+
 **Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.  
 **Ámbito Geográfico:** Huancayo, El Tambo y Chilca — Provincia de Huancayo, Junín  
 **Marco de Gestión:** Enfoque Híbrido (14 semanas / 4 iteraciones)  
@@ -83,13 +108,13 @@ $$	ext{Reserva de Contingencia} = 	ext{SUBTOTAL DE PROYECTO} 	imes 12\% = \$ 120
 
 La siguiente tabla resume el consolidado presupuestario del proyecto **EcoLogística Huancayo**:
 
-| Categoría | Costo Subtotal (USD) | Porcentaje del Total |
+| Categoría | Costo Subtotal estimado (USD) | Porcentaje del subtotal sin contingencia (USD 120 000) |
 | :--- | ---: | ---: |
 | **1. Recursos Humanos (CAPEX)** | $ 105,000.00 | 87.5% |
 | **2. Licenciamiento de Software** | $ 4,200.00 | 3.5% |
 | **3. Infraestructura Cloud (OPEX)** | $ 10,800.00 | 9.0% |
 | **SUBTOTAL DE PROYECTO** | **$ 120,000.00** | **100.0%** |
-| **4. Reserva de Contingencia (12%)** | $ 14,400.00 | N/A |
-| **PRESUPUESTO TOTAL ESTIMADO** | **$ 134,400.00** | **100.0%** |
+| **4. Reserva de Contingencia (12%)** | $ 14,400.00 | 12.0% |
+| **PRESUPUESTO TOTAL ESTIMADO** | **$ 134,400.00** | **112.0% del subtotal** |
 
-*Nota de Conversión:* El Presupuesto Total Estimado de **$ 134,400.00 USD** equivale a **S/ 499,968.00 PEN** (tipo de cambio 1 USD = 3.72 PEN), lo cual satisface con máxima precisión la meta presupuestaria institucional referencial de **S/ 500,000.00 PEN** establecida en los documentos baseline del proyecto [31, 36, 44].
+*Nota de conversión del modelo:* **USD 134 400 × 3,72 = S/499 968**, diferencia aritmética de S/32 respecto de S/500 000. La proximidad no valida el presupuesto ni demuestra ahorro. El tipo de cambio es un supuesto histórico; no se verificó como cotización actual ni se acredita aprobación o ejecución del gasto.

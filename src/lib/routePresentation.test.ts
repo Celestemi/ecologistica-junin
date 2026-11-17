@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { routeStops } from "./routePresentation";
-import type { RouteOptimization } from "../types";
+import { orderLocationHref, routeStops } from "./routePresentation";
+import type { Order, RouteOptimization } from "../types";
 
 const solution = {
   type: "FeatureCollection",
@@ -21,5 +21,9 @@ describe("routeStops", () => {
 
   it("permite una tabla aun cuando no existe geometría de línea", () => {
     expect(routeStops({ ...solution, features: solution.features.filter((feature) => feature.geometry.type === "Point") })).toHaveLength(2);
+  });
+
+  it("abre la jornada de Lima cuando el servidor devuelve una fecha en UTC", () => {
+    expect(orderLocationHref({ id: 8, ventana_inicio: "2026-11-18T02:00:00Z" } as Order)).toBe("/pedidos?fecha=2026-11-17&pedido=8");
   });
 });

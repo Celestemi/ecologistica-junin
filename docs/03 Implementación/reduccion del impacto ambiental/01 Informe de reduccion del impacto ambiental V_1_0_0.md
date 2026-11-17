@@ -1,5 +1,30 @@
 # Informe de reducción del impacto ambiental y optimización Green IT
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: datos ambientales del caso y protocolo Green IT
+
+Se añade un escenario de **transporte simulado**, separado de la huella digital: 300 km/jornada base, 249 km propuestos y 10 km/L de rendimiento equivalente. Consumo 30 →24,9 L; CO₂ supuesto 80,92 →67,16 kg usando el factor diésel y la conversión del proyecto. A 22 jornadas equivalentes: 1 122 km, 112,2 L y aproximadamente 302,63 kg CO₂ evitados. No son ahorros reales ni prueba de cumplimiento de una norma ambiental.
+
+Para completar las magnitudes digitales antes no medidas se propone esta ficha, sin inventar resultados de energía o navegador:
+
+| Magnitud | Método propuesto | Condiciones a registrar |
+|---|---|---|
+| LCP/CLS/TBT y solicitudes | Cinco corridas por pantalla con caché fría y caliente. | Dispositivo, red, navegador, proveedor de tiles y mediana/rango. |
+| Respuesta API | Medir importación, primera página y optimización por separado. | Dataset, concurrencia, proveedor y p50/p95 con número de observaciones. |
+| Energía | Medidor del host o telemetría del proveedor durante ventana definida. | kWh, duración, sistema o carga compartida y método de atribución. |
+| CO₂e digital | kWh atribuibles × intensidad de carbono identificada. | Fuente/fecha de intensidad y alcance; no usar CO₂ del combustible. |
+| Eficiencia | kWh o gramos CO₂e por 1 000 operaciones comparables. | Misma funcionalidad, entorno y volumen antes/después. |
+
+QA/DevOps prepararían las mediciones el 23–25/11/2026. Las optimizaciones y rangos hipotéticos anteriores permanecen identificados; r4 aporta un método y una base sintética de transporte, sin atribuir ejecución adicional.
+<!-- complemento-r4:fin -->
+
+---
+
+
+> **Actualización r3 — 17/11/2026:** las secciones originales conservan el corte del 10/11/2026 y sus ejemplos. En este corte se reconstruyó la referencia y se midió el build nuevo: JavaScript inicial 390 838 → 149 028 B (−61,87 %), JavaScript total 390 838 → 409 482 B (+4,77 %), CSS 40 543 B en ambos y precarga seleccionada 219 884 B. Se usaron fuentes de `2716fd5` con dependencias instaladas actuales; Tailwind descubre utilidades en el entorno de trabajo actual. No es una reconstrucción aislada de todo el entorno histórico ni una medición de tráfico/energía. [Artefactos y protocolo](../../evidencias/2026-11-17/build.json), [comparación vigente](../../REVISION_DATOS_Y_MEJORAS.md).
+
 **Proyecto:** EcoLogística Huancayo
 **Versión:** 1.0.0
 **Fecha:** 10 de noviembre de 2026
@@ -22,7 +47,7 @@ El objetivo es reducir trabajo, datos transferidos y recursos cargados cuando no
 - La caché del navegador y la configuración de Nginx no expresaban políticas de almacenamiento y compresión completas.
 - No se identificaron imágenes raster propias que ameriten conversión a WebP/AVIF. La cartografía procede de un servicio externo.
 
-### 2.2 Línea base disponible
+### 2.2 Línea base disponible en el registro del 10/11/2026
 
 La comparación usa el commit `2716fd5` como base de artefactos frontend. No es una medición de tráfico de producción, ejecución en navegador ni consumo de hardware.
 
@@ -37,7 +62,7 @@ La comparación usa el commit `2716fd5` como base de artefactos frontend. No es 
 
 Los bytes son tamaños locales sin compresión HTTP. El tamaño Gzip calculado por Vite no sustituye la medición del cuerpo transferido en una navegación real.
 
-### 2.3 Estimación preliminar de rendimiento para la primera versión
+### 2.3 Escenario hipotético de rendimiento: no medido
 
 La siguiente tabla completa el formato de referencia con valores de planeación plausibles para una app React con mapa, API asíncrona y despliegue Nginx. **Son rangos hipotéticos del equipo, no resultados de Lighthouse, DevTools ni pruebas de carga.** Se asume móvil Android de gama media, caché fría, red 4G variable, una jornada de hasta 150 pedidos y PostgreSQL en la misma región del backend. Los rangos son deliberadamente moderados porque el mapa, las teselas y la latencia del servicio externo pueden dominar el resultado.
 
@@ -144,7 +169,7 @@ Estos rangos deben sustituirse por auditorías reproducibles. No son intervalos 
 
 **Evidencia en contenedor:** Nginx respondió con 200 a estáticos; el chunk versionado incluyó `Content-Encoding: gzip`, `Vary: Accept-Encoding` y caché inmutable. Un asset inexistente devolvió 404.
 
-## 4. Comparativa antes/después y evidencia
+## 4. Comparativa histórica antes/después y evidencia del registro original
 
 | Comprobación | Antes / referencia | Después / evidencia | Estado |
 |---|---|---|---|
@@ -157,7 +182,7 @@ Estos rangos deben sustituirse por auditorías reproducibles. No son intervalos 
 
 Comandos de build/diagnóstico ejecutados en esta versión: `npm.cmd run build`, `node scripts/audit-green-build.mjs`, `node scripts/measure-green-baseline.mjs 2716fd5`, build Docker frontend, `nginx -t` dentro de la imagen y `python -m compileall -q app`. No se ejecutaron suites automatizadas ni se inició PostgreSQL durante esta revisión.
 
-## 5. Análisis de impacto ambiental
+## 5. Ejercicio hipotético de impacto ambiental: no medido
 
 Las optimizaciones reducen ciertos trabajos o transferencias evitables: código inicial, lecturas obsoletas, repetición de solicitudes de ruta y descarga de historiales completos. Para completar el formato con un valor orientativo se incluye este **escenario numérico hipotético**, que no mide EcoLogística ni el consumo real de los dispositivos:
 

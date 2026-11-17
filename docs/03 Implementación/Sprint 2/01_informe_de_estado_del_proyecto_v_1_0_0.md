@@ -1,5 +1,26 @@
 # 01. Informe de estado del proyecto — Sprint 2 V_1_0_0.md
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: datos y protocolo para verificar el motor
+
+El plan contextual usa algoritmo genético propio y dos datasets: uno de 150 pedidos/15 vehículos con asignación testigo factible y otro con exceso de peso, volumen, ventanas imposibles y jornada excedida. Se propone fijar semilla y registrar diez repeticiones por escenario, separando tiempo del solver y tiempo completo de API/proveedor.
+
+| Área antes sin información suficiente | Contenido propuesto | Condición de aceptación |
+|---|---|---|
+| Rendimiento HTTP | Medir recepción, matriz, optimización, validación y respuesta. | Solución válida y tiempo total ≤45 s bajo condiciones documentadas. |
+| Restricciones | Sobrecarga y jornada de 8,5 h deliberadas. | Rechazo de publicación sin persistencia parcial. |
+| Geocodificación | Dirección ambigua y punto fuera de zona. | Solicitar corrección; no asignar silenciosamente ubicación arbitraria. |
+| Re-optimización | Incidente con entregas ya completadas. | Conservar terminales y asignar pendientes válidos en ≤30 s en escenario definido. |
+| DoD transversal | Sonar/SCA, revisión y staging por versión. | Reportes y revisor identificados, sin inferirlos de código preparado. |
+
+Responsables propuestos: Backend/Optimización y QA; DevOps provee entorno; PM consolida resultados. Ventana 23–25/11/2026. No se crean resultados de tiempo, logs ni documentos históricos para reemplazar las fuentes no localizadas.
+<!-- complemento-r4:fin -->
+
+---
+
+
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.
 
 **Líder del Proyecto:** Nikole Celeste Bastidas Vilca (Project Manager)
@@ -8,7 +29,7 @@
 
 **Fecha de actualización:** 26 de octubre de 2026
 
-**Evidencias de verificación:** [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md), [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md), [REPORTE_RENDIMIENTO_EN_001.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md), suites en `tests/`.
+**Evidencias de verificación:** **VERIFICACION_FINAL_SPRINT_2.md — fuente histórica no localizada**, **PLAN_IMPLEMENTACION_SPRINT_2.md — fuente histórica no localizada**, **REPORTE_RENDIMIENTO_EN_001.md — fuente histórica no localizada**, suites en `tests/`.
 
 ---
 
@@ -16,7 +37,7 @@
 
 Completar la geocodificación espacial de pedidos y endurecer el motor de rutas existente para que la **solución publicada** respete capacidad, ventanas de tiempo, jornada operativa y un **presupuesto de tiempo de 45 segundos**, sin regresionar las capacidades verificables del Sprint 1.
 
-*Fuente:* [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md) §1.
+*Fuente:* **PLAN_IMPLEMENTACION_SPRINT_2.md — fuente histórica no localizada** §1.
 
 ---
 
@@ -25,7 +46,7 @@ Completar la geocodificación espacial de pedidos y endurecer el motor de rutas 
 | Dimensión | Estado |
 |-----------|--------|
 | **Alcance planificado** | US-005, US-007, US-008, US-009, EN-001 — **34 SP** |
-| **Implementación funcional en código** | **Avanzada** en las cinco historias; brechas por criterio en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) |
+| **Implementación funcional en código** | **Avanzada** en las cinco historias; brechas por criterio en **VERIFICACION_FINAL_SPRINT_2.md — fuente histórica no localizada** |
 | **Definition of Done global** ([DoD §2](../../02%20Planificacion/01_transformando_a_agil_v_1_0_0.md)) | **No cumplida** |
 | **Pruebas automatizadas E2E (PostGIS)** | **No ejecutadas** en la verificación 2026-10-26 (Docker/PostGIS no disponible en host de auditoría) |
 | **Cobertura ≥ 80 %** | **No alcanzada** (~50 % backend en corrida focal; frontend sin medición) |
@@ -58,9 +79,9 @@ Completar la geocodificación espacial de pedidos y endurecer el motor de rutas 
 
 ## Criterios de aceptación (referencia)
 
-Los escenarios BDD oficiales están en [01_transformando_a_agil_v_1_0_0.md](../../02%20Planificacion/01_transformando_a_agil_v_1_0_0.md) (US-005, US-007, US-008, US-009, EN-001). La matriz detallada **criterio × evidencia × prueba** figura en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) §11.
+Los escenarios BDD oficiales están en [01_transformando_a_agil_v_1_0_0.md](../../02%20Planificacion/01_transformando_a_agil_v_1_0_0.md) (US-005, US-007, US-008, US-009, EN-001). La matriz detallada **criterio × evidencia × prueba** figura en **VERIFICACION_FINAL_SPRINT_2.md — fuente histórica no localizada** §11.
 
-**Decisiones técnicas aprobadas en planificación** (no confundir con el backlog ágil literal): motor **genético propio** (no OR-Tools), `geometry` 4326 vs `GEOGRAPHY`, OSRM **opcional/apagado** por defecto — ver [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md) §7 y §14 (D-01, D-03, D-06).
+**Decisiones técnicas aprobadas en planificación** (no confundir con el backlog ágil literal): motor **genético propio** (no OR-Tools), `geometry` 4326 vs `GEOGRAPHY`, OSRM **opcional/apagado** por defecto — ver **PLAN_IMPLEMENTACION_SPRINT_2.md — fuente histórica no localizada** §7 y §14 (D-01, D-03, D-06).
 
 ---
 
@@ -73,7 +94,7 @@ Los escenarios BDD oficiales están en [01_transformando_a_agil_v_1_0_0.md](../.
 | Frontend Vitest | `npm run test:coverage` | **No ejecutado** (npm no disponible en host de verificación) |
 | Regresión Sprint 1 | `test_api.py`, import, flota, etc. | **No re-ejecutada** en la misma sesión |
 
-Comando documentado en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) §3.1.
+Comando documentado en **VERIFICACION_FINAL_SPRINT_2.md — fuente histórica no localizada** §3.1.
 
 ---
 
@@ -81,7 +102,7 @@ Comando documentado en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoL
 
 | Métrica | Objetivo | Medido | Fuente |
 |---------|----------|--------|--------|
-| Tiempo solver 150×15 | ≤ 45 s | Media **~0,89 s** | [REPORTE_RENDIMIENTO_EN_001.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md) §4.1 |
+| Tiempo solver 150×15 | ≤ 45 s | Media **~0,89 s** | **REPORTE_RENDIMIENTO_EN_001.md — fuente histórica no localizada** §4.1 |
 | Solución **válida** (factible dura) 150×15 | Sí (RNF-001) | `feasible=false` en 0/5 repeticiones sintéticas | Idem |
 | Tiempo HTTP `POST /optimizar-rutas` | ≤ 45 s | **No medido** | Sin PostGIS en verificación |
 
@@ -129,3 +150,14 @@ Comando documentado en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoL
 ---
 
 [← Volver al README](../../../README.md)
+
+
+## Referencias históricas pendientes — aclaración del 17/11/2026
+
+Los enlaces siguientes apuntaban a archivos ausentes del repositorio. Se conservan sus destinos originales para trazabilidad, sin presentarlos como evidencia comprobada ni reconstruir documentos históricos:
+
+- `../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md`
+- `../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md`
+- `../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md`
+
+[Revisión de datos y límites](../../REVISION_DATOS_Y_MEJORAS.md). El texto anterior conserva su corte histórico; esta aclaración no prueba aceptación ni ejecución de las actividades referidas.

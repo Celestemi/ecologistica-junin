@@ -1,5 +1,25 @@
 # Retrospectiva del Sprint 2
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: retrospectiva preparada para validación
+
+Se propone explorar tres causas: dependencia tardía del entorno, confusión entre reloj y factibilidad, y evidencia de calidad dispersa. Son hipótesis derivadas del contexto técnico; deberán contrastarse con quienes participaron.
+
+| Acción propuesta | Responsable por rol | Fecha objetivo | Criterio de seguimiento |
+|---|---|---|---|
+| Preparar dataset testigo junto al criterio de SLA | Backend + QA | 20/11/2026 | El conjunto explica por qué existe solución y cubre casos imposibles. |
+| Revisar entorno antes de iniciar aceptación | DevOps | 23/11/2026 | PostGIS/API/proveedor identificados y disponibles. |
+| Revisar primero las tareas en QA | QA + equipo | Diariamente en la validación | No más de dos tareas simultáneas en revisión. |
+| Consolidar resultados por versión | PM + QA | 27/11/2026 | No mezclar conteos de distintos árboles o fechas. |
+
+La agenda propuesta para el 27/11/2026 incluye ánimo 1–5 voluntario, hechos, causas y dos mejoras prioritarias. No se atribuyen asistencia, votación, respuestas o acuerdos históricos; el Mood ilustrativo utiliza roles ficticios y queda en el complemento común.
+<!-- complemento-r4:fin -->
+
+---
+
+
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.
 
 **Versión:** V_1_0_0 (SemVerDoc — borrador técnico post-verificación, 2026-10-26)
@@ -10,7 +30,7 @@
 
 ## Aviso sobre la ceremonia
 
-**No consta en el repositorio** evidencia de una retrospectiva Scrum celebrada con el equipo (fecha, participantes, votación, compromisos firmados). El presente documento es un **borrador preparado a partir de hallazgos técnicos** en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md), [REPORTE_RENDIMIENTO_EN_001.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md) y el plan de implementación.
+**No consta en el repositorio** evidencia de una retrospectiva Scrum celebrada con el equipo (fecha, participantes, votación, compromisos firmados). El presente documento es un **borrador preparado a partir de hallazgos técnicos** en **VERIFICACION_FINAL_SPRINT_2.md — fuente histórica no localizada**, **REPORTE_RENDIMIENTO_EN_001.md — fuente histórica no localizada** y el plan de implementación.
 
 **Pendiente:** validación, enriquecimiento y aprobación por el equipo en sesión de retrospectiva real.
 
@@ -91,9 +111,19 @@
 - [Informe de estado Sprint 2](01_informe_de_estado_del_proyecto_v_1_0_0.md)
 - [Revisión del Sprint 2](03_revision_del_sprint_v_1_0_0.md)
 - [Impedimentos Sprint 2](02_registro_de_impedimentos_v_1_0_0.md)
-- [Verificación integral Sprint 2](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md)
+- **Verificación integral Sprint 2 — fuente histórica no localizada**
 - [Retrospectiva Sprint 1](../Sprint%201/04_retrospectiva_del_sprint_V_1_0_1.md) *(sin modificar)*
 
 ---
 
 [← Volver al README](../../../README.md)
+
+
+## Referencias históricas pendientes — aclaración del 17/11/2026
+
+Los enlaces siguientes apuntaban a archivos ausentes del repositorio. Se conservan sus destinos originales para trazabilidad, sin presentarlos como evidencia comprobada ni reconstruir documentos históricos:
+
+- `../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md`
+- `../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md`
+
+[Revisión de datos y límites](../../REVISION_DATOS_Y_MEJORAS.md). El texto anterior conserva su corte histórico; esta aclaración no prueba aceptación ni ejecución de las actividades referidas.

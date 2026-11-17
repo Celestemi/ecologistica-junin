@@ -1,5 +1,24 @@
 # 03. Revisión del Sprint 2 V_1_0_0.md
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: contenido para condiciones no verificadas
+
+| Condición histórica sin verificación | Actividad propuesta | Evidencia requerida y responsable |
+|---|---|---|
+| Análisis sin hallazgos críticos/altos bloqueantes | Ejecutar análisis estático y dependencias sobre la candidata; revisar avisos contextuales. | Exportación y tratamiento de hallazgos, QA + Backend. |
+| Revisión por par | Revisor distinto del autor inspecciona restricciones, transacciones y privacidad. | Identificador de revisión y decisión real, equipo técnico. |
+| CI/CD a staging | Ejecutar pipeline con PostGIS y desplegar candidata. | URL/ID de ejecución, versión y smoke test, DevOps. |
+| SLA de API | Dataset factible, repeticiones y proveedor identificado. | Tiempo total y ausencia de violaciones, QA. |
+| Caso infeliz de publicación | Provocar sobrecarga, ventana imposible y jornada excedida. | Respuesta explícita y base sin persistencia parcial, Backend + QA. |
+
+Se propone revisar el resultado consolidado el 27/11/2026. La matriz de decisión mantiene US-005, US-007, US-008, US-009 y EN-001 con sus criterios originales; los 34 SP comprometidos históricos no se convierten en aceptados mediante esta propuesta.
+<!-- complemento-r4:fin -->
+
+---
+
+
 # Revisión del sprint
 
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.
@@ -29,7 +48,7 @@
 
 ## Objetivo del sprint (recordatorio)
 
-Endurecer geocodificación, restricciones duras, secuencia/ETA y SLA del motor, manteniendo regresión Sprint 1 — [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md) §1.
+Endurecer geocodificación, restricciones duras, secuencia/ETA y SLA del motor, manteniendo regresión Sprint 1 — **PLAN_IMPLEMENTACION_SPRINT_2.md — fuente histórica no localizada** §1.
 
 ---
 
@@ -53,9 +72,9 @@ Leyenda **estado final:** *Implementado* = entregable en repo; *Done (DoD)* = cu
 
 | Artefacto | Ubicación |
 |-----------|-----------|
-| Plan Sprint 2 | [PLAN_IMPLEMENTACION_SPRINT_2.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md) |
-| Verificación QA | [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) |
-| Rendimiento EN-001 | [REPORTE_RENDIMIENTO_EN_001.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md) |
+| Plan Sprint 2 | **PLAN_IMPLEMENTACION_SPRINT_2.md — fuente histórica no localizada** |
+| Verificación QA | **VERIFICACION_FINAL_SPRINT_2.md — fuente histórica no localizada** |
+| Rendimiento EN-001 | **REPORTE_RENDIMIENTO_EN_001.md — fuente histórica no localizada** |
 | Migraciones | `app/db/migrations.py` (`007_geocodificacion_pedido`, `008_eta_detalle_ruta`) |
 | Tests dedicados | `tests/test_geocode_us005.py`, `test_optimizer_us007.py`, `test_hard_constraints_us008.py`, `test_eta_us009.py`, `test_solver_sla_en001.py` |
 | CI | `.github/workflows/ci.yml` (**ejecución remota no verificada**) |
@@ -69,7 +88,7 @@ Leyenda **estado final:** *Implementado* = entregable en repo; *Done (DoD)* = cu
 Evidencias **verificables** sustitutivas de narrativa de demo:
 
 1. Inspección de código y anotaciones OpenAPI en `app/api/v1/routes.py`.
-2. Corrida pytest parcial documentada en [VERIFICACION_FINAL_SPRINT_2.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md) §3.
+2. Corrida pytest parcial documentada en **VERIFICACION_FINAL_SPRINT_2.md — fuente histórica no localizada** §3.
 3. Benchmark solver archivable vía `EN001_WRITE=1` y `tests/test_solver_sla_en001.py -m slow`.
 
 ---
@@ -106,3 +125,14 @@ Evidencias **verificables** sustitutivas de narrativa de demo:
 ---
 
 [← Volver al README](../../../README.md)
+
+
+## Referencias históricas pendientes — aclaración del 17/11/2026
+
+Los enlaces siguientes apuntaban a archivos ausentes del repositorio. Se conservan sus destinos originales para trazabilidad, sin presentarlos como evidencia comprobada ni reconstruir documentos históricos:
+
+- `../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_2.md`
+- `../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/VERIFICACION_FINAL_SPRINT_2.md`
+- `../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_RENDIMIENTO_EN_001.md`
+
+[Revisión de datos y límites](../../REVISION_DATOS_Y_MEJORAS.md). El texto anterior conserva su corte histórico; esta aclaración no prueba aceptación ni ejecución de las actividades referidas.

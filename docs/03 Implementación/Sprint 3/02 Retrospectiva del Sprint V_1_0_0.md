@@ -1,5 +1,23 @@
 ﻿# Retrospectiva del sprint
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: acciones y medición futura
+
+| Aprendizaje propuesto | Acción | Responsable por rol | Fecha objetivo |
+|---|---|---|---|
+| El mapa debe mostrar el estado operativo completo | Validar ruta publicada junto a pedidos nuevos y pendientes. | Frontend + QA | 24/11/2026 |
+| Persistencia e interacción requieren el mismo contrato | Revisar alta, edición, reapertura y error recuperable. | Backend + Frontend | 24/11/2026 |
+| Un gate parcial no acredita accesibilidad integral | Evaluar contraste, teclado, lector y zoom con estado realista. | QA | 25/11/2026 |
+| El equipo necesita cierre visible de tareas | Usar matriz con evidencia y revisor antes de Terminado. | PM + QA | 27/11/2026 |
+
+Se propone medir en la próxima revisión tareas completadas sin ayuda, errores y percepción 1–5. Estos instrumentos completan la propuesta de seguimiento; no se añaden respuestas de personas ni acuerdos como si la reunión ya hubiera ocurrido.
+<!-- complemento-r4:fin -->
+
+---
+
+
 **Versión documental:** V_1_0_0
 
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.

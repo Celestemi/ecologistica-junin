@@ -1,5 +1,25 @@
 # Retrospectiva del Sprint 1
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: agenda y mejoras propuestas
+
+Agenda de 30 minutos: identificar dificultades (5), seleccionar causas (10), priorizar mejoras (10) y asignar seguimiento (5). Se propone revisar fundación en la sesión consolidada del 27/11/2026; se documentarán participantes reales al realizarla.
+
+| Mejora propuesta | Responsable por rol | Fecha objetivo | Cómo observar avance |
+|---|---|---|---|
+| Mantener una matriz criterio → prueba → resultado | QA | 20/11/2026 | Cada condición del incremento tiene evidencia o estado explícito. |
+| Preparar PostGIS y datos repetibles antes de revisar | DevOps | 23/11/2026 | Arranque y limpieza reproducibles en entorno aislado. |
+| Revisar contrato CSV y edición de puntos | Backend + Frontend | 25/11/2026 | Casos válidos, inválidos, duplicados y reapertura. |
+| Registrar decisiones y responsables oportunamente | PM | 27/11/2026 | Minuta con acción, responsable, fecha y criterio de cierre. |
+
+Como hipótesis de aprendizaje, integrar entorno y datos al inicio de la iteración reduce bloqueos de revisión. La tabla es una propuesta de mejora, sin votos ni consenso atribuidos al equipo.
+<!-- complemento-r4:fin -->
+
+---
+
+
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.
 
 **Versión:** V_1_0_1 (SemVerDoc — corrección de coherencia post-verificación DoD, 2026-10-26)
@@ -79,8 +99,17 @@ La sección *Compromisos del equipo* de la retrospectiva **V_1_0_0** listaba die
 - [Informe de estado V_1_0_1](01_informe_de_estado_del_proyecto_v_1_0_1.md)
 - [Revisión del Sprint V_1_0_1](03_revision_del_sprint_v_1_0_1.md)
 - [Registro de impedimentos V_1_0_1](02_registro_de_impedimentos_v_1_0_1.md)
-- [Reporte verificación DoD](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md)
+- **Reporte verificación DoD — fuente histórica no localizada**
 
 ---
 
 [← Volver al README](../../../README.md)
+
+
+## Referencias históricas pendientes — aclaración del 17/11/2026
+
+Los enlaces siguientes apuntaban a archivos ausentes del repositorio. Se conservan sus destinos originales para trazabilidad, sin presentarlos como evidencia comprobada ni reconstruir documentos históricos:
+
+- `../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md`
+
+[Revisión de datos y límites](../../REVISION_DATOS_Y_MEJORAS.md). El texto anterior conserva su corte histórico; esta aclaración no prueba aceptación ni ejecución de las actividades referidas.

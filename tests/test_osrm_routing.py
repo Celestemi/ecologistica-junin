@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from io import StringIO
 from unittest.mock import patch
+from time import monotonic
 
 import pytest
 
@@ -81,3 +82,33 @@ def test_prepare_osrm_routing_without_base_url(monkeypatch: pytest.MonkeyPatch) 
     assert adjuster is None
     assert cache is None
     get_settings.cache_clear()
+
+
+def test_geometry_requests_respect_the_shared_optimizer_deadline():
+    cache = OsrmLegCache("https://router.test", timeout_seconds=15.0)
+    cache._deadline = monotonic() + 1.0
+    with patch("app.services.osrm_client.fetch_driving_leg", return_value=None) as mocked:
+        cache.get_leg(-12.05, -75.21, -12.06, -75.20)
+        assert 0 < mocked.call_args.kwargs["timeout_seconds"] <= 1.0
+    cache._deadline = monotonic() - 1
+    with patch("app.services.osrm_client.fetch_driving_leg") as mocked:
+        assert cache.get_leg(-12.03, -75.21, -12.06, -75.20) is None
+        mocked.assert_not_called()
+
+
+def test_solver_fetches_geometry_only_for_the_winning_route():
+    from tests.test_optimizer_us007 import _depot, _order, _vehicle
+    from app.services.genetic_solver import solve_vrptw
+
+    orders = [_order(i, lon=-75.20 + i * 0.001, lat=-12.04, start_h=8, end_h=18) for i in range(1, 5)]
+    cache = OsrmLegCache("https://router.test", timeout_seconds=1)
+    leg = OsrmRouteLeg(distance_km=1, duration_minutes=2, coordinates=((-75.21, -12.05), (-75.20, -12.04)))
+    with patch.object(cache, "prepare_distance_matrix"), patch.object(cache, "get_matrix_leg", return_value=(1, 2)), \
+         patch.object(OsrmLegCache, "matrix_prepared", property(lambda self: True)), \
+         patch("app.services.osrm_client.fetch_driving_leg", return_value=leg) as mocked:
+        result = solve_vrptw(orders, [_vehicle()], _depot(), routing_cache=cache,
+                            distance_adjuster=lambda *args: 1, generations=8, population_size=8)
+    assert result.feasible
+    assert mocked.call_count == len(orders) + 1
+    assert all(stop.leg_coordinates for itinerary in result.itineraries for stop in itinerary.stops
+               if stop.stop_type.value != "depot_start")

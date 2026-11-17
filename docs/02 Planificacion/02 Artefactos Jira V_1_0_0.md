@@ -1,5 +1,26 @@
 # 02 Artefactos Jira V_1_0_0
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: configuración propuesta de seguimiento
+
+Para completar la información temporal se propone una release académica objetivo al 30/11/2026 y un tablero con columnas Por hacer, En curso, Revisión/QA y Terminado. La PM mantiene alcance/fechas; cada responsable técnico actualiza su tarea y QA enlaza resultado y versión. No se ha creado ni modificado un proyecto Jira remoto.
+
+| Campo propuesto | Contenido |
+|---|---|
+| Identificador | R4-01 a R4-08 para las ocho tareas de preparación de cierre. |
+| Vínculo funcional | RF/RNF o regla que se verifica, sin sustituir su código original. |
+| Criterio de salida | Resultado observable y evidencia requerida. |
+| Fecha y puntos | Estimación del escenario; cambios con motivo registrado. |
+| Evidencia | Archivo/reporte, versión y responsable de revisión. |
+
+Las cinco imágenes existentes se conservan como material histórico. Las series simuladas del complemento sirven para elaborar los radiadores ilustrativos, sin atribuirlas a una exportación auténtica de Jira de 2026.
+<!-- complemento-r4:fin -->
+
+---
+
+
 ## Informe de evidencia visual y funcional de la parametrización de Jira Software
 
 **Proyecto:** EcoLogística Huancayo  

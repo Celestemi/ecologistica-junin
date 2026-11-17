@@ -1,6 +1,32 @@
 [Volver al README principal](../../README.md)
 
+> **Actualización documental r3 — 17/11/2026.** El [estado técnico vigente](../ESTADO_TECNICO_VIGENTE.md) contiene la medición frontend nueva y sus límites. El texto r2 que sigue se conserva como registro histórico; sus pruebas backend, SW, análisis de seguridad y aceptaciones no se reejecutaron en r3. No constituye cierre aprobado.
+
 # Reporte de Estado del Proyecto (Status Report)
+
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: estado del escenario académico
+
+**Corte documental:** 17/11/2026. **Corte económico del ejercicio:** 16/11/2026. Las cifras siguientes son simuladas y completan la práctica de gestión, sin contabilizar gasto ni aceptación reales.
+
+| Campo antes sin información | Contenido del escenario |
+|---|---|
+| Actividades y siguiente hito | Datos/matriz 18–20/11; validación 23–25/11; ensayo 26/11; revisión 27/11; propuesta de cierre 30/11. |
+| Dependencia principal | Datos y entorno → integración → revisión → transferencia; sin duración crítica calculada. |
+| Fondos del periodo 10–16/11 | AC simulado USD 14 700; acumulado USD 112 700. |
+| Costo y avance del periodo | PV USD 12 000; EV USD 13 440; CV = −USD 1 260; SPI del periodo 1,12 y CPI del periodo 0,9143. |
+| Situación acumulada | PV USD 112 000; EV USD 107 520; SV = −USD 4 480 y CV = −USD 5 180. |
+| Próximo periodo | Presupuesto temporal restante hasta BAC USD 22 400; costo por completar proyectado por CPI USD 28 175. Son magnitudes distintas. |
+| Causa ilustrativa de desviación | Supuesto: mayor esfuerzo de integración/revisión y trabajo aún por aceptar. No se atribuyen horas o causas económicas reales. |
+| Acción propuesta | Priorizar revisión y bloqueos; controlar cambios y registrar costos por paquete y periodo. |
+
+La PM coordina; QA consolida evidencia; Backend/Frontend corrigen; DevOps prepara entorno. El escenario no cuantifica consumo de contingencia: para hacerlo se necesita registro separado de autorización y uso. Las suites r2/r3 del texto histórico no se suman ni se reejecutaron en r4.
+<!-- complemento-r4:fin -->
+
+---
+
 
 > **Revisión técnica r2 — 17/11/2026, America/Lima.** Se conserva versión base 1.0.0 y nombre exigido por la plantilla. Referencia vigente: main / b47d5eb7cda26444c56460ea74591cc5f973e0b3 + correcciones sin commit. [Control de implementación](../../AUDITORIA/CONTROL_CORRECCIONES_SPRINT4.md) y [resultados actuales](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md). El estado es borrador, sin aceptación administrativa. Los resultados previos se conservan en sus fuentes y en el historial al final.
 
@@ -41,7 +67,13 @@
 - **Nuevos incidentes (Issues) surgidos:** AF-24 corregido; nuevas regresiones encontraron riesgo de sustitución de entregas activas y se agregó rechazo 409 probado. SCA detectó aviso moderado transitivo y se parcheó un único paquete. Fallo inicial de caché uv se resolvió sin elevar permisos ni cambiar protecciones.
 - **Comentarios relevantes:** pruebas técnicas y smoke/restore descartable no certifican normas, disponibilidad, ahorros mensuales, satisfacción o cierre. [Datos EVM requeridos](../../AUDITORIA/SOLICITUD_DATOS_EVM.md) y [evidencias humanas](../../AUDITORIA/SOLICITUD_EVIDENCIAS_HUMANAS.md).
 
+## Actualización técnica r3: pedidos y puntos de entrega
+
+El formulario de alta, la persistencia y edición del marcador y la visualización conjunta de rutas/pedidos están implementados. La ejecución de este corte aprobó 86/86 pruebas frontend. Cobertura: 81,35 % de líneas y 73,93 % de ramas; quedan 268 líneas y 360 ramas sin cubrir. TypeScript y build terminaron con salida 0. No se reejecutaron backend, SW aislado, seguridad ni aceptación humana. [Detalle y evidencia](../ESTADO_TECNICO_VIGENTE.md).
+
 ## Historial de revisiones del borrador
+
+Revisión r3 (17/11/2026): incorporación de evidencia frontend nueva, cifras con denominador y límites, sin modificar costos reales ni aceptación. El registro r2 conserva sus valores históricos.
 
 | Versión base / revisión | Fecha | Cambio y fuente |
 |---|---|---|

@@ -1,5 +1,25 @@
 # 03. Registro de Riesgos V_1_0_0 (v2)
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: seguimiento y disparadores propuestos
+
+| Riesgo del proyecto | Disparador para actuar | Responsable por rol | Acción y salida verificable |
+|---|---|---|---|
+| Solver rápido pero no factible | Cualquier violación dura o pedido duplicado. | Backend + QA | Impedir publicación; conservar caso reproducible y explicar exclusiones. |
+| Pérdida de entrega offline | Registro ausente o duplicado tras reconectar. | Frontend + QA | Comprobar cola, reintento e idempotencia con datos aislados. |
+| Dependencia de entorno/proveedor | API, PostGIS o ruteo no disponibles. | DevOps | Recuperar entorno; registrar fuente alternativa y límites. |
+| Falta de evidencia de gestión | Costo, aceptación o decisión sin origen/fecha. | PM | Usar supuesto identificado hasta recopilar fuente; no elevarlo a resultado real. |
+| Demora de revisión | Más de dos tareas acumuladas en QA. | QA + PM | Reducir trabajo nuevo y priorizar revisión del incremento. |
+| Uso de regla normativa no confirmada | Intento de activar restricción sin fuente. | PM + administrador | Mantener desactivada y registrar revisión pendiente. |
+
+Frecuencia propuesta: seguimiento diario de riesgos altos/críticos y revisión semanal del registro. La ventana de revalidación es 23–25/11/2026. No se cambian las probabilidades históricas sin observaciones nuevas.
+<!-- complemento-r4:fin -->
+
+---
+
+
 **Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.  
 **Estándar:** PMBOK® Guide 7.ª Edición / CMMI-DEV v2.0 (Gestión de Riesgos - RSKM)  
 **Versión:** V_1_0_0 (v2)  

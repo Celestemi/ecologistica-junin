@@ -1,6 +1,29 @@
 [Volver al README principal](../../README.md)
 
+> **Actualización documental r3 — 17/11/2026.** El [estado técnico vigente](../ESTADO_TECNICO_VIGENTE.md) contiene la medición frontend nueva y sus límites. El texto r2 que sigue se conserva como registro histórico; sus pruebas backend, SW, análisis de seguridad y aceptaciones no se reejecutaron en r3. No constituye cierre aprobado.
+
 # Reporte de Variación (Variance Report)
+
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: variaciones del ejercicio contextual
+
+Los importes son **datos simulados** del modelo común. Para evitar ambigüedad: costo ejecutado menos plan = AC−PV; variación EVM de costo = EV−AC; variación EVM de cronograma = EV−PV.
+
+| Dimensión del ejercicio | Planeado | Supuesto alcanzado/incurrido | Variación e interpretación |
+|---|---:|---:|---|
+| Presupuesto acumulado al 16/11 | PV USD 112 000 | AC USD 112 700 | AC−PV = +USD 700 (+0,625 % respecto de PV); diferencia de gasto, no CV EVM. |
+| Costo del trabajo ganado | EV USD 107 520 | AC USD 112 700 | CV = −USD 5 180; CPI = 0,9540. |
+| Avance valorado | PV USD 112 000 | EV USD 107 520 | SV = −USD 4 480; SPI = 0,9600; no equivale a días. |
+| Proyección final por CPI | BAC USD 134 400 | EAC USD 140 875 | VAC = −USD 6 475; sobrecosto proyectado 4,82 %. |
+| Hito final | Objetivo propuesto 30/11/2026 | Fecha real sin registro | No se crea una fecha real; próxima revisión propuesta 27/11. |
+
+Se propone tolerancia presupuestaria ±5 % y alerta SPI/CPI<0,95. El EAC queda dentro de esa tolerancia hipotética, pero eso no aprueba sobrecostos ni cierre. La causa del ejercicio es esfuerzo adicional de integración/QA; PM y equipo revisarían capacidad y alcance antes de modificar fechas. Calidad se revisa con la matriz y los resultados históricos existentes, sin inventar métricas nuevas.
+<!-- complemento-r4:fin -->
+
+---
+
 
 > **Revisión técnica r2 — 17/11/2026, America/Lima.** Se conserva versión base 1.0.0 y nombre exigido por la plantilla. Referencia vigente: main / b47d5eb7cda26444c56460ea74591cc5f973e0b3 + correcciones sin commit. [Control de implementación](../../AUDITORIA/CONTROL_CORRECCIONES_SPRINT4.md) y [resultados actuales](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md). El estado es borrador, sin aceptación administrativa. Los resultados previos se conservan en sus fuentes y en el historial al final.
 
@@ -42,7 +65,19 @@ Fuente: [presupuesto,15/09/2026](../02%20Planificacion/04_presupuesto_del_proyec
 
 [DoD histórico](../02%20Planificacion/01_transformando_a_agil_v_1_0_0.md), [defectos actuales](../../AUDITORIA/SPRINT4_DEFECTOS_PENDIENTES.md). La variación de cronograma EVM(SV) se expresa en presupuesto y no sustituye días de atraso; CV=EV−AC tampoco equivale a la diferencia costo real−plan de esta tabla.
 
+## Actualización técnica r3: variación observada en frontend
+
+| Indicador | Registro r2 | Medición r3 | Diferencia entre reportes |
+|---|---:|---:|---:|
+| Pruebas frontend aprobadas | 70 | 86 | +16 casos |
+| Cobertura de líneas frontend | 80,47 % | 81,35 % | +0,88 pp |
+| Cobertura de ramas frontend | 71,55 % | 73,93 % | +2,38 pp |
+
+El código y los denominadores cambiaron: las diferencias describen los reportes y no aíslan el efecto de una sola mejora. El gate actual solo exige 80 % de líneas; sentencias (78,81 %) y funciones (77,22 %) quedan por debajo de ese valor. Costos y cronograma reales siguen no calculables. [Medición completa](../evidencias/2026-11-17/frontend.json).
+
 ## Historial de revisiones del borrador
+
+Revisión r3 (17/11/2026): incorporación de evidencia frontend nueva, cifras con denominador y límites, sin modificar costos reales ni aceptación. El registro r2 conserva sus valores históricos.
 
 | Versión base / revisión | Fecha | Cambio y fuente |
 |---|---|---|

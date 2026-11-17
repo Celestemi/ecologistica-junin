@@ -1,4 +1,14 @@
-import type { RouteFeature, RouteOptimization } from "../types";
+import type { Order, RouteFeature, RouteOptimization } from "../types";
+
+export function ordersOutsideRoute(orders: Order[], solution: RouteOptimization | null): Order[] {
+  const routedCodes = new Set(routeStops(solution).filter((stop) => stop.type === "delivery").map((stop) => stop.orderCode));
+  return orders.filter((order) => !routedCodes.has(order.codigo_pedido));
+}
+
+export function orderLocationHref(order: Order): string {
+  const fecha = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(new Date(order.ventana_inicio));
+  return `/pedidos?fecha=${fecha}&pedido=${order.id}`;
+}
 
 export type RouteStop = {
   key: string;

@@ -1,4 +1,26 @@
 # 01. Transformando a Ágil V_1_0_0.md
+
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: capacidad, aceptación y seguimiento
+
+Se propone mantener las historias y estimaciones históricas, y preparar una iteración de validación con ocho tareas R4-01…R4-08 por 20 puntos. Sus puntos son estimaciones nuevas del ejercicio y no corrigen retrospectivamente los SP aceptados de Sprint 1/2.
+
+| Regla propuesta de trabajo | Aplicación |
+|---|---|
+| Capacidad | Ocho tareas: trazabilidad, dataset, restricciones, UI, accesibilidad, seguridad, respaldo y demostración. |
+| Límite de trabajo en curso | Máximo dos tareas en desarrollo y dos en revisión/QA; terminar revisión antes de iniciar una tercera. |
+| Ready | Criterio, datos y revisor definidos; dependencia identificada. |
+| Done | Resultado reproducible, revisión y evidencia vinculados, sin defectos bloqueantes; mantener DoD global. |
+| Reestimación | Registrar motivo y fecha; no convertir automáticamente puntos a horas o USD. |
+| Revisión | Registrar aceptado/rechazado por criterio, versión y responsable. |
+
+Las cinco jornadas D1…D5 de los radiadores son un ejercicio, sin fechas históricas atribuidas. La ventana futura propuesta de validación es 18–30/11/2026 y depende de la disponibilidad del equipo y evaluador.
+<!-- complemento-r4:fin -->
+
+---
+
 **Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.  
 **Ámbito:** Huancayo, El Tambo y Chilca (Provincia de Huancayo, Junín)  
 **Versión:** V_1_0_0  

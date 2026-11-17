@@ -1,5 +1,30 @@
 # Reporte de Seguridad OWASP Top 10 (2025)
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: modelo de amenazas y plan de verificación
+
+Este modelo de amenazas es una propuesta documental para completar A06 y las comprobaciones no disponibles; no representa un pentest ejecutado.
+
+| Activo / frontera | Amenaza del caso | Control y comprobación propuestos | Responsable por rol |
+|---|---|---|---|
+| Sesión navegador–API | Token usado por usuario/rol no autorizado. | Verificar expiración, revocación prevista, rol y objeto en cada canal. | Backend + QA |
+| Conductor–vehículo/pedido | Suplantar vehículo o modificar entrega ajena. | Validar identidad vinculada y reasignación; probar terminalidad. | Backend + QA |
+| Seguimiento público | Exponer GPS, comprobante o datos de terceros. | Respuesta mínima, token opaco y validación de alcance. | Backend + QA |
+| Importador–BD | Entrada malformada, duplicados o transacción parcial. | Esquemas, límites, consultas parametrizadas y rollback. | Backend |
+| Servicio de ruteo | Timeout, respuesta inválida o proveedor no permitido. | Límites de tiempo/tamaño, destinos permitidos y fallo controlado. | Backend + DevOps |
+| Dependencias–artefacto | Paquete vulnerable o procedencia desconocida. | SCA npm/Python, lockfiles, SBOM y versiones revisadas. | DevOps |
+| Registros–operación | Incidentes sin detección o registro de secretos. | Minimización, retención propuesta de 30 días en entorno académico y alertas sobre bloqueos/5xx. | DevOps + PM |
+
+Se propone revisar amenazas y dependencias el 23–25/11/2026. La ficha de SCA debe indicar base de avisos/fecha, versión analizada y tratamiento. No se reemplazan los resultados históricos divergentes por un nuevo “0 vulnerabilidades”; TLS, alertamiento y aislamiento requieren comprobación en el entorno objetivo.
+<!-- complemento-r4:fin -->
+
+---
+
+
+> **Vigencia documental r3 — 17/11/2026:** este reporte conserva la evaluación puntual y sus antecedentes; no es un escaneo nuevo del árbol actual. Las mejoras frontend de pedidos se verificaron con Vitest, sin reejecutar SCA, DAST ni SonarQube. Las afirmaciones temporales «actual» y «vigente» del cuerpo se refieren al corte registrado aquí. [Estado técnico actualizado](../../ESTADO_TECNICO_VIGENTE.md).
+
 **Versión documental:** V_1_0_0
 
 **Nombre del proyecto:** EcoLogística Junín  

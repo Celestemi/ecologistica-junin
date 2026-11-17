@@ -154,6 +154,13 @@ MIGRATIONS: tuple[tuple[str, str], ...] = (
         WHERE modelo_distancia IS NULL;
         """,
     ),
+    (
+        "009_pedido_vehiculo_asignado",
+        """
+        ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS vehiculo_asignado_id INTEGER
+        REFERENCES vehiculos(id);
+        """,
+    ),
 )
 
 

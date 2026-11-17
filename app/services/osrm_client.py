@@ -50,6 +50,7 @@ class OsrmLegCache:
         self._legs: dict[tuple[float, float, float, float], OsrmRouteLeg | None] = {}
         self._matrix: dict[tuple[float, float, float, float], tuple[float, float] | None] = {}
         self._matrix_prepared = False
+        self._deadline: float | None = None
 
     @property
     def matrix_prepared(self) -> bool:
@@ -66,6 +67,7 @@ class OsrmLegCache:
         keys = list(dict.fromkeys(_coord_key(lat, lon, lat, lon)[:2] for lat, lon in points))
         size = max(1, min(50, chunk_size))
         self._matrix_prepared = True
+        self._deadline = deadline
         for row_start in range(0, len(keys), size):
             origins = keys[row_start : row_start + size]
             for column_start in range(0, len(keys), size):
@@ -135,13 +137,19 @@ class OsrmLegCache:
     ) -> OsrmRouteLeg | None:
         key = _coord_key(origin_lat, origin_lon, dest_lat, dest_lon)
         if key not in self._legs:
+            timeout = self._timeout
+            if self._deadline is not None:
+                remaining = self._deadline - monotonic()
+                if remaining <= 0:
+                    return None
+                timeout = min(timeout, remaining)
             self._legs[key] = fetch_driving_leg(
                 self._base,
                 origin_lat,
                 origin_lon,
                 dest_lat,
                 dest_lon,
-                timeout_seconds=self._timeout,
+                timeout_seconds=timeout,
             )
         return self._legs[key]
 

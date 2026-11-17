@@ -51,6 +51,7 @@ from app.schemas.logistics import (
     PedidoRead,
     PedidoLocationUpdate,
     PedidoWindowUpdate,
+    PedidoVehicleUpdate,
     RouteOptimizationGeoJSON,
     ExclusionPlacaMetadata,
     RouteOptimizationMetadata,
@@ -176,17 +177,18 @@ router = APIRouter(prefix="/api/v1")
     responses={401: {"description": "No hay sesión."}, 403: {"description": "Rol no autorizado."}},
 )
 async def list_pending_orders(
+    fecha: date | None = None,
     session: AsyncSession = Depends(get_db),
     _: Usuario = Depends(
         require_roles(*DESK_READ, accion="pedidos_denegado", detail=DENY_ROLE),
     ),
 ) -> list[Pedido]:
     """Devuelve los pedidos en estado pendiente, del más urgente al más tardío."""
-    result = await session.scalars(
-        select(Pedido)
-        .where(Pedido.estado == EstadoPedido.PENDING)
-        .order_by(Pedido.ventana_inicio, Pedido.id)
-    )
+    query = select(Pedido).where(Pedido.estado == EstadoPedido.PENDING)
+    if fecha is not None:
+        start = datetime.combine(fecha, time.min, tzinfo=LIMA)
+        query = query.where(Pedido.ventana_inicio >= start, Pedido.ventana_inicio < start + timedelta(days=1))
+    result = await session.scalars(query.order_by(Pedido.ventana_inicio, Pedido.id))
     return list(result.all())
 
 
@@ -367,6 +369,46 @@ async def update_order_location(
     return order
 
 
+@router.patch("/pedidos/{pedido_id}/vehiculo", response_model=PedidoRead, tags=["pedidos"])
+async def assign_order_vehicle(
+    pedido_id: int,
+    payload: PedidoVehicleUpdate,
+    session: AsyncSession = Depends(get_db),
+    actor: Usuario = Depends(require_roles(*ORDER_WRITE, accion="asignacion_denegada", detail=DENY_ROLE)),
+) -> Pedido:
+    from app.services.active_plan import lock_route_state
+
+    await lock_route_state(session)
+    order = await session.get(Pedido, pedido_id, with_for_update=True)
+    if order is None:
+        raise HTTPException(status_code=404, detail="No existe el pedido.")
+    if order.estado != EstadoPedido.PENDING:
+        raise HTTPException(status_code=409, detail="Solo se pueden asignar vehículos a pedidos pendientes de ruta.")
+    if payload.vehiculo_asignado_id is not None:
+        vehicle = await session.get(Vehiculo, payload.vehiculo_asignado_id, with_for_update=True)
+        if vehicle is None:
+            raise HTTPException(status_code=404, detail="No existe el vehículo.")
+        if vehicle.estado_operativo != EstadoOperativoVehiculo.ACTIVO or not vehicle.activo:
+            raise HTTPException(status_code=409, detail="El vehículo debe estar activo para recibir pedidos.")
+        depot = await _require_depot(session)
+        if vehicle.deposito_id != depot.id:
+            raise HTTPException(status_code=409, detail="El vehículo no pertenece al depósito de planificación.")
+        if order.peso_kg > vehicle.capacidad_kg or (
+            order.volumen_m3 is not None and order.volumen_m3 > vehicle.capacidad_m3
+        ):
+            raise HTTPException(status_code=409, detail="El pedido supera la capacidad del vehículo seleccionado.")
+        config = await load_config(session)
+        allowed, exclusions = filter_vehicles_for_planning([vehicle], _as_lima(order.ventana_inicio).date(), config)
+        if not allowed:
+            raise HTTPException(status_code=409, detail=exclusions[0].motivo)
+    order.vehiculo_asignado_id = payload.vehiculo_asignado_id
+    await record(session, correo=actor.correo, accion="asignar_pedido_vehiculo",
+                 detalle=f"Pedido {order.codigo_pedido}: vehículo {payload.vehiculo_asignado_id or 'automático'}.", usuario=actor)
+    await session.commit()
+    await session.refresh(order)
+    return order
+
+
 @router.get(
     "/vehiculos",
     response_model=list[VehiculoRead],
@@ -375,15 +417,15 @@ async def update_order_location(
     responses={401: {"description": "No hay sesión."}, 403: {"description": "Rol no autorizado."}},
 )
 async def list_vehicles(
+    todos: bool = False,
     session: AsyncSession = Depends(get_db),
     _: Usuario = Depends(require_roles(*MAP_READ, accion="flota_denegada", detail=DENY_ROLE)),
 ) -> list[Vehiculo]:
     """Devuelve los vehículos activos, ordenados por placa."""
-    result = await session.scalars(
-        select(Vehiculo)
-        .where(Vehiculo.estado_operativo == EstadoOperativoVehiculo.ACTIVO)
-        .order_by(Vehiculo.placa, Vehiculo.id)
-    )
+    query = select(Vehiculo)
+    if not todos:
+        query = query.where(Vehiculo.estado_operativo == EstadoOperativoVehiculo.ACTIVO)
+    result = await session.scalars(query.order_by(Vehiculo.placa, Vehiculo.id))
     return list(result.all())
 
 
@@ -588,12 +630,13 @@ async def confirm_delivery(
     },
 )
 async def fleet_map(
+    fecha: date | None = None,
     session: AsyncSession = Depends(get_db),
     actor: Usuario = Depends(require_roles(*MAP_READ, accion="ruta_denegada", detail=DENY_ROLE)),
 ) -> RouteOptimizationGeoJSON:
     """GeoJSON de la última ruta de cada vehículo. Un recálculo no borra al resto."""
     scoped_plate = await _enforce_vehicle_scope(session, actor, None)
-    grouped = await _fleet_groups(session)
+    grouped = await _fleet_groups(session, operation_day=fecha)
     if scoped_plate is not None:
         grouped = [details for details in grouped if details and details[0].vehiculo.placa == scoped_plate]
     if not grouped:
@@ -975,12 +1018,15 @@ def _open_stop(detail: RutaDetalle) -> bool:
     return detail.pedido.estado not in _CLOSED_ORDERS
 
 
-async def _fleet_groups(session: AsyncSession) -> list[list[RutaDetalle]]:
+async def _fleet_groups(session: AsyncSession, *, operation_day: date | None = None) -> list[list[RutaDetalle]]:
     """Última secuencia útil de cada vehículo, de la solución más reciente que aún la tenga."""
+    query = select(SolucionRuta)
+    if operation_day is not None:
+        query = query.where(SolucionRuta.fecha_operacion == operation_day)
     solutions = list(
         (
             await session.scalars(
-                select(SolucionRuta)
+                query
                 .options(
                     selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.vehiculo),
                     selectinload(SolucionRuta.detalles).selectinload(RutaDetalle.pedido),

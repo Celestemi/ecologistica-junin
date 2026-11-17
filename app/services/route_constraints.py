@@ -260,6 +260,12 @@ def validate_for_publication(
                     vehicle_plate=plate, order_code=code,
                 ))
             assigned.add(order.id)
+            requested_vehicle = getattr(order, "vehiculo_asignado_id", None)
+            if requested_vehicle is not None and requested_vehicle != itinerary.vehicle_id:
+                violations.append(ConstraintViolation(
+                    code="ASIGNACION_VEHICULO", message=f"El pedido {code} debe viajar en su vehículo asignado.",
+                    vehicle_plate=plate, order_code=code,
+                ))
             if stop.eta is None or not stop.matrix_trusted:
                 violations.append(ConstraintViolation(
                     code="VENTANA_NO_VERIFICABLE", message=f"El pedido {code} no tiene ETA confiable.",

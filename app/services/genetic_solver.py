@@ -204,6 +204,7 @@ class _OrderNode:
     volume_m3: float | None
     window_start: datetime
     window_end: datetime
+    assigned_vehicle_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -267,6 +268,7 @@ class _Problem:
         self.depot_altitude_m = depot_altitude_m
         self.depot_name = depot_name
         self.routing_cache = routing_cache
+        self.include_geometry = True
         self.order_ids = [order.id for order in orders]
         self.orders_by_id = {order.id: order for order in orders}
         self.id_to_index = {order.id: index for index, order in enumerate(orders)}
@@ -357,7 +359,7 @@ class _Problem:
     def leg_coordinates(
         self, origin: int, destination: int
     ) -> tuple[tuple[float, float], ...] | None:
-        if self.routing_cache is None:
+        if self.routing_cache is None or not self.include_geometry:
             return None
         leg = self.routing_cache.get_leg(
             self._latitudes[origin],
@@ -487,6 +489,8 @@ def solve_vrptw(
     if departure_not_before is not None and departure_not_before.tzinfo is None:
         raise ValueError('El inicio operativo debe incluir zona horaria.')
     problem.departure_not_before = departure_not_before
+    # La búsqueda usa la matriz; las calles se consultan solo para el ganador.
+    problem.include_geometry = False
     if not problem.orders:
         return _empty_solution(generations, population_size, seed)
 
@@ -583,9 +587,11 @@ def solve_vrptw(
     fifo = evaluate(fifo_routes, already_repaired=True)
     sequential_routes = _repair(_sequential_baseline_routes(problem), problem)
     sequential = evaluate(sequential_routes, already_repaired=True)
+    problem.include_geometry = True
+    final_evaluation = _evaluate(problem, best.routes, service_minutes)
     elapsed = perf_counter() - started
     return _to_solution(
-        best.evaluation if best.evaluation is not None else evaluate(best.routes),
+        final_evaluation,
         fifo_co2_grams=fifo.co2_grams,
         fifo_distance_km=fifo.distance_km,
         sequential_co2_grams=sequential.co2_grams,
@@ -624,6 +630,10 @@ def _build_problem(
         (_adapt_vehicle(vehicle) for vehicle in active),
         key=lambda vehicle: vehicle.id,
     )
+    available_ids = {vehicle.id for vehicle in adapted_vehicles}
+    for order in adapted_orders:
+        if order.assigned_vehicle_id is not None and order.assigned_vehicle_id not in available_ids:
+            raise ValueError(f"El vehículo asignado al pedido {order.code} no está disponible. Reasigna el pedido o usa asignación automática.")
     depot_lat, depot_lon = _lat_lon(depot.ubicacion)
     return _Problem(
         orders=sorted(adapted_orders, key=lambda order: order.id),
@@ -655,6 +665,7 @@ def _adapt_order(order: Pedido) -> _OrderNode:
         ),
         window_start=_as_aware(order.ventana_inicio),
         window_end=_as_aware(order.ventana_fin),
+        assigned_vehicle_id=getattr(order, "vehiculo_asignado_id", None),
     )
 
 
@@ -1254,13 +1265,19 @@ def _repair(routes: list[list[int]], problem: _Problem) -> list[list[int]]:
     cleaned: list[list[int]] = [[] for _ in problem.vehicles]
     seen: set[int] = set()
     valid = set(problem.order_ids)
+    vehicle_indices = {vehicle.id: index for index, vehicle in enumerate(problem.vehicles)}
     for index, route in enumerate(routes):
         if index >= len(cleaned):
             break
         for order_id in route:
             if order_id in valid and order_id not in seen:
-                cleaned[index].append(order_id)
+                assigned = problem.orders_by_id[order_id].assigned_vehicle_id
+                destination = vehicle_indices[assigned] if assigned is not None else index
+                cleaned[destination].append(order_id)
                 seen.add(order_id)
+    for order in problem.orders:
+        if order.assigned_vehicle_id is not None and order.id not in seen:
+            cleaned[vehicle_indices[order.assigned_vehicle_id]].append(order.id)
     return cleaned
 
 

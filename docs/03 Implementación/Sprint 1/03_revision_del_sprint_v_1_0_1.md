@@ -1,6 +1,26 @@
 # 03. Revisión del Sprint V_1_0_1.md
 
-> **Control de versiones:** sustituye a `03_revision_del_sprint_v_1_0_0.md` (2026-10-26). La V_1_0_0 declaraba 100 % SP y DoD cumplida; esta versión alinea el acta con el código y con [REPORTE_VERIFICACION_DOD_SPRINT_1.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md).
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: guion de revisión y decisión de aceptación
+
+Se propone una revisión de 30 minutos: contexto y alcance (5), acceso/flota/importación (10), ventanas/ubicación/errores (10) y decisión (5). Participan por rol PM, Backend, Frontend, QA y evaluador; la fecha propuesta es 27/11/2026 dentro de la revisión consolidada, sin afirmar una sesión histórica.
+
+| Criterio | Demostración propuesta | Registro necesario |
+|---|---|---|
+| Integridad | Importar el mismo identificador dos veces. | Una entidad persistida y respuesta explícita de duplicado. |
+| Acceso | Conductor intenta una operación de administración. | Rechazo y registro de seguridad sin datos sensibles. |
+| Datos geográficos | Guardar, cerrar y reabrir un punto. | Coordenadas y marcador persistentes. |
+| Calidad | Revisar pruebas, cobertura, revisión y staging de una misma versión. | Evidencia vinculada a cada condición de DoD. |
+
+Se propone una ficha con criterio, observado, evidencia, revisor y decisión: aceptado, rechazado o condicionado con alcance. Una suite preparada o un workflow escrito no sustituye ejecución remota; no se añaden números de PR, aprobaciones o corridas inventados.
+<!-- complemento-r4:fin -->
+
+---
+
+
+> **Control de versiones:** sustituye a `03_revision_del_sprint_v_1_0_0.md` (2026-10-26). La V_1_0_0 declaraba 100 % SP y DoD cumplida; esta versión alinea el acta con el código y con **REPORTE_VERIFICACION_DOD_SPRINT_1.md — fuente histórica no localizada**.
 
 # Revisión del sprint
 
@@ -63,7 +83,7 @@ La revisión **V_1_0_0** describió una *Sprint Demo* en staging con escenarios 
 
 ### Cierre de calidad Sprint 1 (DoD)
 
-Ver [REPORTE_VERIFICACION_DOD_SPRINT_1.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md) §11 y impedimento **IMP-009** en `02_registro_de_impedimentos_v_1_0_1.md`.
+Ver **REPORTE_VERIFICACION_DOD_SPRINT_1.md — fuente histórica no localizada** §11 y impedimento **IMP-009** en `02_registro_de_impedimentos_v_1_0_1.md`.
 
 ### Backlog de producto (sin cambio de alcance Sprint 1)
 
@@ -87,9 +107,19 @@ Ver [REPORTE_VERIFICACION_DOD_SPRINT_1.md](../../../Auditorias-EcoLogistica/03_R
 | Informe de estado | `01_informe_de_estado_del_proyecto_v_1_0_1.md` |
 | Impedimentos | `02_registro_de_impedimentos_v_1_0_1.md` |
 | Retrospectiva | `04_retrospectiva_del_sprint_V_1_0_1.md` |
-| Plan de implementación | [PLAN_IMPLEMENTACION_SPRINT_1.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_1.md) |
+| Plan de implementación | **PLAN_IMPLEMENTACION_SPRINT_1.md — fuente histórica no localizada** |
 | DoD | `docs/02 Planificacion/01_transformando_a_agil_v_1_0_0.md` §2 |
 
 ---
 
 [← Volver al README](../../../README.md)
+
+
+## Referencias históricas pendientes — aclaración del 17/11/2026
+
+Los enlaces siguientes apuntaban a archivos ausentes del repositorio. Se conservan sus destinos originales para trazabilidad, sin presentarlos como evidencia comprobada ni reconstruir documentos históricos:
+
+- `../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md`
+- `../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_1.md`
+
+[Revisión de datos y límites](../../REVISION_DATOS_Y_MEJORAS.md). El texto anterior conserva su corte histórico; esta aclaración no prueba aceptación ni ejecución de las actividades referidas.

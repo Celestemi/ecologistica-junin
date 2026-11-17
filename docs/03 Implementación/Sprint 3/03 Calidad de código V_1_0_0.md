@@ -1,12 +1,35 @@
 # Evaluación de Calidad de Código — SonarQube
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: ficha de análisis y tratamiento de hallazgos
+
+Se propone una nueva ventana de análisis del 23 al 25/11/2026, con QA/DevOps como responsables funcionales. No se asigna una fecha ficticia al escaneo histórico. La ficha de la próxima ejecución debe contener versión/commit, fecha/hora, herramienta/versión, configuración, exclusiones justificadas, denominadores, gate y exportación íntegra.
+
+| Grupo de hallazgos históricos | Tratamiento propuesto | Criterio de salida |
+|---|---|---|
+| Ordenación sin comparador | Revisar el orden requerido y usar comparación explícita si aplica. | Caso representativo y revisión del resultado. |
+| Posible falso positivo en OpenAPI | Contrastar firma de la dependencia instalada y explicar contexto. | Decisión de revisión registrada; no ocultar el aviso sin motivo. |
+| PRNG del algoritmo | Separar aleatoriedad de simulación de generación de secretos. | Revisión contextual con fuente y uso identificado. |
+| HTTP local | Mantener perfil demo explícito y validar HTTPS en entorno de entrega. | Comprobación del entorno; no inferir TLS del código. |
+| Rechazos de cola offline | Normalizar errores y probar persistencia/reconexión. | Sin pérdida ni duplicado y mensajes recuperables. |
+
+Las métricas y conteos originales no se modifican: no hay nueva corrida SonarQube en r4. La información SCM faltante se completa mediante versionado y revisión reales cuando se integren cambios, sin inventar autoría.
+<!-- complemento-r4:fin -->
+
+---
+
+
+> **Aclaración r3 — 17/11/2026:** las cifras SonarQube de este documento pertenecen a un registro anterior. No se reejecutó el analizador ni se confirmó su Quality Gate sobre el árbol actual. La evidencia nueva es [Vitest/V8](../../evidencias/2026-11-17/frontend.json): 86/86 casos, 81,35 % de líneas y 73,93 % de ramas frontend. Son métricas de herramienta y alcance diferentes; no sustituyen el 82,1 % global histórico ni se promedian con él.
+
 **Versión documental:** V_1_1_0
 
 **Nombre del Proyecto:** EcoLogística Huancayo  
-**Fecha de Análisis:** revisión general  
+**Fecha de Análisis:** fecha exacta del escaneo histórico no acreditada en este documento; aclaración documental del 17/11/2026.
 **Versión del Análisis:** V_1_1_0
 
-## 1. Resumen Ejecutivo de Quality Gate
+## 1. Resumen del Quality Gate reportado históricamente
 
 - **Estado del Quality Gate:** PASSED (`OK`).
 - **Porcentaje de Cobertura Global (Coverage):** 82.1%.
@@ -15,11 +38,11 @@
 - **Cobertura de Código Nuevo:** 82.0%.
 - **Duplicación de Código:** 0.0%.
 
-Se ejecutó SonarQube Community Build 26.10.0.133078 localmente mediante Docker Desktop y SonarScanner CLI 8.1.0.6389. El análisis procesó 125 archivos e importó correctamente `coverage.xml` de pytest-cov y `coverage/frontend/lcov.info` de Vitest desde `/usr/src`. El Quality Gate evaluó el código nuevo con 82.0% de cobertura, 0.0% de duplicación y 0 violaciones nuevas. Su aprobación no implica que las 30 incidencias históricas estén resueltas.
+El registro anterior declara SonarQube Community Build 26.10.0.133078 localmente mediante Docker Desktop y SonarScanner CLI 8.1.0.6389, con 125 archivos y reportes `coverage.xml` de pytest-cov y `coverage/frontend/lcov.info` de Vitest desde `/usr/src`. Registra 82.0% de cobertura en código nuevo, 0.0% de duplicación y 0 violaciones nuevas. La actualización r3 no recuperó una exportación autenticada que permita verificar ese escaneo ni su fecha; se conserva como antecedente declarado. Su gate no acredita resolución de las 30 incidencias históricas.
 
 ### Comparación con el análisis anterior
 
-| Métrica | Análisis anterior | Análisis actual | Variación |
+| Métrica | Referencia histórica anterior | Análisis histórico registrado | Variación reportada |
 |---|---:|---:|---:|
 | Cobertura global | 62.0% | **82.1%** | +20.1 pp |
 | Cobertura de líneas | 61.7% | **85.4%** | +23.7 pp |

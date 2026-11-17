@@ -1,5 +1,25 @@
 # Estándares de ingeniería de software y guía de desarrollo verde
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: criterios de aplicación y revisión
+
+| Ámbito | Propuesta de control para este proyecto | Evidencia de revisión |
+|---|---|---|
+| Ingeniería de requisitos | Relacionar los 18 RF y cinco RNF con reglas, pruebas y responsable. | Matriz versionada con estado por condición. |
+| Calidad | Reportar cobertura por capa y denominador; revisar hallazgos contextuales. | Ejecución identificada, configuración y decisión. |
+| Seguridad | Modelar sesión, conductor/pedido, seguimiento y proveedor externo. | Matriz de amenazas, SCA y pruebas por objeto/rol. |
+| Accesibilidad | Conservar AA y 48 × 48 px en controles del conductor. | Auditoría automática más recorrido manual/lector. |
+| Sostenibilidad digital | Comparar cargas equivalentes y medir consumo atribuible. | kWh, intensidad de carbono y unidad funcional documentados. |
+| Continuidad | Copia y restauración en entorno aislado. | Versión, fecha, resultado y responsable. |
+
+Lighthouse Performance móvil ≥70/100 se conserva como **objetivo propuesto**, sin reemplazar “no medido” por una puntuación creada. Los estándares citados orientan la evaluación; aplicar esta matriz no equivale a certificación. Responsable de consolidación propuesto: QA; ventana de revisión 23–25/11/2026.
+<!-- complemento-r4:fin -->
+
+---
+
+
 **Proyecto:** EcoLogística Huancayo
 **Versión:** 1.0.0
 **Fecha:** 10 de noviembre de 2026

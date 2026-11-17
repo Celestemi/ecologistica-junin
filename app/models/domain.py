@@ -203,6 +203,9 @@ class Pedido(Base):
     )
     jornada_id: Mapped[int | None] = mapped_column(ForeignKey("jornadas.id"), nullable=True)
     token_seguimiento: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    vehiculo_asignado_id: Mapped[int | None] = mapped_column(
+        ForeignKey("vehiculos.id"), nullable=True,
+    )
 
     detalles: Mapped[list["RutaDetalle"]] = relationship(back_populates="pedido")
 

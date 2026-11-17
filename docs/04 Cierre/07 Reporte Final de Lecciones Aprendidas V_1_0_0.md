@@ -1,6 +1,30 @@
 [Volver al README principal](../../README.md)
 
+> **Actualización documental r3 — 17/11/2026.** El [estado técnico vigente](../ESTADO_TECNICO_VIGENTE.md) contiene la medición frontend nueva y sus límites. El texto r2 que sigue se conserva como registro histórico; sus pruebas backend, SW, análisis de seguridad y aceptaciones no se reejecutaron en r3. No constituye cierre aprobado.
+
 # Reporte Final de Lecciones Aprendidas (Final Lessons Learned Report)
+
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: conclusiones propuestas y sesión preparada
+
+**Fecha propuesta de reunión:** 27/11/2026. **Duración:** 30 minutos. Participantes por confirmar mediante convocatoria real: PM, equipo técnico, QA/DevOps y evaluador. No se simula una lista de asistentes ni aprobación.
+
+| Conclusión propuesta para discutir | Acción concreta | Responsable por rol | Fecha objetivo | Verificación |
+|---|---|---|---|---|
+| Preparar entorno y dataset al inicio evita bloqueos tardíos. | Usar checklist de PostGIS, API y testigo factible. | DevOps + Backend | 23/11/2026 | Arranque y caso reproducibles. |
+| Separar implementación, prueba y aceptación mejora trazabilidad. | Revisar matriz RF/RNF→criterio→evidencia→decisión. | QA + PM | 27/11/2026 | Cada estado tiene fuente y revisor. |
+| El ahorro necesita referencia comparable. | Mantener mismo lote, flota y ventanas al comparar. | Backend + QA | 25/11/2026 | Cálculo y supuestos visibles. |
+| Gestión económica debe registrarse por periodo. | Adoptar ficha de paquete, horas, tarifa, soporte y aceptación. | PM | 20/11/2026 para preparar formato | Datos reales distinguibles de supuestos. |
+| Revisión es parte de la capacidad del equipo. | Limitar a dos tareas en QA y revisar antes de abrir trabajo nuevo. | QA + equipo | Durante validación | Menor acumulación observada en tablero futuro. |
+| La entrega requiere transferencia operable. | Ensayar respaldo/restauración y guía por roles. | DevOps + equipo | 26/11/2026 | Recorrido y resultado registrados. |
+
+Estas conclusiones son propuestas analíticas acordes con las brechas documentadas. La sesión deberá confirmar qué mantener, qué ajustar y quién asume cada acción. Para satisfacción y reconocimiento se propone una pregunta voluntaria 1–5 más comentario abierto, sin convertir el Mood ilustrativo en respuestas reales del equipo.
+<!-- complemento-r4:fin -->
+
+---
+
 
 > **Revisión técnica r2 — 17/11/2026, America/Lima.** Se conserva versión base 1.0.0 y nombre exigido por la plantilla. Referencia vigente: main / b47d5eb7cda26444c56460ea74591cc5f973e0b3 + correcciones sin commit. [Control de implementación](../../AUDITORIA/CONTROL_CORRECCIONES_SPRINT4.md) y [resultados actuales](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md). El estado es borrador, sin aceptación administrativa. Los resultados previos se conservan en sus fuentes y en el historial al final.
 
@@ -27,7 +51,15 @@ Contexto e impacto actuales: las correcciones AF-01/02/03/24 y el parche transit
 
 No disponibles en los registros revisados como conclusiones de una reunión real: faltan fecha, participantes, discusión, aprobación y compromisos. La matriz anterior es insumo para esa sesión. El equipo deberá confirmar qué prácticas mantener, qué acciones asume, responsable/plazo y cómo verificarlas, junto con satisfacción/transferencia y límites económicos. No se simula acta, consenso ni reconocimiento del equipo.
 
+## Lección técnica añadida en r3: verificar el pedido de extremo a extremo
+
+**Hecho observado:** el mapa principal omitía pedidos nuevos si existía una ruta publicada; guardar una ubicación borraba su marcador de la vista. La corrección combina estado persistido, representación de pedidos pendientes y pruebas de reapertura/edición. Se añadieron casos para pedidos fuera de la primera página y errores recuperables. [Evidencia](../ESTADO_TECNICO_VIGENTE.md).
+
+**Acción propuesta:** incluir en la siguiente revisión un recorrido observado de crear → guardar → volver al dashboard → editar → recargar, con un pedido que no sea de ejemplo. Registrar duración, errores y resultado, sin fijar porcentajes antes de medir. Esta lección procede de la revisión técnica actual; no se atribuye a una retrospectiva de equipo que no fue observada.
+
 ## Historial de revisiones del borrador
+
+Revisión r3 (17/11/2026): incorporación de evidencia frontend nueva, cifras con denominador y límites, sin modificar costos reales ni aceptación. El registro r2 conserva sus valores históricos.
 
 | Versión base / revisión | Fecha | Cambio y fuente |
 |---|---|---|

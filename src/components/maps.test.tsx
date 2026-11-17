@@ -7,18 +7,20 @@ import { PinMap } from "./PinMap";
 import type { Depot, Order, RouteOptimization } from "../types";
 
 const leaflet = vi.hoisted(() => ({ divIcon: vi.fn((options) => options) }));
-const map = vi.hoisted(() => ({ setView: vi.fn(), fitBounds: vi.fn() }));
+const map = vi.hoisted(() => ({ setView: vi.fn(), fitBounds: vi.fn(), panTo: vi.fn(), invalidateSize: vi.fn(), getContainer: vi.fn(() => document.createElement("div")) }));
 const leafletState = vi.hoisted(() => ({
   clickHandler: null as null | ((event: { latlng: { lat: number; lng: number } }) => void),
   tileError: null as null | (() => void),
   markerIndex: 0,
+  dragHandler: null as null | ((event: { target: { getLatLng: () => { lat: number; lng: number } } }) => void),
 }));
 
 vi.mock("leaflet", () => ({ default: leaflet }));
 vi.mock("react-leaflet", () => ({
   MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="map-container">{children}</div>,
-  Marker: ({ children, eventHandlers, position }: { children?: React.ReactNode; eventHandlers?: { click?: () => void }; position: [number, number] }) => {
+  Marker: ({ children, eventHandlers, position }: { children?: React.ReactNode; eventHandlers?: { click?: () => void; dragend?: typeof leafletState.dragHandler }; position: [number, number] }) => {
     const index = leafletState.markerIndex++;
+    leafletState.dragHandler = eventHandlers?.dragend ?? null;
     return <div data-testid={`marker-${index}`} data-position={position.join(",")} onClick={eventHandlers?.click}>{children}</div>;
   },
   Polyline: ({ positions }: { positions: [number, number][] }) => <div data-testid="polyline" data-points={positions.length} />,
@@ -88,6 +90,7 @@ describe("map components", () => {
     leafletState.clickHandler = null;
     leafletState.tileError = null;
     leafletState.markerIndex = 0;
+    leafletState.dragHandler = null;
   });
 
   afterEach(() => cleanup());
@@ -139,6 +142,18 @@ describe("map components", () => {
     await waitFor(() => expect(map.setView).toHaveBeenCalledWith([-12.06513, -75.20486], 13));
   });
 
+  it("keeps new delivery points visible alongside published routes and in the map bounds", async () => {
+    const duplicate = { ...order, id: 11, codigo_pedido: "PED-1", cliente_nombre: "No duplicar" };
+    const unlocated = { ...order, id: 12, ubicacion: null, cliente_nombre: "Sin punto" };
+    render(<MapView depot={null} orders={[order, duplicate, unlocated]} solution={solution} selectedPlate="ABC-123" onSelectPlate={vi.fn()} onSelectStop={vi.fn()} onMapFailure={vi.fn()} />);
+    expect(screen.getByText("Cliente ruta")).toBeTruthy();
+    expect(screen.getByText("Cliente sin ruta")).toBeTruthy();
+    expect(screen.getByText("Pendiente de asignar a una ruta")).toBeTruthy();
+    expect(screen.queryByText("No duplicar")).toBeNull();
+    expect(screen.queryByText("Sin punto")).toBeNull();
+    await waitFor(() => expect(map.fitBounds).toHaveBeenCalledWith(expect.arrayContaining([[-12.06, -75.21], [-12.07, -75.22]]), expect.anything()));
+  });
+
   it("captures manual coordinates and displays the selected pin", () => {
     const onPick = vi.fn();
     const { rerender } = render(<PinMap pin={null} onPick={onPick} />);
@@ -149,5 +164,17 @@ describe("map components", () => {
     leafletState.markerIndex = 0;
     rerender(<PinMap pin={[-12.1, -75.3]} onPick={onPick} />);
     expect(screen.getByTestId("marker-0").getAttribute("data-position")).toBe("-12.1,-75.3");
+    expect(map.panTo).toHaveBeenCalledWith([-12.1, -75.3], { animate: false });
+    expect(map.invalidateSize).toHaveBeenCalledWith({ pan: false });
+    leafletState.dragHandler?.({ target: { getLatLng: () => ({ lat: -12.08, lng: -75.22 }) } });
+    expect(onPick).toHaveBeenLastCalledWith(-12.08, -75.22);
+  });
+
+  it("ignores map selections while disabled", () => {
+    const onPick = vi.fn();
+    render(<PinMap pin={[-12.1, -75.3]} onPick={onPick} enabled={false} />);
+    leafletState.clickHandler?.({ latlng: { lat: -12.08, lng: -75.22 } });
+    leafletState.dragHandler?.({ target: { getLatLng: () => ({ lat: -12.08, lng: -75.22 }) } });
+    expect(onPick).not.toHaveBeenCalled();
   });
 });

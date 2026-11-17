@@ -13,6 +13,7 @@ vi.mock("./lib/session", async (importOriginal) => ({
 
 import {
   ApiError,
+  assignOrderVehicle,
   confirmDelivery,
   createOrder,
   createVehicle,
@@ -105,6 +106,24 @@ describe("API client", () => {
     await fetchOrders();
     const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
     expect(headers.get("Authorization")).toBe("Bearer jwt-token");
+  });
+
+  it("sends dates and vehicle assignments and explains structured optimization errors", async () => {
+    fetchMock.mockImplementation(async () => jsonResponse({}));
+    await fetchOrders("2026-11-17");
+    await fetchPublishedRoute("2026-11-17");
+    await optimizeRoutes("2026-11-17");
+    await fetchVehicles(true);
+    await assignOrderVehicle(7, 3);
+    expect(fetchMock.mock.calls.map(([path]) => path)).toEqual([
+      "/api/v1/pedidos?fecha=2026-11-17", "/api/v1/rutas/mapa?fecha=2026-11-17",
+      "/api/v1/optimizar-rutas?fecha=2026-11-17", "/api/v1/vehiculos?todos=true", "/api/v1/pedidos/7/vehiculo",
+    ]);
+    expect(JSON.parse(String(fetchMock.mock.calls[4]?.[1]?.body))).toEqual({ vehiculo_asignado_id: 3 });
+    fetchMock.mockResolvedValueOnce(jsonResponse({ detail: {
+      mensaje: "Ruta inviable.", violaciones: [{ mensaje: "El pedido P-1 supera la capacidad." }],
+    } }, { status: 409, statusText: "Conflict" }));
+    await expect(optimizeRoutes()).rejects.toMatchObject({ message: "Ruta inviable. El pedido P-1 supera la capacidad.", status: 409 });
   });
 
   it("uses backend details for forbidden and generic errors", async () => {

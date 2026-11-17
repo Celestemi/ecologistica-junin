@@ -1,5 +1,22 @@
 # 02. Registro de Impedimentos V_1_0_1.md
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: tratamiento de impedimentos sin cierre acreditado
+
+| Impedimento | Responsable propuesto | Acción concreta | Fecha objetivo propuesta | Evidencia para cerrar |
+|---|---|---|---|---|
+| IMP-005: normativa | PM | Registrar fuente, ámbito y vigencia; mantener placa desactivada. | 20/11/2026 para revisión documental | Fuente aplicable y decisión registrada; si falta, permanece desactivada. |
+| IMP-007: entregable 09 | PM | Presentar propuesta de matriz de trazabilidad/impacto como apoyo. | 20/11/2026 | Instrucción del evaluador antes de declararlo exigido. |
+| IMP-009: DoD | QA + DevOps | Reejecutar conjunto de aceptación, revisión y staging. | 25/11/2026 | Reportes, versión, revisión y despliegue identificados. |
+
+Las fechas de resolución históricas vacías significan que no hay cierre registrado. Esta tabla las completa con una **fecha objetivo y criterio**, sin simular una resolución ya ocurrida. IMP-004 requiere factibilidad además de reloj; IMP-008 cuenta con modelo referencial, sin aprobación o ejecución acreditadas por ese solo hecho.
+<!-- complemento-r4:fin -->
+
+---
+
+
 > **Control de versiones:** sustituye a `02_registro_de_impedimentos_v_1_0_0.md` (2026-10-26). Se conservan los registros históricos IMP-001 a IMP-008; se actualiza IMP-005 y se agrega IMP-009 con evidencia de verificación.
 
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.

@@ -7,6 +7,7 @@ export type Order = {
   id: number;
   codigo_pedido: string;
   token_seguimiento?: string | null;
+  vehiculo_asignado_id?: number | null;
   cliente_nombre: string;
   direccion_referencia: string;
   ubicacion: GeoPoint | null;

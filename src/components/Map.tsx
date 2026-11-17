@@ -2,12 +2,14 @@ import L from "leaflet";
 import { useEffect, useMemo } from "react";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import { formatCo2, formatWindow, windowColor } from "../lib/format";
-import { HUANCAYO_CENTER, ROUTE_COLORS, type Depot, type Order, type RouteFeature, type RouteOptimization } from "../types";
+import { ordersOutsideRoute } from "../lib/routePresentation";
+import { HUANCAYO_CENTER, ROUTE_COLORS, type Depot, type Order, type RouteFeature, type RouteOptimization, type Vehicle } from "../types";
 
 type MapProps = {
   depot: Depot | null;
   orders: Order[];
   solution: RouteOptimization | null;
+  vehicles?: Vehicle[];
   selectedPlate: string | null;
   onSelectPlate: (plate: string) => void;
   onSelectStop: (key: string) => void;
@@ -75,10 +77,13 @@ function lineFeatures(solution: RouteOptimization | null): RouteFeature[] {
   );
 }
 
-export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate, onSelectStop, onMapFailure }: MapProps) {
+export function MapView({ depot, orders, solution, vehicles, selectedPlate, onSelectPlate, onSelectStop, onMapFailure }: MapProps) {
   const roadLines = lineFeatures(solution);
   const lines = roadLines.filter((feature) => !selectedPlate || feature.properties.plate === selectedPlate);
-  const points = pointFeatures(solution).filter((feature) => !selectedPlate || feature.properties.plate === selectedPlate);
+  const points = useMemo(() => pointFeatures(solution).filter((feature) => !selectedPlate || feature.properties.plate === selectedPlate), [solution, selectedPlate]);
+  const pendingOrders = useMemo(() => ordersOutsideRoute(orders, solution).filter((order) =>
+    !selectedPlate || order.vehiculo_asignado_id == null || vehicles?.some((vehicle) => vehicle.placa === selectedPlate && vehicle.id === order.vehiculo_asignado_id)),
+  [orders, solution, selectedPlate, vehicles]);
   const plates = useMemo(() => {
     const found = new Set<string>();
     for (const feature of solution?.features ?? []) {
@@ -100,15 +105,14 @@ export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate,
           next.push(toLatLng(feature.geometry.coordinates));
         }
       }
-      return next;
     }
-    for (const order of orders) {
+    for (const order of pendingOrders) {
       if (order.ubicacion) {
         next.push(toLatLng(order.ubicacion.coordinates));
       }
     }
     return next;
-  }, [depot, orders, points, solution]);
+  }, [depot, pendingOrders, points, solution]);
 
   const boundsKey = positions.map((pair) => pair.join(",")).join("|");
 
@@ -132,8 +136,7 @@ export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate,
             </Popup>
           </Marker>
         ) : null}
-        {solution
-          ? points.map((feature) => {
+        {points.map((feature) => {
               if (feature.geometry.type !== "Point" || feature.properties.stop_type !== "delivery") {
                 return null;
               }
@@ -164,8 +167,8 @@ export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate,
                   </Popup>
                 </Marker>
               );
-            })
-          : orders.map((order) => {
+            })}
+        {pendingOrders.map((order) => {
               if (!order.ubicacion) {
                 return null;
               }
@@ -174,7 +177,7 @@ export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate,
                 <Marker
                   key={order.id}
                   position={[lat, lon]}
-                  icon={pinIcon(windowColor(order.ventana_inicio), false)}
+                  icon={pinIcon(windowColor(order.ventana_inicio), false, "+")}
                   title={`Pedido de ${order.cliente_nombre}`}
                   alt={`Pedido de ${order.cliente_nombre}`}
                   keyboard
@@ -187,6 +190,7 @@ export function MapView({ depot, orders, solution, selectedPlate, onSelectPlate,
                       co2={formatCo2(null)}
                       plate={null}
                     />
+                    <p className="mt-2 text-sm font-semibold text-amber-900">Pendiente de asignar a una ruta</p>
                   </Popup>
                 </Marker>
               );
@@ -255,6 +259,7 @@ function Legend({
     <div className="pointer-events-none absolute bottom-3 left-3 z-[500] max-w-[14rem] rounded-2xl bg-white/95 px-3 py-2 text-xs text-stone-700 shadow-lg ring-1 ring-stone-200">
       <p className="mb-1 font-semibold text-stone-900">Cómo leer el mapa</p>
       <ul className="space-y-1">
+        <li>+ Pedido pendiente de ruta</li>
         <li className="flex items-center gap-2">
           <Dot color="#c2410c" /> Antes de las 9:00
         </li>

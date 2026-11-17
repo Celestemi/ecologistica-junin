@@ -1,5 +1,26 @@
 # 01. Informe de estado del proyecto V_1_0_1.md
 
+<!-- complemento-r4:inicio -->
+> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
+
+## Complementación r4: plan verificable para cerrar la fundación
+
+El objetivo de esta adición es completar el trabajo necesario sobre autenticación, flota, importación y ventanas. El estado de octubre y los 20 SP/0 Done históricos permanecen como registro del corte, sin convertirlos en una aceptación nueva.
+
+| Elemento | Preparación propuesta | Resultado necesario |
+|---|---|---|
+| Acceso | Cuentas sintéticas por rol; tres credenciales inválidas. | Rechazo por rol/objeto y bloqueo temporal coherente. |
+| Flota | 15 vehículos con pesos/volúmenes distintos. | Validar capacidad y evitar placa duplicada. |
+| Pedidos | CSV de 150 filas más casos inválidos en archivo separado. | Resumen de altas/rechazos y ausencia de duplicados. |
+| Ubicación/ventanas | Dirección ambigua, pin manual y ventanas mañana/tarde. | Estado pendiente visible y dato persistido tras editar. |
+| DoD | Ejecución integral, cobertura por capa, revisión y staging. | Reporte por versión, revisión identificada y evidencia del entorno. |
+
+Responsables propuestos: Backend para dominio/acceso; Frontend para formularios; QA para casos y evidencia; DevOps para PostGIS/staging; PM para revisión. Preparación 18–20/11 y revalidación 23–25/11/2026, como acciones futuras propuestas.
+<!-- complemento-r4:fin -->
+
+---
+
+
 > **Control de versiones:** sustituye a `01_informe_de_estado_del_proyecto_v_1_0_0.md` (2026-10-26). La versión anterior reflejaba un cierre optimista no sustentado en la verificación DoD.
 
 **Nombre del Proyecto:** EcoLogística Huancayo — Optimizador de Rutas Sostenibles para DistriRápido S.A.C.
@@ -8,7 +29,7 @@
 
 **Fecha de actualización:** 26 de octubre de 2026
 
-**Evidencias de verificación:** [REPORTE_VERIFICACION_DOD_SPRINT_1.md](../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md), [PLAN_IMPLEMENTACION_SPRINT_1.md](../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_1.md), suites en `tests/`.
+**Evidencias de verificación:** **REPORTE_VERIFICACION_DOD_SPRINT_1.md — fuente histórica no localizada**, **PLAN_IMPLEMENTACION_SPRINT_1.md — fuente histórica no localizada**, suites en `tests/`.
 
 ---
 
@@ -83,3 +104,13 @@ Cualquier minuta o acta de demo presencial debe adjuntarse aparte; no se inventa
 ---
 
 [← Volver al README](../../../README.md)
+
+
+## Referencias históricas pendientes — aclaración del 17/11/2026
+
+Los enlaces siguientes apuntaban a archivos ausentes del repositorio. Se conservan sus destinos originales para trazabilidad, sin presentarlos como evidencia comprobada ni reconstruir documentos históricos:
+
+- `../../../Auditorias-EcoLogistica/03_Reportes_Verificacion/REPORTE_VERIFICACION_DOD_SPRINT_1.md`
+- `../../../Auditorias-EcoLogistica/02_Planes_Implementacion/PLAN_IMPLEMENTACION_SPRINT_1.md`
+
+[Revisión de datos y límites](../../REVISION_DATOS_Y_MEJORAS.md). El texto anterior conserva su corte histórico; esta aclaración no prueba aceptación ni ejecución de las actividades referidas.
