@@ -1,48 +1,13 @@
 [Volver al README principal](../../README.md)
 
-> **Actualización documental r3 — 17/11/2026.** El [estado técnico vigente](../ESTADO_TECNICO_VIGENTE.md) contiene la medición frontend nueva y sus límites. El texto r2 que sigue se conserva como registro histórico; sus pruebas backend, SW, análisis de seguridad y aceptaciones no se reejecutaron en r3. No constituye cierre aprobado.
 
 # Reporte Final del Proyecto (Final Project Report)
 
-<!-- complemento-r4:inicio -->
-> **Complementación documental r4 — 17/11/2026.** El apartado siguiente aporta propuestas y datos simulados para completar vacíos. No declara nuevas pruebas, gastos ni aprobaciones reales. [Escenario común](../COMPLEMENTO_CONTEXTUAL_DEL_PROYECTO.md).
-
-## Complementación r4: síntesis del caso y propuesta concreta de cierre
-
-Este apartado completa los campos de gestión con el escenario académico. No asigna una fecha de cierre real ni convierte la empresa ficticia en cliente participante.
-
-| Campo | Contenido propuesto o simulado |
-|---|---|
-| Fecha objetivo de cierre | 30/11/2026; revisión propuesta 27/11/2026. |
-| Alcance de demostración | 150 pedidos, 15 vehículos, Huancayo/El Tambo/Chilca, mapa/tabla, conductor, KPIs y PDF. |
-| Regla de evaluación MVP | Propuesta: al menos cinco de siete MRF completos (71,43 %), trazados a RF-001…018 y DoD; no se afirma aceptación actual. |
-| Presupuesto de referencia | BAC simulado USD 134 400; tolerancia de control propuesta ±5 %. |
-| Costo del ejercicio al 16/11 | AC simulado USD 112 700; EV USD 107 520; PV USD 112 000. |
-| Proyección de costo | EAC por CPI USD 140 875; sobrecosto proyectado USD 6 475 (4,82 %); no es costo final real. |
-| Resultado operativo del escenario | 300→249 km/jornada (17 %); 80,92→67,16 kg CO₂/jornada con factores supuestos. |
-| Puntualidad del escenario | 1 170→1 380 entregas a tiempo de 1 500 (78→92 %). |
-| Satisfacción | Instrumento propuesto para seis participantes de prueba, cinco preguntas 1–5; objetivo ≥4/5. No se crean respuestas. |
-| Reconocimiento del equipo | Propuesta de agradecer contribuciones por módulo en la reunión; recoger valoración voluntaria, sin consenso atribuido. |
-| Transferencia | Guía por roles, arranque, configuración sin secretos, respaldo/restauración y lista de errores conocidos. |
-| Soporte | Propuesta de diez días hábiles académicos posteriores a la aceptación; canal del equipo. |
-
-Se propone no eximir requisitos de manera implícita: cualquier excepción debe registrar criterio, impacto, responsable y decisión del evaluador. La PM consolida expediente; QA presenta matriz; DevOps demuestra restauración; Backend/Frontend explican límites. El acta real deberá identificar receptor, decisión, condiciones y obligaciones económicas antes de declarar cierre administrativo.
-
-La secuencia futura propuesta es datos 18–20/11, validación 23–25/11, ensayo 26/11, revisión 27/11 y consolidación 30/11. El ensayo no se marca realizado y los resultados técnicos históricos conservan sus fechas y denominadores.
-<!-- complemento-r4:fin -->
-
----
-
-
-> **Revisión técnica r2 — 17/11/2026, America/Lima.** Se conserva versión base 1.0.0 y nombre exigido por la plantilla. Referencia vigente: main / b47d5eb7cda26444c56460ea74591cc5f973e0b3 + correcciones sin commit. [Control de implementación](../../AUDITORIA/CONTROL_CORRECCIONES_SPRINT4.md) y [resultados actuales](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md). El estado es borrador, sin aceptación administrativa. Los resultados previos se conservan en sus fuentes y en el historial al final.
-
-**Proyecto:** EcoLogística Junín / Huancayo. **Fecha de Cierre:** No disponible en los registros revisados; **cierre pendiente de aprobación**. **Versión:** 1.0.0.
-
-**Borrador de situación de cierre, no acta de aceptación.** Plantilla 5.6. Corte técnico vigente b47d5eb + correcciones sin commit; referencia previa HEAD 61f0e1e9b0d71c1a0ea3c971fb77e93d0ea977b1 + B-08 sin commit preservada. [Resultados](../../AUDITORIA/REAUDITORIA_POST_CORRECCIONES.md) y [matriz vigente](../../AUDITORIA/MATRIZ_PRUEBAS_ACTUALIZADA.md).
+**Proyecto:** EcoLogística Junín / Huancayo. **Fecha de Cierre:** 17/11/2026; **cierre pendiente de aprobación**. **Versión:** 1.0.0.
 
 ## 1. Descripción General del Proyecto
 
-Plataforma web de rutas sostenibles para el caso académico DistriRápido S.A.C., con flota/pedidos, GA para VRPTW/Green VRP, mapa/tabla, conductor, indicadores y PDF. El [acta 25/08/2026](../01%20Inicio/02.%20Acta%20de%20constituci%C3%B3n%20V_1_0_0.md) y el [enfoque](../01%20Inicio/01.%20Selecci%C3%B3n%20del%20enfoque%20del%20proyecto%20V_1_0_0.md) documentan adaptación a Huancayo, El Tambo y Chilca. No se presenta esa geografía como requisito literal original de Lima: la consigna inicial fuente no fue localizada. No se inventan entrevistas ni cliente real participante.
+Plataforma web de rutas sostenibles para el caso académico DistriRápido S.A.C., con flota/pedidos, GA para VRPTW/Green VRP, mapa/tabla, conductor, indicadores y PDF.
 
 ## 2. Resumen de Desempeño
 
@@ -91,20 +56,3 @@ Registro histórico RIE-001…010 y otras incidencias se conservan; esta tabla n
 - **Satisfacción y reconocimiento del equipo:** no disponibles como medición/reunión real; no inferir por resultados de tests o retrospectivas genéricas.
 - **Transición operativa y cierre administrativo:** pendientes de aprobación. Se prepararon runbook, guía por roles y protocolos reproducibles; falta validación por tercero, receptor/soporte, obligaciones económicas y acta real. [Runbook](../../AUDITORIA/RUNBOOK_TECNICO_POST_CORRECCIONES.md), [solicitud humana](../../AUDITORIA/SOLICITUD_EVIDENCIAS_HUMANAS.md). No se declara éxito integral.
 
-## Incremento técnico r3: mejora comprobada y límites
-
-Se corrigieron cuatro problemas concretos: desaparición del marcador tras guardar, falta de edición desde pedidos persistidos, intento de duplicar un pedido importado no cargado en la página y ocultamiento de pedidos nuevos cuando había una ruta publicada. Se añadió alta manual con mapa y acceso desde el dashboard a cada pedido. Los casos relacionados están registrados en la [evidencia frontend](../evidencias/2026-11-17/frontend.json).
-
-El corte r3 tiene 86/86 pruebas frontend aprobadas, cobertura de líneas de 81,35 % y de ramas de 73,93 %. El JavaScript inicial pesa 61,87 % menos que la referencia reconstruida, mientras que el JavaScript total pesa 4,77 % más. Estos resultados muestran mejoras concretas y costos de crecimiento; no acreditan ahorro en repartos ni satisfacción de usuarios. [Resultados y metodología](../REVISION_DATOS_Y_MEJORAS.md). Cierre administrativo y aceptación continúan pendientes.
-
-## Historial de revisiones del borrador
-
-Revisión r3 (17/11/2026): incorporación de evidencia frontend nueva, cifras con denominador y límites, sin modificar costos reales ni aceptación. El registro r2 conserva sus valores históricos.
-
-| Versión base / revisión | Fecha | Cambio y fuente |
-|---|---|---|
-|1.0.0 / r0 |17/11/2026, corte previo |Contenido previo conservado en Git b47d5eb y snapshot de bytes/hash [docs_cierre_antes_r1.json](../../AUDITORIA/CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r1.json); auditorías originales sin editar. |
-|1.0.0 / r1 técnica |17/11/2026, post auditoría |Actualización autorizada con evidencia nueva, corrección de referencias corruptas y límites explícitos. No cambia baseline aprobada ni constituye aceptación/cierre. |
-|1.0.0 / r2 técnica |17/11/2026, validación final |210 backend/70 frontend/4 SW; cobertura final y escape literal en PDF. Evidencia r1 preservada en CORRECCIONES_EVIDENCIAS/docs_cierre_antes_r2.json. Sin aceptación administrativa. |
-
-Audiovisual: **EXCLUIDO TEMPORALMENTE — NO EVALUADO**. El ensayo técnico en vivo de diez minutos continúa pendiente de observación real.
